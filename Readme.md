@@ -32,7 +32,7 @@ PyPipboy is at the beginning of the development. The first version of the GUI fr
 
 # Usage
 
-For now the best option is to download the provided archives in the release section.
+For now the best option is to download the provided archives in the [release section](https://github.com/matzman666/PyPipboyApp/releases).
 
 Manual Installation:
 - Install Python3, PyQt5, PyPipboy and its dependencies
