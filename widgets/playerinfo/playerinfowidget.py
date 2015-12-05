@@ -5,15 +5,16 @@ import datetime
 import os
 from PyQt5 import QtWidgets, QtCore, uic
 from pypipboy.types import eValueType
-from .. import widgets
+from widgets import widgets
 
 
 class PlayerInfoWidget(widgets.WidgetBase):
     _signalInfoUpdated = QtCore.pyqtSignal()
     
-    def __init__(self, mhandle, parent):
+    def __init__(self, handle, controller, parent):
         super().__init__('Player Info', parent)
-        self.widget = uic.loadUi(os.path.join(mhandle.basepath, 'ui', 'playerinfowidget.ui'))
+        self.controller = controller
+        self.widget = uic.loadUi(os.path.join(handle.basepath, 'ui', 'playerinfowidget.ui'))
         self.setWidget(self.widget)
         self.pipPlayerInfo = None
         self.maxHP = 0

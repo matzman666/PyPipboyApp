@@ -1,0 +1,8 @@
+__pycache__
+/.project
+/.pydevproject
+/.settings/
+/widgets/map/res/*.svg
+/widgets/map/res/*.png
+/widgets/playerinfo/res/*.svg
+/widgets/playerinfo/res/*.png

@@ -19,8 +19,9 @@ Currently implemented features are:
    - Data Browser
    - Data Update Logger
    - Player Info
+   - Player Condition (showing limb damage)
    - Date/Time
-   - Map (Heavy WIP)
+   - Map (Global and Local)
 
 # Screenshots
 

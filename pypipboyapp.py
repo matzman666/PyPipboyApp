@@ -4,6 +4,7 @@
 import os
 import sys
 import importlib
+import traceback
 import logging.config
 from PyQt5 import QtWidgets, QtCore, uic
 from pypipboy.network import NetworkChannel
@@ -262,8 +263,9 @@ class PyPipboyApp(QtWidgets.QApplication):
             self._connectHostMessageBox.hide()
             self._connectHostMessageBox = None
         # delete thread
-        self._connectHostThread.wait()
-        self._connectHostThread = None
+        if self._connectHostThread:
+            self._connectHostThread.wait()
+            self._connectHostThread = None
         # Handle errors
         if status:
             pass
@@ -337,7 +339,7 @@ class PyPipboyApp(QtWidgets.QApplication):
         self.modulehandles = dict()
         for dir in os.listdir(self.PROGRAM_WIDGETS_DIR):
             dirpath = os.path.join(self.PROGRAM_WIDGETS_DIR, dir)
-            if not dir.startswith('__') and os.path.isdir(dirpath):
+            if dir != 'shared' and not dir.startswith('__') and os.path.isdir(dirpath):
                 self._logger.debug('Tyring to load widget dir "' + dir + '"')
                 module = None
                 try:
@@ -368,6 +370,7 @@ class PyPipboyApp(QtWidgets.QApplication):
                         self._logger.warning('Could not load widget dir "' + dir + '": No Info')
                 except Exception as e:
                     self._logger.warning('Could not load widget dir "' + dir + '": ' + str(e))
+                    traceback.print_exc(file=sys.stdout)
                     
     # load widgets
     def _initWidgets(self):

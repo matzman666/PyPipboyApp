@@ -1,7 +1,7 @@
 
 from widgets import widgets
 
-from .playerinfowidget import PlayerInfoWidget
+from .controller import Controller
 
 class ModuleInfo(widgets.ModuleInfoBase):
     
@@ -10,4 +10,7 @@ class ModuleInfo(widgets.ModuleInfoBase):
 
     @staticmethod
     def createWidgets(handle, parent):
-        return PlayerInfoWidget(handle, parent)
+        controller = Controller(handle)
+        infoWidget = controller.createPlayerInfoWidget(parent)
+        conditionWidget = controller.createPlayerConditionWidget(parent)
+        return [infoWidget, conditionWidget]
