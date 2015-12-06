@@ -36,7 +36,7 @@ class PipboyMainWindow(QtWidgets.QMainWindow):
         self.statusbar.addPermanentWidget(self.connectionStatusLabel)
         self.setCentralWidget(None) # damn thing cannot be removed in Qt-Designer
         self.setDockNestingEnabled(True)
-        self.setTabPosition(QtCore.Qt.AllDockWidgetAreas, QtWidgets.QTabWidget.North)
+        self.setTabPosition(QtCore.Qt.AllDockWidgetAreas, QtWidgets.QTabWidget.South)
         
     # Init function that is called after everything has been set up
     def init(self, app, networkchannel, datamanager):
@@ -126,12 +126,30 @@ class PyPipboyApp(QtWidgets.QApplication):
         self.mainWindow.signalWantsToQuit.connect(self.requestQuit)
         self.mainWindow.actionShowAbout.triggered.connect(self.showAboutDialog)
         self.mainWindow.actionShowAboutQt.triggered.connect(self.aboutQt)
+        self.mainWindow.actionAuto_Connect_on_Start_up.triggered.connect(self.autoConnectToggled)
         # Main window is ready, so show it
         self.mainWindow.init(self, self.networkChannel, self.dataManager)
         self._initWidgets()
         self.mainWindow.show()
         # start main event loop
+        if self.settings.value('mainwindow/autoconnect'):
+            self.mainWindow.actionAuto_Connect_on_Start_up.setChecked(True)
+            host = 'localhost'
+            port = 27000
+            if self.settings.value('mainwindow/lasthost'):
+                host = self.settings.value('mainwindow/lasthost')
+            if self.settings.value('mainwindow/lastport'):
+                port = self.settings.value('mainwindow/lastport')
+
+            self.signalConnectToHost.emit(host, port, False)
+            #self.connectToHost(host, port, True, True)
         sys.exit(self.exec_())
+
+    @QtCore.pyqtSlot(bool)
+    def autoConnectToggled(self, value):
+        self._logger.debug("autoConnectToggled: " + str(value))
+        self.settings.setValue('mainwindow/autoconnect', int(value))
+
         
     # Start auto discovery (non-blocking)
     # Auto discovery is done in its own thread, we don't want to block the gui
@@ -193,6 +211,7 @@ class PyPipboyApp(QtWidgets.QApplication):
                     QtWidgets.QMessageBox.warning(self.mainWindow, 'Connection to host failed', 
                             'Caught exception while parsing port: ' + str(e),
                             QtWidgets.QMessageBox.Ok)
+            
                     
     # connect to specified host (non blocking)
     # connect happens in its own thread
@@ -288,7 +307,7 @@ class PyPipboyApp(QtWidgets.QApplication):
     @QtCore.pyqtSlot()        
     def requestQuit(self):
         # do you really wanna
-        if QtWidgets.QMessageBox.question(self.mainWindow, 'Close', 'Are you sure you want to quit?',
+        if not self.settings.value('mainwindow/promptBeforeQuit') or  QtWidgets.QMessageBox.question(self.mainWindow, 'Close', 'Are you sure you want to quit?',
                             QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
                             QtWidgets.QMessageBox.No) == QtWidgets.QMessageBox.Yes:
             # disconnect any network sessions
@@ -322,6 +341,10 @@ class PyPipboyApp(QtWidgets.QApplication):
             tmp += 'Version: ' + str(self.networkChannel.hostVersion) + ", "
             tmp += 'Lang: ' +str(self.networkChannel.hostLang) + ")"
             self.mainWindow.connectionStatusLabel.setText('Connected to ' + tmp)
+            self.settings.setValue('mainwindow/lasthost', str(self.networkChannel.hostAddr))
+            self.settings.setValue('mainwindow/lastport', self.networkChannel.hostPort)
+
+            
         else: # disconnect
             # menu management stuff
             self.mainWindow.actionConnect.setEnabled(True)
@@ -397,6 +420,9 @@ class PyPipboyApp(QtWidgets.QApplication):
             action = menu.addAction(self.styles[s].name)
             action.triggered.connect(_genSlotSetStyles(self, self.styles[s].name))
         self.mainWindow.actionStylesDefault.triggered.connect(_genSlotSetStyles(self, 'default'))
+        if (self.settings.value('mainwindow/lastStyle')):
+            self.setStyle(self.settings.value('mainwindow/lastStyle'))
+        
             
     def setStyle(self, name):
         if name == 'default':
@@ -406,6 +432,7 @@ class PyPipboyApp(QtWidgets.QApplication):
             stylefilepath = os.path.join(style.styledir, 'style.qss')
             self.setStyleSheet('file:///' + stylefilepath)
 
+        self.settings.setValue('mainwindow/lastStyle', name)
 
 
 # Main entry point
