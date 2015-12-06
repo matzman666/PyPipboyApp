@@ -126,20 +126,20 @@ class LocalMapWidget(widgets.WidgetBase):
         self.widget.mapZoomSpinbox.valueChanged.connect(self._slotZoomSpinTriggered)
         self.signalSetZoomLevel.connect(self.saveZoom)
         if (self._app.settings.value('localmapwidget/zoom')):
-            zoomvalue = float(self._app.settings.value('localmapwidget/zoom'))
-            if zoomvalue == 1.0:
+            self.mapZoomLevel = float(self._app.settings.value('localmapwidget/zoom'))
+            if self.mapZoomLevel == 1.0:
                 sliderValue = 0
-            elif zoomvalue > 1.0:
-                sliderValue = (zoomvalue/self.MAPZOOM_SCALE_MAX)*100.0
+            elif self.mapZoomLevel > 1.0:
+                sliderValue = (self.mapZoomLevel/self.MAPZOOM_SCALE_MAX)*100.0
             else:
-                sliderValue = -(self.MAPZOOM_SCALE_MIN/zoomvalue)*100.0
+                sliderValue = -(self.MAPZOOM_SCALE_MIN/self.mapZoomLevel)*100.0
             self.widget.mapZoomSlider.blockSignals(True)
             self.widget.mapZoomSlider.setValue(sliderValue)
             self.widget.mapZoomSlider.blockSignals(False)
             self.widget.mapZoomSpinbox.blockSignals(True)
-            self.widget.mapZoomSpinbox.setValue(zoomvalue*100.0)
+            self.widget.mapZoomSpinbox.setValue(self.mapZoomLevel*100.0)
             self.widget.mapZoomSpinbox.blockSignals(False)        
-            self.signalSetZoomLevel.emit(zoomvalue, 0, 0)
+            self.signalSetZoomLevel.emit(self.mapZoomLevel, 0, 0)
 
         # Init Enable Checkbox
         self.widget.enableCheckbox.stateChanged.connect(self._slotEnableMapTriggered)
