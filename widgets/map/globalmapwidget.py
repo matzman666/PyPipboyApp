@@ -388,7 +388,8 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.controller = controller
         self.widget = uic.loadUi(os.path.join(self.basepath, 'ui', 'globalmapwidget.ui'))
         self.setWidget(self.widget)
-        self.mapFilePath = os.path.join('res', 'mapgreyscale-4k.png')
+        self.mapGreyscaleFilePath = os.path.join('res', 'mapgreyscale-4k.png')
+        self.mapThreatLevelFilePath = os.path.join('res', 'mapthreatlevel-4k.png')
         self._logger = logging.getLogger('pypipboyapp.map.globalmap')
         self.mapZoomLevel = 1.0
         
@@ -409,7 +410,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         # Add map graphics
         if self._app.settings.value('globalmapwidget/colour'):
             self.mapColor = self._app.settings.value('globalmapwidget/colour')
-        self.mapItem = MapGraphicsItem(self, self.controller.imageFactory, self.mapFilePath, self.mapColor, True)
+        self.mapItem = MapGraphicsItem(self, self.controller.imageFactory, self.mapGreyscaleFilePath, self.mapColor, True)
         self.signalSetZoomLevel.connect(self.mapItem.setZoomLevel)
         self.signalSetColor.connect(self.mapItem.setColor)
         # Add player marker
@@ -436,20 +437,21 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.widget.mapZoomSpinbox.valueChanged.connect(self._slotZoomSpinTriggered)
         self.signalSetZoomLevel.connect(self.saveZoom)
         if (self._app.settings.value('globalmapwidget/zoom')):
-            zoomvalue = float(self._app.settings.value('globalmapwidget/zoom'))
-            if zoomvalue == 1.0:
+            self.mapZoomLevel = float(self._app.settings.value('globalmapwidget/zoom'))
+            if self.mapZoomLevel == 1.0:
                 sliderValue = 0
-            elif zoomvalue > 1.0:
-                sliderValue = (zoomvalue/self.MAPZOOM_SCALE_MAX)*100.0
+            elif self.mapZoomLevel > 1.0:
+                sliderValue = (self.mapZoomLevel/self.MAPZOOM_SCALE_MAX)*100.0
             else:
-                sliderValue = -(self.MAPZOOM_SCALE_MIN/zoomvalue)*100.0
+                sliderValue = -(self.MAPZOOM_SCALE_MIN/self.mapZoomLevel)*100.0
             self.widget.mapZoomSlider.blockSignals(True)
             self.widget.mapZoomSlider.setValue(sliderValue)
             self.widget.mapZoomSlider.blockSignals(False)
             self.widget.mapZoomSpinbox.blockSignals(True)
-            self.widget.mapZoomSpinbox.setValue(zoomvalue*100.0)
+            self.widget.mapZoomSpinbox.setValue(self.mapZoomLevel*100.0)
             self.widget.mapZoomSpinbox.blockSignals(False)        
-            self.signalSetZoomLevel.emit(zoomvalue, 0, 0)
+
+        self.signalSetZoomLevel.emit(self.mapZoomLevel, 0, 0)
 
        # Init color controls
         self.widget.mapColorButton.clicked.connect(self._slotMapColorSelectionTriggered)
@@ -474,6 +476,9 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.centerOnPlayerEnabled = False
         self.widget.centerPlayerCheckbox.stateChanged.connect(self._slotCenterOnPlayerCheckToggled)
         self.widget.centerPlayerCheckbox.setChecked(self._app.settings.value('globalmapwidget/centerPlayer', False))
+        # Init ShowThreatLevel checkbox
+        self.widget.showThreatLevelCheckBox.stateChanged.connect(self._slotshowThreatLevelToggled)
+        self.widget.showThreatLevelCheckBox.setChecked(self._app.settings.value('globalmapwidget/showThreatLevel', False))
         # Init SaveTo Button
         self.widget.saveToButton.clicked.connect(self._slotSaveToTriggered)
         # Init Splitter
@@ -572,8 +577,7 @@ class GlobalMapWidget(widgets.WidgetBase):
             if self.pipWorldLocations:
                 self.pipWorldLocations.registerValueUpdatedListener(self._onPipWorldLocationsUpdated, 0)
                 self._signalPipWorldLocationsUpdated.emit()
-                    
-                    
+           
     def _onPipWorldQuestsUpdated(self, caller, value, pathObjs):
         self._signalPipWorldQuestsUpdated.emit()
 
@@ -625,9 +629,10 @@ class GlobalMapWidget(widgets.WidgetBase):
     @QtCore.pyqtSlot()        
     def _slotMapColorSelectionTriggered(self):
         color = QtWidgets.QColorDialog.getColor(self.mapColor, self)
-        if color.isValid:
+        if color.isValid and color.value() != QtGui.QColor.fromRgb(0,0,0).value():
             self._app.settings.setValue('globalmapwidget/colour', color)
             self.widget.mapColorAutoToggle.setChecked(False)
+            self.widget.showThreatLevelCheckBox.setChecked(False)
             self.signalSetColor.emit(color)
 
 
@@ -691,6 +696,16 @@ class GlobalMapWidget(widgets.WidgetBase):
         self._app.settings.setValue('globalmapwidget/locationVisibilityCheat', value)
         self.signalLocationFilterVisibilityCheat.emit(value)
         
+    @QtCore.pyqtSlot(bool)        
+    def _slotshowThreatLevelToggled(self, value):
+        self._app.settings.setValue('globalmapwidget/showThreatLevel', value)
+        if(value):
+            self.mapItem.setMapPixmap(self.controller.imageFactory.getPixmap(self.mapThreatLevelFilePath, color = None))
+        else:
+            self.mapItem.setMapPixmap(self.controller.imageFactory.getPixmap(self.mapGreyscaleFilePath, color = None))
+            self.signalSetColor.emit(self._app.settings.value('globalmapwidget/colour'))
+        
+
     @QtCore.pyqtSlot(bool)        
     def _slotCenterOnPlayerCheckToggled(self, value):
         self.centerOnPlayerEnabled = value
