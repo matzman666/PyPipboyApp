@@ -6,3 +6,4 @@ __pycache__
 /widgets/map/res/*.png
 /widgets/playerinfo/res/*.svg
 /widgets/playerinfo/res/*.png
+/pypipboy/
