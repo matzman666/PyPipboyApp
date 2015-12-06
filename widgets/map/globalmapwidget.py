@@ -394,6 +394,9 @@ class GlobalMapWidget(widgets.WidgetBase):
         
     def init(self, app, datamanager):
         super().init(app, datamanager)
+        self._app = app
+
+        
         # Init graphics view
         self.mapColor = QtGui.QColor.fromRgb(20,255,23)
         self.mapScene = QtWidgets.QGraphicsScene()
@@ -404,6 +407,8 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.mapView.setMouseTracking(True)
         self.mapView.centerOn(0, 0)
         # Add map graphics
+        if self._app.settings.value('globalmapwidget/colour'):
+            self.mapColor = self._app.settings.value('globalmapwidget/colour')
         self.mapItem = MapGraphicsItem(self, self.controller.imageFactory, self.mapFilePath, self.mapColor, True)
         self.signalSetZoomLevel.connect(self.mapItem.setZoomLevel)
         self.signalSetColor.connect(self.mapItem.setColor)
@@ -429,30 +434,39 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.widget.mapZoomSpinbox.setValue(100.0)
         self.widget.mapZoomSpinbox.setSingleStep(10.0)
         self.widget.mapZoomSpinbox.valueChanged.connect(self._slotZoomSpinTriggered)
+        if (self._app.settings.value('globalmapwidget/zoom')):
+            zoomvalue = int(self._app.settings.value('globalmapwidget/zoom'))
+            self.widget.mapZoomSlider.setValue(zoomvalue)
         # Init color controls
         self.widget.mapColorButton.clicked.connect(self._slotMapColorSelectionTriggered)
+        self.widget.mapColorAutoToggle.setChecked(self._app.settings.value('globalmapwidget/autoColour', False))
         self.widget.mapColorAutoToggle.stateChanged.connect(self._slotMapColorAutoModeTriggered)
         # Init stickyLabels Checkbox
         self.stickyLabelsEnabled = False
-        self.widget.stickyLabelsCheckbox.setChecked(False)
         self.widget.stickyLabelsCheckbox.stateChanged.connect(self._slotStickyLabelsTriggered)
+        self.widget.stickyLabelsCheckbox.setChecked(self._app.settings.value('globalmapwidget/stickyLabels', False))
         # Init PowerMarker Enable Checkbox
-        self.widget.powerMarkerEnableCheckbox.setChecked(True)
         self.widget.powerMarkerEnableCheckbox.stateChanged.connect(self._slotPowerMarkerEnableTriggered)
+        self.widget.powerMarkerEnableCheckbox.setChecked(self._app.settings.value('globalmapwidget/powerArmourMarker', True))
         # Init Location Enable Checkbox
         self.locationFilterEnableFlag = True
-        self.widget.locationMarkerEnableCheckbox.setChecked(True)
         self.widget.locationMarkerEnableCheckbox.stateChanged.connect(self._slotLocationEnableTriggered)
+        self.widget.locationMarkerEnableCheckbox.setChecked(self._app.settings.value('globalmapwidget/locationMarker', True))
         # Init Location Visibility Cheat Checkbox
         self.locationVisibilityCheatFlag = False
-        self.widget.locationVisibilityCheatCheckbox.setChecked(False)
         self.widget.locationVisibilityCheatCheckbox.stateChanged.connect(self._slotLocationVisibilityCheatTriggered)
+        self.widget.locationVisibilityCheatCheckbox.setChecked(self._app.settings.value('globalmapwidget/locationVisibilityCheat', False))
         # Init CenterOnPlayer checkbox
         self.centerOnPlayerEnabled = False
-        self.widget.centerPlayerCheckbox.setChecked(False)
         self.widget.centerPlayerCheckbox.stateChanged.connect(self._slotCenterOnPlayerCheckToggled)
+        self.widget.centerPlayerCheckbox.setChecked(self._app.settings.value('globalmapwidget/centerPlayer', False))
         # Init SaveTo Button
         self.widget.saveToButton.clicked.connect(self._slotSaveToTriggered)
+        # Init Splitter
+        if self._app.settings.value('globalmapwidget/splittercollapsed'):
+            self.widget.splitter.setSizes([100,0])
+        self.widget.splitter.splitterMoved.connect(self._slotSplitterMoved)
+
         # Init PyPipboy stuff
         from .controller import MapCoordinates
         self.mapCoords = MapCoordinates()
@@ -468,6 +482,17 @@ class GlobalMapWidget(widgets.WidgetBase):
         self._signalPipWorldLocationsUpdated.connect(self._slotPipWorldLocationsUpdated)
         self.datamanager.registerRootObjectListener(self._onRootObjectEvent)
 
+    @QtCore.pyqtSlot(int, int)
+    def _slotSplitterMoved(self, pos, index):
+        if (self.widget.splitter.sizes()[1] == 0):
+            splittercollapsed = 1
+        else: 
+            splittercollapsed = 0
+       
+        self._app.settings.setValue('globalmapwidget/splittercollapsed', splittercollapsed)
+        pass
+
+        
     def _connectMarker(self, marker):
         self.signalSetZoomLevel.connect(marker.setZoomLevel)
         self.signalSetColor.connect(marker.setColor)
@@ -527,6 +552,7 @@ class GlobalMapWidget(widgets.WidgetBase):
                 self.pipWorldLocations.registerValueUpdatedListener(self._onPipWorldLocationsUpdated, 0)
                 self._signalPipWorldLocationsUpdated.emit()
                     
+                    
     def _onPipWorldQuestsUpdated(self, caller, value, pathObjs):
         self._signalPipWorldQuestsUpdated.emit()
 
@@ -579,7 +605,10 @@ class GlobalMapWidget(widgets.WidgetBase):
     def _slotMapColorSelectionTriggered(self):
         color = QtWidgets.QColorDialog.getColor(self.mapColor, self)
         if color.isValid:
+            self._app.settings.setValue('globalmapwidget/colour', color)
+            self.widget.mapColorAutoToggle.setChecked(False)
             self.signalSetColor.emit(color)
+
 
 
     @QtCore.pyqtSlot(int)        
@@ -597,6 +626,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.widget.mapZoomSpinbox.blockSignals(True)
         self.widget.mapZoomSpinbox.setValue(self.mapZoomLevel*100.0)
         self.widget.mapZoomSpinbox.blockSignals(False)
+        self._app.settings.setValue('globalmapwidget/zoom', zoom)
         self.signalSetZoomLevel.emit(self.mapZoomLevel, mcenterpos.x(), mcenterpos.y())
         
         
@@ -615,31 +645,37 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.widget.mapZoomSlider.blockSignals(True)
         self.widget.mapZoomSlider.setValue(sliderValue)
         self.widget.mapZoomSlider.blockSignals(False)
+        self._app.settings.setValue('globalmapwidget/zoom', sliderValue)
         self.signalSetZoomLevel.emit(self.mapZoomLevel, mcenterpos.x(), mcenterpos.y())
         
         
     @QtCore.pyqtSlot(bool)        
     def _slotStickyLabelsTriggered(self, value):
         self.stickyLabelsEnabled = value
+        self._app.settings.setValue('globalmapwidget/stickyLabels', value)
         self.signalSetStickyLabel.emit(value)
         
     @QtCore.pyqtSlot(bool)        
     def _slotPowerMarkerEnableTriggered(self, value):
         self.powerArmorMarker.filterSetVisible(value)
+        self._app.settings.setValue('globalmapwidget/powerArmourMarker', value)
         
     @QtCore.pyqtSlot(bool)        
     def _slotLocationEnableTriggered(self, value):
         self.locationFilterEnableFlag = value
+        self._app.settings.setValue('globalmapwidget/locationMarker', value)
         self.signalLocationFilterSetVisible.emit(value)
         
     @QtCore.pyqtSlot(bool)        
     def _slotLocationVisibilityCheatTriggered(self, value):
         self.locationVisibilityCheatFlag = value
+        self._app.settings.setValue('globalmapwidget/locationVisibilityCheat', value)
         self.signalLocationFilterVisibilityCheat.emit(value)
         
     @QtCore.pyqtSlot(bool)        
     def _slotCenterOnPlayerCheckToggled(self, value):
         self.centerOnPlayerEnabled = value
+        self._app.settings.setValue('globalmapwidget/centerPlayer', value)
         if value and self.playerMarker.markerItem.isVisible():
             self.mapView.centerOn(self.playerMarker.markerItem.pos())
             
@@ -650,6 +686,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         
     @QtCore.pyqtSlot(bool)        
     def _slotMapColorAutoModeTriggered(self, value):
+        self._app.settings.setValue('globalmapwidget/autoColour', int(value))
         if self.pipMapObject:
             if value:
                 self.pipColor = self.pipMapObject.pipParent.child('Status').child('EffectColor')
@@ -657,7 +694,9 @@ class GlobalMapWidget(widgets.WidgetBase):
                 self._onPipColorChanged(None, None, None)
             elif self.pipColor:
                 self.pipColor.unregisterValueUpdatedListener(self._onPipColorChanged)
-            
+                if self._app.settings.value('globalmapwidget/colour'):
+                    self.signalSetColor.emit(self._app.settings.value('globalmapwidget/colour'))
+
         
     @QtCore.pyqtSlot()
     def _slotSaveToTriggered(self):
