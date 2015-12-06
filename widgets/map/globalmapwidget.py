@@ -434,10 +434,24 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.widget.mapZoomSpinbox.setValue(100.0)
         self.widget.mapZoomSpinbox.setSingleStep(10.0)
         self.widget.mapZoomSpinbox.valueChanged.connect(self._slotZoomSpinTriggered)
+        self.signalSetZoomLevel.connect(self.saveZoom)
         if (self._app.settings.value('globalmapwidget/zoom')):
-            zoomvalue = int(self._app.settings.value('globalmapwidget/zoom'))
-            self.widget.mapZoomSlider.setValue(zoomvalue)
-        # Init color controls
+            zoomvalue = float(self._app.settings.value('globalmapwidget/zoom'))
+            if zoomvalue == 1.0:
+                sliderValue = 0
+            elif zoomvalue > 1.0:
+                sliderValue = (zoomvalue/self.MAPZOOM_SCALE_MAX)*100.0
+            else:
+                sliderValue = -(self.MAPZOOM_SCALE_MIN/zoomvalue)*100.0
+            self.widget.mapZoomSlider.blockSignals(True)
+            self.widget.mapZoomSlider.setValue(sliderValue)
+            self.widget.mapZoomSlider.blockSignals(False)
+            self.widget.mapZoomSpinbox.blockSignals(True)
+            self.widget.mapZoomSpinbox.setValue(zoomvalue*100.0)
+            self.widget.mapZoomSpinbox.blockSignals(False)        
+            self.signalSetZoomLevel.emit(zoomvalue, 0, 0)
+
+       # Init color controls
         self.widget.mapColorButton.clicked.connect(self._slotMapColorSelectionTriggered)
         self.widget.mapColorAutoToggle.setChecked(self._app.settings.value('globalmapwidget/autoColour', False))
         self.widget.mapColorAutoToggle.stateChanged.connect(self._slotMapColorAutoModeTriggered)
@@ -482,6 +496,13 @@ class GlobalMapWidget(widgets.WidgetBase):
         self._signalPipWorldLocationsUpdated.connect(self._slotPipWorldLocationsUpdated)
         self.datamanager.registerRootObjectListener(self._onRootObjectEvent)
 
+    @QtCore.pyqtSlot(float, float, float)
+    def saveZoom(self, zoom, mapposx, mapposy):
+        #self.widget.mapZoomSlider.setValue(sliderValue)
+        self._app.settings.setValue('globalmapwidget/zoom', zoom)
+
+        
+        
     @QtCore.pyqtSlot(int, int)
     def _slotSplitterMoved(self, pos, index):
         if (self.widget.splitter.sizes()[1] == 0):
@@ -626,7 +647,6 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.widget.mapZoomSpinbox.blockSignals(True)
         self.widget.mapZoomSpinbox.setValue(self.mapZoomLevel*100.0)
         self.widget.mapZoomSpinbox.blockSignals(False)
-        self._app.settings.setValue('globalmapwidget/zoom', zoom)
         self.signalSetZoomLevel.emit(self.mapZoomLevel, mcenterpos.x(), mcenterpos.y())
         
         
@@ -645,7 +665,6 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.widget.mapZoomSlider.blockSignals(True)
         self.widget.mapZoomSlider.setValue(sliderValue)
         self.widget.mapZoomSlider.blockSignals(False)
-        self._app.settings.setValue('globalmapwidget/zoom', sliderValue)
         self.signalSetZoomLevel.emit(self.mapZoomLevel, mcenterpos.x(), mcenterpos.y())
         
         
