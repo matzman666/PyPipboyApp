@@ -326,12 +326,12 @@ class LocationMarker(PipValueMarkerBase):
 
 class MapGraphicsItem(QtCore.QObject):
     
-    MAP_NWX = 36
-    MAP_NWY = 50
-    MAP_NEX = 2000
-    MAP_NEY = 50
-    MAP_SWX = 36
-    MAP_SWY = 1978
+    MAP_NWX = 86 #72 #36
+    MAP_NWY = 130 #100 #50
+    MAP_NEX = 4000 #4000 #2000
+    MAP_NEY = 130 #100 #50
+    MAP_SWX = 86 #72 #36
+    MAP_SWY = 3956 #3956 #1978
     
     class PixmapItem(QtWidgets.QGraphicsPixmapItem):
         def __init__(self, parent, qparent = None):
@@ -388,7 +388,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.controller = controller
         self.widget = uic.loadUi(os.path.join(self.basepath, 'ui', 'globalmapwidget.ui'))
         self.setWidget(self.widget)
-        self.mapFilePath = os.path.join('res', 'mapgreyscale.png')
+        self.mapFilePath = os.path.join('res', 'mapgreyscale-4k.png')
         self._logger = logging.getLogger('pypipboyapp.map.globalmap')
         self.mapZoomLevel = 1.0
         
