@@ -91,6 +91,7 @@ class LocalMapWidget(widgets.WidgetBase):
         
     def init(self, app, datamanager):
         super().init(app, datamanager)
+        self._app = app
         self.mapScene = QtWidgets.QGraphicsScene()
         self.mapScene.setBackgroundBrush(QtGui.QBrush(QtGui.QColor.fromRgb(0,0,0)))
         self.mapColor = QtGui.QColor.fromRgb(20,255,23)
@@ -123,10 +124,32 @@ class LocalMapWidget(widgets.WidgetBase):
         self.widget.mapZoomSpinbox.setValue(100.0)
         self.widget.mapZoomSpinbox.setSingleStep(10.0)
         self.widget.mapZoomSpinbox.valueChanged.connect(self._slotZoomSpinTriggered)
+        self.signalSetZoomLevel.connect(self.saveZoom)
+        if (self._app.settings.value('localmapwidget/zoom')):
+            zoomvalue = float(self._app.settings.value('localmapwidget/zoom'))
+            if zoomvalue == 1.0:
+                sliderValue = 0
+            elif zoomvalue > 1.0:
+                sliderValue = (zoomvalue/self.MAPZOOM_SCALE_MAX)*100.0
+            else:
+                sliderValue = -(self.MAPZOOM_SCALE_MIN/zoomvalue)*100.0
+            self.widget.mapZoomSlider.blockSignals(True)
+            self.widget.mapZoomSlider.setValue(sliderValue)
+            self.widget.mapZoomSlider.blockSignals(False)
+            self.widget.mapZoomSpinbox.blockSignals(True)
+            self.widget.mapZoomSpinbox.setValue(zoomvalue*100.0)
+            self.widget.mapZoomSpinbox.blockSignals(False)        
+            self.signalSetZoomLevel.emit(zoomvalue, 0, 0)
+
         # Init Enable Checkbox
         self.widget.enableCheckbox.stateChanged.connect(self._slotEnableMapTriggered)
+        self.widget.enableCheckbox.setChecked(self._app.settings.value('localmapwidget/enabled', False))
         # Init SaveTo Button
         self.widget.saveToButton.clicked.connect(self._slotSaveToTriggered)
+        # Init Splitter
+        if self._app.settings.value('localmapwidget/splittercollapsed'):
+            self.widget.splitter.setSizes([100,0])
+        self.widget.splitter.splitterMoved.connect(self._slotSplitterMoved)
         # Init PyPipboy stuff
         from .controller import MapCoordinates
         self.mapCoords = MapCoordinates()
@@ -141,6 +164,20 @@ class LocalMapWidget(widgets.WidgetBase):
         self.datamanager.registerRootObjectListener(self._onRootObjectEvent)
         self.dataManager.registerLocalMapListener(self._onLocalMapUpdate)
         self._signalMapUpdate.connect(self._slotMapUpdate)
+
+    @QtCore.pyqtSlot(float, float, float)
+    def saveZoom(self, zoom, mapposx, mapposy):
+        self._app.settings.setValue('localmapwidget/zoom', zoom)
+        
+    @QtCore.pyqtSlot(int, int)
+    def _slotSplitterMoved(self, pos, index):
+        if (self.widget.splitter.sizes()[1] == 0):
+            splittercollapsed = 1
+        else: 
+            splittercollapsed = 0
+       
+        self._app.settings.setValue('localmapwidget/splittercollapsed', splittercollapsed)
+        pass
 
     def _connectMarker(self, marker):
         self.signalSetZoomLevel.connect(marker.setZoomLevel)
@@ -172,6 +209,7 @@ class LocalMapWidget(widgets.WidgetBase):
     
     @QtCore.pyqtSlot(bool)
     def _slotEnableMapTriggered(self, value):
+        self._app.settings.setValue('localmapwidget/enabled', value)
         self.mapEnabledFlag = value
         if value:
             self.dataManager.rpcRequestLocalMapSnapshot()
