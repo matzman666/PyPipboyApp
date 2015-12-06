@@ -14,7 +14,14 @@ from dialogs.connecthostdialog import ConnectHostDialog
 from widgets.widgets import ModuleHandle 
 from argparse import _get_action_name
 
+import hotkeymanager
+import ctypes
+from ctypes import wintypes
+import win32con
+byref = ctypes.byref
+user32 = ctypes.windll.user32
 
+hm = hotkeymanager.HotkeyManager()
 
 class ApplicationStyle(QtCore.QObject):
     def __init__(self, app, name, styledir):
@@ -103,6 +110,11 @@ class PyPipboyApp(QtWidgets.QApplication):
         self._connectHostMessageBox = None
         self._connectHostThread = None
         self._logger = logging.getLogger('pypipboyapp.main')
+        self._hm = hm
+
+#    def doThing(self):
+#        self._logger.debug("got the key!")
+#        self._hm.unregisterHotkey(0x47, win32con.MOD_CONTROL)
         
     # run the application
     def run(self):
@@ -143,6 +155,10 @@ class PyPipboyApp(QtWidgets.QApplication):
 
             self.signalConnectToHost.emit(host, port, False)
             #self.connectToHost(host, port, True, True)
+            
+            
+        #self._hm.registerHotkey(0x47, win32con.MOD_CONTROL, self.doThing)  #g
+        
         sys.exit(self.exec_())
 
     @QtCore.pyqtSlot(bool)
@@ -435,6 +451,33 @@ class PyPipboyApp(QtWidgets.QApplication):
         self.settings.setValue('mainwindow/lastStyle', name)
 
 
+            
+class WinEventFilter(QtCore.QAbstractNativeEventFilter):
+    def __init__(self, hotkeymanager):
+        QtCore.QAbstractNativeEventFilter.__init__(self)
+        self._logger = logging.getLogger('pypipboyapp.main')
+        self._logger.debug("eventfilter init")
+        self._hm = hotkeymanager
+
+    def nativeEventFilter(self, eventType, message): 
+        try:
+            msg = ctypes.wintypes.MSG.from_address(message.__int__()) 
+            if msg.message == win32con.WM_HOTKEY:
+                # Handling for our special Windows message
+                self._logger.debug("eventfilter got hotkey: " + str(msg.wParam))
+                self._hm.processKeyId(msg.wParam)
+                pass
+            else:
+                #self._logger.debug("eventfilter: got something else")
+                pass
+        except Exception as e:
+            self._logger.warn("Exception in WinEventFilter.nativeEventFilter")
+            self._logger.warn(str(e))
+            pass
+
+        return False, 0 # False lets the event propagate freely        
+
+            
 # Main entry point
 if __name__ == "__main__":
     try:
@@ -443,4 +486,8 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.WARN)
         logging.error('Error while reading logging config: ' + str(e))
     pipboyApp = PyPipboyApp(sys.argv)
+
+    win_event_filter = WinEventFilter(hm)
+    pipboyApp.installNativeEventFilter(win_event_filter)
+
     pipboyApp.run()
