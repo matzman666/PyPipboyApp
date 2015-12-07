@@ -207,6 +207,14 @@ class PyPipboyApp(QtWidgets.QApplication):
     def showConnectToDialog(self):
         if not self.networkChannel.isConnected:
             connectDialog = ConnectHostDialog(self.mainWindow)
+            host = 'localhost'
+            port = 27000
+            if self.settings.value('mainwindow/lasthost'):
+                host = self.settings.value('mainwindow/lasthost')
+            if self.settings.value('mainwindow/lastport'):
+                port = self.settings.value('mainwindow/lastport')
+            connectDialog.hostInput.setText(host)
+            connectDialog.portInput.setText(str(port))
             if connectDialog.exec():
                 try:
                     host = connectDialog.hostInput.text()
