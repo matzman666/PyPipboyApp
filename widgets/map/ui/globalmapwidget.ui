@@ -188,13 +188,6 @@
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="showThreatLevelCheckBox">
-             <property name="text">
-              <string>Show Threat Level</string>
-             </property>
-            </widget>
-           </item>
-           <item>
             <widget class="QPushButton" name="saveToButton">
              <property name="text">
               <string>Save To ...</string>
