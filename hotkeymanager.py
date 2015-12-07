@@ -1,8 +1,36 @@
+from PyQt5 import QtCore
 import ctypes
 from ctypes import wintypes
 import win32con
 byref = ctypes.byref
 user32 = ctypes.windll.user32
+
+            
+class WinEventFilter(QtCore.QAbstractNativeEventFilter):
+    def __init__(self, hotkeymanager):
+        QtCore.QAbstractNativeEventFilter.__init__(self)
+        self._logger = logging.getLogger('pypipboyapp.main')
+        self._logger.debug("eventfilter init")
+        self._hm = hotkeymanager
+
+    def nativeEventFilter(self, eventType, message): 
+        try:
+            msg = ctypes.wintypes.MSG.from_address(message.__int__()) 
+            if msg.message == win32con.WM_HOTKEY:
+                # Handling for our special Windows message
+                self._logger.debug("eventfilter got hotkey: " + str(msg.wParam))
+                self._hm.processKeyId(msg.wParam)
+                pass
+            else:
+                #self._logger.debug("eventfilter: got something else")
+                pass
+        except Exception as e:
+            self._logger.warn("Exception in WinEventFilter.nativeEventFilter")
+            self._logger.warn(str(e))
+            pass
+
+        return False, 0 # False lets the event propagate freely       
+
 
 class HotkeyManager():
     HOTKEYS = {}

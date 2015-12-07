@@ -1,7 +1,6 @@
 
 from widgets import widgets
 
-from .akstatuswidget import AKStatusWidget
 
 class ModuleInfo(widgets.ModuleInfoBase):
     
@@ -10,4 +9,9 @@ class ModuleInfo(widgets.ModuleInfoBase):
 
     @staticmethod
     def createWidgets(handle, parent):
-        return AKStatusWidget(handle, parent)
+        # Import and create widget only on windows
+        if handle.application.hotkeymanager:
+            from .akstatuswidget import AKStatusWidget
+            return AKStatusWidget(handle, parent)
+        else:
+            return None

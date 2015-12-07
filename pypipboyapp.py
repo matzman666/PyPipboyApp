@@ -5,6 +5,7 @@ import os
 import sys
 import importlib
 import traceback
+import platform
 import logging.config
 from PyQt5 import QtWidgets, QtCore, uic
 from pypipboy.network import NetworkChannel
@@ -12,16 +13,7 @@ from pypipboy.datamanager import PipboyDataManager
 from dialogs.selecthostdialog import SelectHostDialog
 from dialogs.connecthostdialog import ConnectHostDialog
 from widgets.widgets import ModuleHandle 
-from argparse import _get_action_name
 
-import hotkeymanager
-import ctypes
-from ctypes import wintypes
-import win32con
-byref = ctypes.byref
-user32 = ctypes.windll.user32
-
-hm = hotkeymanager.HotkeyManager()
 
 class ApplicationStyle(QtCore.QObject):
     def __init__(self, app, name, styledir):
@@ -110,12 +102,17 @@ class PyPipboyApp(QtWidgets.QApplication):
         self._connectHostMessageBox = None
         self._connectHostThread = None
         self._logger = logging.getLogger('pypipboyapp.main')
-        self._hm = hm
-
-#    def doThing(self):
-#        self._logger.debug("got the key!")
-#        self._hm.unregisterHotkey(0x47, win32con.MOD_CONTROL)
         
+        # Import hotkeymanager only on windows
+        if platform.system() == 'Windows':
+            import hotkeymanager
+            self.hotkeymanager = hotkeymanager.HotkeyManager()
+            win_event_filter = hotkeymanager.WinEventFilter(hm)
+            pipboyApp.installNativeEventFilter(win_event_filter)     
+        else:
+            self.hotkeymanager = None
+    
+    
     # run the application
     def run(self):
         self.mainWindow = PipboyMainWindow()
@@ -152,13 +149,7 @@ class PyPipboyApp(QtWidgets.QApplication):
                 host = self.settings.value('mainwindow/lasthost')
             if self.settings.value('mainwindow/lastport'):
                 port = self.settings.value('mainwindow/lastport')
-
             self.signalConnectToHost.emit(host, port, False)
-            #self.connectToHost(host, port, True, True)
-            
-            
-        #self._hm.registerHotkey(0x47, win32con.MOD_CONTROL, self.doThing)  #g
-        
         sys.exit(self.exec_())
 
     @QtCore.pyqtSlot(bool)
@@ -323,7 +314,7 @@ class PyPipboyApp(QtWidgets.QApplication):
     @QtCore.pyqtSlot()        
     def requestQuit(self):
         # do you really wanna
-        if not self.settings.value('mainwindow/promptBeforeQuit') or  QtWidgets.QMessageBox.question(self.mainWindow, 'Close', 'Are you sure you want to quit?',
+        if not self.settings.value('mainwindow/promptBeforeQuit', True) or  QtWidgets.QMessageBox.question(self.mainWindow, 'Close', 'Are you sure you want to quit?',
                             QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
                             QtWidgets.QMessageBox.No) == QtWidgets.QMessageBox.Yes:
             # disconnect any network sessions
@@ -388,7 +379,7 @@ class PyPipboyApp(QtWidgets.QApplication):
                         self._logger.debug('Found info module')
                         if info.LABEL in self.modulehandles:
                             raise Exception('Module with same name already exists.')
-                        handle = ModuleHandle(dirpath)
+                        handle = ModuleHandle(self, dirpath)
                         self.modulehandles[info.LABEL] = handle
                         widgets = info.createWidgets(handle, self.mainWindow)
                         if widgets:
@@ -447,35 +438,7 @@ class PyPipboyApp(QtWidgets.QApplication):
             style = self.styles[name]
             stylefilepath = os.path.join(style.styledir, 'style.qss')
             self.setStyleSheet('file:///' + stylefilepath)
-
-        self.settings.setValue('mainwindow/lastStyle', name)
-
-
-            
-class WinEventFilter(QtCore.QAbstractNativeEventFilter):
-    def __init__(self, hotkeymanager):
-        QtCore.QAbstractNativeEventFilter.__init__(self)
-        self._logger = logging.getLogger('pypipboyapp.main')
-        self._logger.debug("eventfilter init")
-        self._hm = hotkeymanager
-
-    def nativeEventFilter(self, eventType, message): 
-        try:
-            msg = ctypes.wintypes.MSG.from_address(message.__int__()) 
-            if msg.message == win32con.WM_HOTKEY:
-                # Handling for our special Windows message
-                self._logger.debug("eventfilter got hotkey: " + str(msg.wParam))
-                self._hm.processKeyId(msg.wParam)
-                pass
-            else:
-                #self._logger.debug("eventfilter: got something else")
-                pass
-        except Exception as e:
-            self._logger.warn("Exception in WinEventFilter.nativeEventFilter")
-            self._logger.warn(str(e))
-            pass
-
-        return False, 0 # False lets the event propagate freely        
+        self.settings.setValue('mainwindow/lastStyle', name) 
 
             
 # Main entry point
@@ -486,8 +449,4 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.WARN)
         logging.error('Error while reading logging config: ' + str(e))
     pipboyApp = PyPipboyApp(sys.argv)
-
-    win_event_filter = WinEventFilter(hm)
-    pipboyApp.installNativeEventFilter(win_event_filter)
-
     pipboyApp.run()
