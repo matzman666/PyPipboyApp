@@ -102,15 +102,6 @@ class PyPipboyApp(QtWidgets.QApplication):
         self._connectHostMessageBox = None
         self._connectHostThread = None
         self._logger = logging.getLogger('pypipboyapp.main')
-        
-        # Import hotkeymanager only on windows
-        if platform.system() == 'Windows':
-            import hotkeymanager
-            self.hotkeymanager = hotkeymanager.HotkeyManager()
-            win_event_filter = hotkeymanager.WinEventFilter(hm)
-            pipboyApp.installNativeEventFilter(win_event_filter)     
-        else:
-            self.hotkeymanager = None
     
     
     # run the application
