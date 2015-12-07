@@ -2,6 +2,7 @@
 
 
 import os
+import json
 import logging
 from PyQt5 import QtWidgets, QtCore, QtGui, uic, QtSvg
 from widgets import widgets
@@ -326,31 +327,38 @@ class LocationMarker(PipValueMarkerBase):
 
 class MapGraphicsItem(QtCore.QObject):
     
-    MAP_NWX = 36
-    MAP_NWY = 50
-    MAP_NEX = 2000
-    MAP_NEY = 50
-    MAP_SWX = 36
-    MAP_SWY = 1978
-    
     class PixmapItem(QtWidgets.QGraphicsPixmapItem):
         def __init__(self, parent, qparent = None):
             super().__init__(qparent)
             self.parent = parent
 
-    def __init__(self, gwidget, imageFactory, mapfile, color = None, colorable = True, qparent = None):
+    def __init__(self, gwidget, imageFactory, color = None, qparent = None):
         super().__init__(qparent)
         self.gwidget = gwidget
         self.imageFactory = imageFactory
-        self.mapfile = mapfile
-        self.colorUpdate = color
-        self.colorable = colorable
+        self.mapfile = None
+        self.color = color
+        self.colorable = True
+        self.nw = None
+        self.ne = None
+        self.sw = None
         self.mapItem = self.PixmapItem(self)
         self.gwidget.mapScene.addItem(self.mapItem)
-        self.setMapPixmap(imageFactory.getPixmap(mapfile, color = color))
         self.mapItem.setZValue(-10)
-            
-    def setMapPixmap(self, pixmap):
+    
+    def setMapFile(self, mapfile, colorable = True, nw = [52, 52], ne = [1990, 52], sw = [52, 1990]):
+        self.mapfile = mapfile
+        self.colorable = colorable
+        self.nw = nw
+        self.ne = ne
+        self.sw = sw
+        if colorable:
+            self._setMapPixmap(self.imageFactory.getPixmap(self.mapfile, color = self.color))
+        else:
+            self._setMapPixmap(self.imageFactory.getPixmap(self.mapfile, color = None))
+        
+    
+    def _setMapPixmap(self, pixmap):
         self.mapItem.setPixmap(pixmap)
         self.gwidget.mapScene.setSceneRect(self.mapItem.sceneBoundingRect())
     
@@ -363,8 +371,9 @@ class MapGraphicsItem(QtCore.QObject):
     
     @QtCore.pyqtSlot(QtGui.QColor)
     def setColor(self, color):
-        self.colorUpdate = color
-        self.setMapPixmap(self.imageFactory.getPixmap(self.mapfile, color = color))
+        self.color = color
+        if self.colorable:
+            self._setMapPixmap(self.imageFactory.getPixmap(self.mapfile, color = color))
 
 
 
@@ -375,12 +384,13 @@ class GlobalMapWidget(widgets.WidgetBase):
     signalSetStickyLabel = QtCore.pyqtSignal(bool)
     signalLocationFilterSetVisible = QtCore.pyqtSignal(bool)
     signalLocationFilterVisibilityCheat = QtCore.pyqtSignal(bool)
+    signalMarkerForcePipValueUpdate = QtCore.pyqtSignal()
     
     _signalPipWorldQuestsUpdated = QtCore.pyqtSignal()
     _signalPipWorldLocationsUpdated = QtCore.pyqtSignal()
     
     MAPZOOM_SCALE_MAX = 4.0
-    MAPZOOM_SCALE_MIN = 0.1
+    MAPZOOM_SCALE_MIN = 0.05
   
     def __init__(self, handle, controller, parent):
         super().__init__('Global Map', parent)
@@ -388,15 +398,19 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.controller = controller
         self.widget = uic.loadUi(os.path.join(self.basepath, 'ui', 'globalmapwidget.ui'))
         self.setWidget(self.widget)
-        self.mapFilePath = os.path.join('res', 'mapgreyscale.png')
         self._logger = logging.getLogger('pypipboyapp.map.globalmap')
         self.mapZoomLevel = 1.0
         
     def init(self, app, datamanager):
         super().init(app, datamanager)
         self._app = app
-
-        
+        # Read maps config file
+        try:
+            configFile = open(os.path.join(self.basepath, 'res', 'globalmapsconfig.json'))
+            self.mapFiles = json.load(configFile)
+        except Exception as e:
+            self._logger.error('Could not load map-files: ' + str(e))
+        self.selectedMapFile = self._app.settings.value('globalmapwidget/selectedMapFile', 'default')
         # Init graphics view
         self.mapColor = QtGui.QColor.fromRgb(20,255,23)
         self.mapScene = QtWidgets.QGraphicsScene()
@@ -409,7 +423,13 @@ class GlobalMapWidget(widgets.WidgetBase):
         # Add map graphics
         if self._app.settings.value('globalmapwidget/colour'):
             self.mapColor = self._app.settings.value('globalmapwidget/colour')
-        self.mapItem = MapGraphicsItem(self, self.controller.imageFactory, self.mapFilePath, self.mapColor, True)
+        self.mapItem = MapGraphicsItem(self, self.controller.imageFactory, self.mapColor)
+        mapfile = self.mapFiles[self.selectedMapFile]
+        if not mapfile:
+            self._logger.error('Could not find map "' + self.selectedMapFile + '".')
+        else:
+            file = os.path.join('res', mapfile['file'])
+            self.mapItem.setMapFile(file, mapfile['colorable'], mapfile['nw'], mapfile['ne'], mapfile['sw'])
         self.signalSetZoomLevel.connect(self.mapItem.setZoomLevel)
         self.signalSetColor.connect(self.mapItem.setColor)
         # Add player marker
@@ -450,10 +470,19 @@ class GlobalMapWidget(widgets.WidgetBase):
             self.widget.mapZoomSpinbox.setValue(self.mapZoomLevel*100.0)
             self.widget.mapZoomSpinbox.blockSignals(False)        
             self.signalSetZoomLevel.emit(self.mapZoomLevel, 0, 0)
-
-       # Init color controls
+        # Init map file combo box
+        i = 0
+        self.mapFileComboItems = []
+        for mf in self.mapFiles:
+            self.widget.mapFileComboBox.addItem(self.mapFiles[mf]['label'])
+            if mf == self.selectedMapFile:
+                self.widget.mapFileComboBox.setCurrentIndex(i)
+            i += 1
+            self.mapFileComboItems.append(mf)
+        self.widget.mapFileComboBox.currentIndexChanged.connect(self._slotMapFileComboTriggered)
+        # Init color controls
         self.widget.mapColorButton.clicked.connect(self._slotMapColorSelectionTriggered)
-        self.widget.mapColorAutoToggle.setChecked(self._app.settings.value('globalmapwidget/autoColour', False))
+        self.widget.mapColorAutoToggle.setChecked(bool(self._app.settings.value('globalmapwidget/autoColour', False)))
         self.widget.mapColorAutoToggle.stateChanged.connect(self._slotMapColorAutoModeTriggered)
         # Init stickyLabels Checkbox
         self.stickyLabelsEnabled = False
@@ -473,7 +502,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         # Init CenterOnPlayer checkbox
         self.centerOnPlayerEnabled = False
         self.widget.centerPlayerCheckbox.stateChanged.connect(self._slotCenterOnPlayerCheckToggled)
-        self.widget.centerPlayerCheckbox.setChecked(self._app.settings.value('globalmapwidget/centerPlayer', False))
+        self.widget.centerPlayerCheckbox.setChecked(bool(self._app.settings.value('globalmapwidget/centerPlayer', False)))
         # Init SaveTo Button
         self.widget.saveToButton.clicked.connect(self._slotSaveToTriggered)
         # Init Splitter
@@ -518,6 +547,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.signalSetZoomLevel.connect(marker.setZoomLevel)
         self.signalSetColor.connect(marker.setColor)
         self.signalSetStickyLabel.connect(marker.setStickyLabel)
+        self.signalMarkerForcePipValueUpdate.connect(marker._slotPipValueUpdated)
         marker.signalMarkerDestroyed.connect(self._disconnectMarker)
         if marker.markerType == 4:
             self.signalLocationFilterSetVisible.connect(marker.filterSetVisible)
@@ -529,6 +559,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.signalSetZoomLevel.disconnect(marker.setZoomLevel)
         self.signalSetStickyLabel.disconnect(marker.setStickyLabel)
         self.signalSetColor.disconnect(marker.setColor)
+        self.signalMarkerForcePipValueUpdate.disconnect(marker._slotPipValueUpdated)
         if marker.markerType == 4:
             self.signalLocationFilterSetVisible.disconnect(marker.filterSetVisible)
             self.signalLocationFilterVisibilityCheat.disconnect(marker.filterVisibilityCheat)
@@ -548,9 +579,9 @@ class GlobalMapWidget(widgets.WidgetBase):
                         extents.child('NWX').value(), extents.child('NWY').value(), 
                         extents.child('NEX').value(),  extents.child('NEY').value(), 
                         extents.child('SWX').value(), extents.child('SWY').value(), 
-                        self.mapItem.MAP_NWX, self.mapItem.MAP_NWY, 
-                        self.mapItem.MAP_NEX, self.mapItem.MAP_NEY, 
-                        self.mapItem.MAP_SWX, self.mapItem.MAP_SWY )
+                        self.mapItem.nw[0], self.mapItem.nw[1], 
+                        self.mapItem.ne[0], self.mapItem.ne[1], 
+                        self.mapItem.sw[0], self.mapItem.sw[1] )
             else:
                 self._logger.warn('No "Extents" record found. Map coordinates may be off')
             if self.widget.mapColorAutoToggle.isChecked():
@@ -629,6 +660,31 @@ class GlobalMapWidget(widgets.WidgetBase):
             self._app.settings.setValue('globalmapwidget/colour', color)
             self.widget.mapColorAutoToggle.setChecked(False)
             self.signalSetColor.emit(color)
+    
+    
+    @QtCore.pyqtSlot(int)
+    def _slotMapFileComboTriggered(self, index):
+        mapfile = self.mapFiles[self.mapFileComboItems[index]]
+        if not mapfile:
+            self._logger.error('Could not find map "' + self.selectedMapFile + '".')
+        else:
+            self.selectedMapFile = self.mapFileComboItems[index]
+            file = os.path.join('res', mapfile['file'])
+            self.mapItem.setMapFile(file, mapfile['colorable'], mapfile['nw'], mapfile['ne'], mapfile['sw'])
+            if self.pipMapWorldObject:
+                extents = self.pipMapWorldObject.child('Extents')
+                if extents:
+                    self.mapCoords.init( 
+                            extents.child('NWX').value(), extents.child('NWY').value(), 
+                            extents.child('NEX').value(),  extents.child('NEY').value(), 
+                            extents.child('SWX').value(), extents.child('SWY').value(), 
+                            self.mapItem.nw[0], self.mapItem.nw[1], 
+                            self.mapItem.ne[0], self.mapItem.ne[1], 
+                            self.mapItem.sw[0], self.mapItem.sw[1] )
+                else:
+                    self._logger.warn('No "Extents" record found. Map coordinates may be off')
+            self.signalMarkerForcePipValueUpdate.emit()
+            self._app.settings.setValue('globalmapwidget/selectedMapFile', self.selectedMapFile)
 
 
 
@@ -705,7 +761,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         
     @QtCore.pyqtSlot(bool)        
     def _slotMapColorAutoModeTriggered(self, value):
-        self._app.settings.setValue('globalmapwidget/autoColour', int(value))
+        self._app.settings.setValue('globalmapwidget/autoColour', bool(value))
         if self.pipMapObject:
             if value:
                 self.pipColor = self.pipMapObject.pipParent.child('Status').child('EffectColor')

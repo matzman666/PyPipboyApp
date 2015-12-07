@@ -14,16 +14,7 @@
    <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
-   <property name="leftMargin">
-    <number>0</number>
-   </property>
-   <property name="topMargin">
-    <number>0</number>
-   </property>
-   <property name="rightMargin">
-    <number>0</number>
-   </property>
-   <property name="bottomMargin">
+   <property name="margin">
     <number>0</number>
    </property>
    <item>
@@ -50,16 +41,7 @@
      </widget>
      <widget class="QWidget" name="sidebar" native="true">
       <layout class="QVBoxLayout" name="verticalLayout">
-       <property name="leftMargin">
-        <number>0</number>
-       </property>
-       <property name="topMargin">
-        <number>0</number>
-       </property>
-       <property name="rightMargin">
-        <number>0</number>
-       </property>
-       <property name="bottomMargin">
+       <property name="margin">
         <number>0</number>
        </property>
        <item>
@@ -78,8 +60,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>270</width>
-            <height>385</height>
+            <width>261</width>
+            <height>371</height>
            </rect>
           </property>
           <attribute name="label">
@@ -92,16 +74,7 @@
               <string>Zoom</string>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_3">
-              <property name="leftMargin">
-               <number>8</number>
-              </property>
-              <property name="topMargin">
-               <number>8</number>
-              </property>
-              <property name="rightMargin">
-               <number>8</number>
-              </property>
-              <property name="bottomMargin">
+              <property name="margin">
                <number>8</number>
               </property>
               <item>
@@ -143,21 +116,24 @@
             </widget>
            </item>
            <item>
+            <widget class="QGroupBox" name="groupBox_3">
+             <property name="title">
+              <string>Map File</string>
+             </property>
+             <layout class="QVBoxLayout" name="verticalLayout_7">
+              <item>
+               <widget class="QComboBox" name="mapFileComboBox"/>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
             <widget class="QGroupBox" name="groupBox_2">
              <property name="title">
               <string>Map Color</string>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_4">
-              <property name="leftMargin">
-               <number>8</number>
-              </property>
-              <property name="topMargin">
-               <number>8</number>
-              </property>
-              <property name="rightMargin">
-               <number>8</number>
-              </property>
-              <property name="bottomMargin">
+              <property name="margin">
                <number>8</number>
               </property>
               <item>
@@ -214,8 +190,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>153</width>
-            <height>110</height>
+            <width>261</width>
+            <height>371</height>
            </rect>
           </property>
           <attribute name="label">

@@ -51,10 +51,10 @@ class MapGraphicsItem(QtCore.QObject):
         self.lwidget.mapScene.addItem(self.mapItem)
         image = QtGui.QImage(960, 640, QtGui.QImage.Format_Indexed8)
         image.fill(QtGui.QColor.fromRgb(255,255,255))
-        self.setMapPixmap(QtGui.QPixmap.fromImage(image))
+        self._setMapPixmap(QtGui.QPixmap.fromImage(image))
         self.mapItem.setZValue(-10)
             
-    def setMapPixmap(self, pixmap):
+    def _setMapPixmap(self, pixmap):
         self.mapItem.setPixmap(pixmap)
         self.lwidget.mapScene.setSceneRect(self.mapItem.sceneBoundingRect())
     
@@ -143,7 +143,7 @@ class LocalMapWidget(widgets.WidgetBase):
 
         # Init Enable Checkbox
         self.widget.enableCheckbox.stateChanged.connect(self._slotEnableMapTriggered)
-        self.widget.enableCheckbox.setChecked(self._app.settings.value('localmapwidget/enabled', False))
+        self.widget.enableCheckbox.setChecked(bool(self._app.settings.value('localmapwidget/enabled', False)))
         # Init SaveTo Button
         self.widget.saveToButton.clicked.connect(self._slotSaveToTriggered)
         # Init Splitter
@@ -239,7 +239,7 @@ class LocalMapWidget(widgets.WidgetBase):
         image.setColorTable(self.COLORTABLE)
         self.playerMarker.setMapPos(self._mapUpdate.width/2, self._mapUpdate.height/2, self.playerMarker.mapPosR, False)
         if self.mapItem:
-            self.mapItem.setMapPixmap(QtGui.QPixmap.fromImage(image))
+            self.mapItem._setMapPixmap(QtGui.QPixmap.fromImage(image))
         if self.mapEnabledFlag:
             self.playerMarker.setVisible(True)
             self.dataManager.rpcRequestLocalMapSnapshot()
