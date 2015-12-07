@@ -31,16 +31,17 @@ class PlayerMarker(PipValueMarkerBase):
     
     @QtCore.pyqtSlot()        
     def _slotPipValueUpdated(self):
-        self.setVisible(True)
-        rx = self.pipValue.child('X').value()
-        ry = self.pipValue.child('Y').value()
-        px = self.mapCoords.pip2map_x(rx)
-        py = self.mapCoords.pip2map_y(ry)
-        pr = self.pipValue.child('Rotation').value()
-        self.markerItem.setToolTip( 'Pos: (' + str(rx) + ', ' + str(ry) + ')\n'
-                                + 'Rot: ' + str(pr))
-        self.setMapPos(px, py, pr)
-        self.signalPlayerPositionUpdate.emit(px, py, pr)
+        if self.pipValue:
+            self.setVisible(True)
+            rx = self.pipValue.child('X').value()
+            ry = self.pipValue.child('Y').value()
+            px = self.mapCoords.pip2map_x(rx)
+            py = self.mapCoords.pip2map_y(ry)
+            pr = self.pipValue.child('Rotation').value()
+            self.markerItem.setToolTip( 'Pos: (' + str(rx) + ', ' + str(ry) + ')\n'
+                                    + 'Rot: ' + str(pr))
+            self.setMapPos(px, py, pr)
+            self.signalPlayerPositionUpdate.emit(px, py, pr)
 
 
 class CustomMarker(PipValueMarkerBase):
@@ -66,20 +67,21 @@ class CustomMarker(PipValueMarkerBase):
     
     @QtCore.pyqtSlot()        
     def _slotPipValueUpdated(self):
-        isVisible = self.pipValue.child('Visible').value()
-        if isVisible:
-            self.setVisible(True)
-            rx = self.pipValue.child('X').value()
-            ry = self.pipValue.child('Y').value()
-            px = self.mapCoords.pip2map_x(rx)
-            py = self.mapCoords.pip2map_y(ry)
-            height = self.pipValue.child('Height').value()
-            self.markerItem.setToolTip( 'Pos: (' + str(rx) + ', ' + str(ry) + ')\n'
-                                        + 'Visible: ' + str(isVisible) + '\n'
-                                        + 'Height: ' +str(height) )
-            self.setMapPos(px, py)
-        else:
-            self.setVisible(False)
+        if self.pipValue:
+            isVisible = self.pipValue.child('Visible').value()
+            if isVisible:
+                self.setVisible(True)
+                rx = self.pipValue.child('X').value()
+                ry = self.pipValue.child('Y').value()
+                px = self.mapCoords.pip2map_x(rx)
+                py = self.mapCoords.pip2map_y(ry)
+                height = self.pipValue.child('Height').value()
+                self.markerItem.setToolTip( 'Pos: (' + str(rx) + ', ' + str(ry) + ')\n'
+                                            + 'Visible: ' + str(isVisible) + '\n'
+                                            + 'Height: ' +str(height) )
+                self.setMapPos(px, py)
+            else:
+                self.setVisible(False)
         
     def _fillMarkerContextMenu_(self, event, menu):
         if self.pipValue:
@@ -119,21 +121,22 @@ class PowerArmorMarker(PipValueMarkerBase):
     
     @QtCore.pyqtSlot()        
     def _slotPipValueUpdated(self):
-        self.PipVisible = self.pipValue.child('Visible').value()
-        rx = self.pipValue.child('X').value()
-        ry = self.pipValue.child('Y').value()
-        px = self.mapCoords.pip2map_x(rx)
-        py = self.mapCoords.pip2map_y(ry)
-        height = self.pipValue.child('Height').value()
-        self.markerItem.setToolTip( 'Pos: (' + str(rx) + ', ' + str(ry) + ')\n'
-                                    + 'Visible: ' + str(self.PipVisible) + '\n'
-                                    + 'Height: ' +str(height) )
-        self.setMapPos(px, py, False)
-        if self.PipVisible and self.filterVisibleFlag:
-            self.setVisible(True)
-            self.doUpdate()
-        else:
-            self.setVisible(False)
+        if self.pipValue:
+            self.PipVisible = self.pipValue.child('Visible').value()
+            rx = self.pipValue.child('X').value()
+            ry = self.pipValue.child('Y').value()
+            px = self.mapCoords.pip2map_x(rx)
+            py = self.mapCoords.pip2map_y(ry)
+            height = self.pipValue.child('Height').value()
+            self.markerItem.setToolTip( 'Pos: (' + str(rx) + ', ' + str(ry) + ')\n'
+                                        + 'Visible: ' + str(self.PipVisible) + '\n'
+                                        + 'Height: ' +str(height) )
+            self.setMapPos(px, py, False)
+            if self.PipVisible and self.filterVisibleFlag:
+                self.setVisible(True)
+                self.doUpdate()
+            else:
+                self.setVisible(False)
     
 
 
@@ -160,35 +163,36 @@ class QuestMarker(PipValueMarkerBase):
         
     @QtCore.pyqtSlot()        
     def _slotPipValueUpdated(self):
-        self.setVisible(True)
-        name = self.pipValue.child('Name').value()
-        self.setLabel(name, False)
-        rx = self.pipValue.child('X').value()
-        ry = self.pipValue.child('Y').value()
-        px = self.mapCoords.pip2map_x(rx)
-        py = self.mapCoords.pip2map_y(ry)
-        height = self.pipValue.child('Height').value()
-        tttext =  'Pos: (' + str(rx) + ', ' + str(ry) + ')\n';
-        tttext += 'Height: ' +str(height)
-        onDoor = self.pipValue.child('OnDoor').value()
-        if onDoor != None:
-            tttext += '\nOnDoor: ' + str(onDoor)
-        shared = self.pipValue.child('Shared').value()
-        if shared != None:
-            tttext += '\nShared: ' + str(shared)
-        questids = self.pipValue.child('QuestId').value()
-        if questids != None:
-            tttext += '\nQuestIds: ['
-            isFirst = True
-            for q in questids:
-                if isFirst:
-                    isFirst = False
-                else:
-                    tttext += ', '
-                tttext += str(q.value())
-            tttext += ']'
-        self.markerItem.setToolTip( tttext )
-        self.setMapPos(px, py)
+        if self.pipValue:
+            self.setVisible(True)
+            name = self.pipValue.child('Name').value()
+            self.setLabel(name, False)
+            rx = self.pipValue.child('X').value()
+            ry = self.pipValue.child('Y').value()
+            px = self.mapCoords.pip2map_x(rx)
+            py = self.mapCoords.pip2map_y(ry)
+            height = self.pipValue.child('Height').value()
+            tttext =  'Pos: (' + str(rx) + ', ' + str(ry) + ')\n';
+            tttext += 'Height: ' +str(height)
+            onDoor = self.pipValue.child('OnDoor').value()
+            if onDoor != None:
+                tttext += '\nOnDoor: ' + str(onDoor)
+            shared = self.pipValue.child('Shared').value()
+            if shared != None:
+                tttext += '\nShared: ' + str(shared)
+            questids = self.pipValue.child('QuestId').value()
+            if questids != None:
+                tttext += '\nQuestIds: ['
+                isFirst = True
+                for q in questids:
+                    if isFirst:
+                        isFirst = False
+                    else:
+                        tttext += ', '
+                    tttext += str(q.value())
+                tttext += ']'
+            self.markerItem.setToolTip( tttext )
+            self.setMapPos(px, py)
         
     
 class LocationMarker(PipValueMarkerBase):
@@ -260,41 +264,42 @@ class LocationMarker(PipValueMarkerBase):
         
     @QtCore.pyqtSlot()        
     def _slotPipValueUpdated(self):
-        self.visible = self.pipValue.child('Visible').value()
-        name = self.pipValue.child('Name')
-        if name:
-            self.setLabel(name.value(), False)
-        else:
-            self.setLabel('<Location>', False)
-        loctype = self.pipValue.child('type')
-        if loctype:
-            self.locType = loctype.value()
-        else:
-            self.locType = -1
-        discovered = self.pipValue.child('Discovered')
-        if discovered:
-            self.discovered = discovered.value()
-        cleared = self.pipValue.child('ClearedStatus')
-        if cleared:
-            self.cleared = cleared.value()
-        if self.discovered != self.lastKnownDiscovered:
-            self.invalidateMarkerPixmap(False)
-        self.lastKnownDiscovered = self.discovered
-        rx = self.pipValue.child('X').value()
-        ry = self.pipValue.child('Y').value()
-        px = self.mapCoords.pip2map_x(rx)
-        py = self.mapCoords.pip2map_y(ry)
-        tttext = 'Pos: (' + str(rx) + ', ' + str(ry) + ')'
-        props = self.pipValue.value()
-        for prop in props:
-            if prop != 'X' and prop !='Y':
-                tttext += '\n' + prop + ': ' + str(props[prop].value())
-        self.markerItem.setToolTip( tttext )
-        if (self.visible or self.filterVisibilityCheatFlag) and self.filterVisibleFlag:
-            self.setVisible(True)
-            self.setMapPos(px, py)
-        else:
-            self.setMapPos(px, py, False)
+        if self.pipValue:
+            self.visible = self.pipValue.child('Visible').value()
+            name = self.pipValue.child('Name')
+            if name:
+                self.setLabel(name.value(), False)
+            else:
+                self.setLabel('<Location>', False)
+            loctype = self.pipValue.child('type')
+            if loctype:
+                self.locType = loctype.value()
+            else:
+                self.locType = -1
+            discovered = self.pipValue.child('Discovered')
+            if discovered:
+                self.discovered = discovered.value()
+            cleared = self.pipValue.child('ClearedStatus')
+            if cleared:
+                self.cleared = cleared.value()
+            if self.discovered != self.lastKnownDiscovered:
+                self.invalidateMarkerPixmap(False)
+            self.lastKnownDiscovered = self.discovered
+            rx = self.pipValue.child('X').value()
+            ry = self.pipValue.child('Y').value()
+            px = self.mapCoords.pip2map_x(rx)
+            py = self.mapCoords.pip2map_y(ry)
+            tttext = 'Pos: (' + str(rx) + ', ' + str(ry) + ')'
+            props = self.pipValue.value()
+            for prop in props:
+                if prop != 'X' and prop !='Y':
+                    tttext += '\n' + prop + ': ' + str(props[prop].value())
+            self.markerItem.setToolTip( tttext )
+            if (self.visible or self.filterVisibilityCheatFlag) and self.filterVisibleFlag:
+                self.setVisible(True)
+                self.setMapPos(px, py)
+            else:
+                self.setMapPos(px, py, False)
             
     def _labelStr_(self):
         tmp = self.label
@@ -506,7 +511,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         # Init SaveTo Button
         self.widget.saveToButton.clicked.connect(self._slotSaveToTriggered)
         # Init Splitter
-        if self._app.settings.value('globalmapwidget/splittercollapsed'):
+        if int(self._app.settings.value('globalmapwidget/splittercollapsed', 0)):
             self.widget.splitter.setSizes([100,0])
         self.widget.splitter.splitterMoved.connect(self._slotSplitterMoved)
 

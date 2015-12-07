@@ -35,7 +35,7 @@ class PipboyMainWindow(QtWidgets.QMainWindow):
         self.statusbar.addPermanentWidget(self.connectionStatusLabel)
         self.setCentralWidget(None) # damn thing cannot be removed in Qt-Designer
         self.setDockNestingEnabled(True)
-        self.setTabPosition(QtCore.Qt.AllDockWidgetAreas, QtWidgets.QTabWidget.South)
+        self.setTabPosition(QtCore.Qt.AllDockWidgetAreas, QtWidgets.QTabWidget.North)
         
     # Init function that is called after everything has been set up
     def init(self, app, networkchannel, datamanager):
@@ -141,20 +141,19 @@ class PyPipboyApp(QtWidgets.QApplication):
         self._initWidgets()
         self.mainWindow.show()
         # start main event loop
-        if self.settings.value('mainwindow/autoconnect'):
+        if int(self.settings.value('mainwindow/autoconnect', 0)):
             self.mainWindow.actionAuto_Connect_on_Start_up.setChecked(True)
             host = 'localhost'
             port = 27000
             if self.settings.value('mainwindow/lasthost'):
                 host = self.settings.value('mainwindow/lasthost')
             if self.settings.value('mainwindow/lastport'):
-                port = self.settings.value('mainwindow/lastport')
+                port = int(self.settings.value('mainwindow/lastport'))
             self.signalConnectToHost.emit(host, port, False)
         sys.exit(self.exec_())
 
     @QtCore.pyqtSlot(bool)
     def autoConnectToggled(self, value):
-        self._logger.debug("autoConnectToggled: " + str(value))
         self.settings.setValue('mainwindow/autoconnect', int(value))
 
         
