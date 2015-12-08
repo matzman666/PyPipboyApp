@@ -1,7 +1,7 @@
 
 from widgets import widgets
-
 from .hotkeys import HotkeyWidget
+import platform
 
 class ModuleInfo(widgets.ModuleInfoBase):
     
@@ -12,5 +12,5 @@ class ModuleInfo(widgets.ModuleInfoBase):
     def createWidgets(handle, parent):
         if platform.system() == 'Windows':
             return HotkeyWidget(handle, parent)
-        else
+        else:
             return None
