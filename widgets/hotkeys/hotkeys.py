@@ -34,19 +34,25 @@ class HotkeyWidget(widgets.WidgetBase):
         
         self.llh = LLHookey()
 
-        #addHotkey(self, key, action=None, control=False, alt=False, shift=False, enabled=True, params=None)
+        #self.llh.addHotkey(223, action=self.useJet) #`
+        #self.llh.addHotkey(36, action=self.useItemByName, params=("48", "psycho")) #home
+        #self.llh.addHotkey(89, action=datamanager.rpcUseStimpak) #y
+        #self.llh.addHotkey(71, action=self.equipNextGrendae) #g
+        #self.llh.addHotkey(188, action=self.useItemByName, params=("29", "formal hat")) #,
+        #self.llh.addHotkey(190, action=self.useItemByFormID, params=("43", 598551)) #.
         
-        #self.llh.addHotkey(70, action=self.doThing) #f
-        #self.llh.addHotkey(71, action=self.doOtherThing, control=True) #ctrl-g
-        #self.llh.addHotkey(72, action=self.llh.disableHotkey, params=70) #h
-        #self.llh.addHotkey(74, action=self.llh.enableHotkey, params=70) #j
+        self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('`'), action=self.useJet) )
+        self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('g'), action=self.equipNextGrendae) )
+        self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('y'), action=datamanager.rpcUseStimpak))
+        self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('h'), control=True, action=self.llh.toggleAllHotkeys) )
 
-        self.llh.addHotkey(223, action=self.useJet) #`
-        self.llh.addHotkey(36, action=self.useItemByName, params=("48", "psycho")) #home
-        self.llh.addHotkey(89, action=datamanager.rpcUseStimpak) #y
-        self.llh.addHotkey(71, action=self.equipNextGrendae) #g
-        self.llh.addHotkey(188, action=self.useItemByName, params=("29", "formal hat")) #,
-        self.llh.addHotkey(190, action=self.useItemByFormID, params=("43", 598551)) #.
+        #h1 = Hotkey(keycode=VK_CODE.get(','), action=self.useItemByName, params=("29", "formal hat"))
+        #h2 = Hotkey(keycode=VK_CODE.get('/'), action=self.llh.removeHotkey, params=(h1))
+        #h3 = Hotkey(keycode=VK_CODE.get('/'), action=self.llh.disableHotkey, params=(h1))
+        #self.llh.addHotkey( h1 )
+        #self.llh.addHotkey( h2 )
+        #self.llh.addHotkey( h3 )
+        #self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('#'), action=self.llh.removeAllHotkeys) )
         
         
 
@@ -66,8 +72,6 @@ class HotkeyWidget(widgets.WidgetBase):
             
             self.useItemByName("43", self.availableGrenades[getIndex][0])
                 
-
-    
     def useJet(self):   
         self.useItemByName("48", "jet")
 
@@ -88,12 +92,6 @@ class HotkeyWidget(widgets.WidgetBase):
                 if (name.lower() == itemName):
                     self.dataManager.rpcUseItem(inventory.child(i))
 
-    def doThing(self):
-        print("THING!!!!!!!!!!!!!!!!!!!!!")
-
-    def doOtherThing(self):
-        print("!!!!!!!!!!!!OTHERTHING!!!!!!!!!!!!!!!!!!!!!")
-        
     def _onPipRootObjectEvent(self, rootObject):
         self.pipInventoryInfo = rootObject.child('Inventory')
         if self.pipInventoryInfo:
@@ -128,11 +126,7 @@ class HotkeyWidget(widgets.WidgetBase):
         for hk in keys:
             self.addToModel(hk )
         
-    
-        #self.addToModel("bob")
-        
     def addToModel(self, key):
-    
     
         item = [
             QStandardItem(""),
@@ -174,7 +168,15 @@ KeyEvent=namedtuple("KeyEvent",(['event_type', 'key_code',
                                              'time']))
 handlers=[]
 
-Hotkey=namedtuple("Hotkey", (['keycode', 'action', 'control', 'alt', 'shift', 'enabled', 'params']))
+class Hotkey():
+    def __init__(self, keycode=None, action=None, control=False, alt=False, shift=False, enabled=True, params=None):
+        self.keycode = keycode
+        self.action = action
+        self.control = control
+        self.alt = alt
+        self.shift = shift
+        self.enabled = enabled
+        self.params = params
 
 class LLHookey(QtCore.QObject):
     Hotkeys=[]
@@ -186,6 +188,9 @@ class LLHookey(QtCore.QObject):
         self.windown = False
         self.shiftdown = False
         self.altdown = False
+        
+        self.allKeysDisabled = False
+        
         self._signalKeyEvent.connect(self._onKeyEvent)
         handlers.append(self._handleKeyHookEvent)
         
@@ -203,7 +208,7 @@ class LLHookey(QtCore.QObject):
         activeWin = GetWindowText(GetForegroundWindow())
         if (activeWin != "Fallout4"):
             return
-       
+        
         #print("_onKeyEvent")
         if(event.event_type == 'key up'):
             if(event.key_code == 160 or event.key_code == 161):
@@ -230,61 +235,37 @@ class LLHookey(QtCore.QObject):
                 and hk.shift == self.shiftdown
                 and hk.alt == self.altdown):
                     if(hk.enabled and hk.action):
-                        if(hk.params):
-                            args = hk.params
-                            hk.action(*args)
-                        else:
-                            hk.action()
-                           
+                        if (not self.allKeysDisabled or hk.action == self.toggleAllHotkeys):
 
-        #if(event.event_type == 'key down' and not event.key_code in [160,161,162,163,164,91]):
-        #self.addToModel(VK_KEY.get(event.key_code), str(event.key_code), str(event.scan_code), self.getModifiers(event))
-                        
+                            if(hk.params):
+                                args = hk.params
+                                try:
+                                    hk.action(*args)
+                                except:
+                                    hk.action(hk.params)
+                            else:
+                                hk.action()
+
+    def addHotkey(self, hotkey):
+        self.Hotkeys.append( hotkey )
+
+    def removeHotkey(self, hotkey):
+        self.Hotkeys.remove(hotkey)
         
-    def getModifiers(self,event):
-        retstr = ""
-        if self.altdown:
-            retstr += "alt"
-        if self.ctrldown:
-            retstr += " ctrl"
-        if self.shiftdown:
-            retstr += " shift"
-        if self.windown:
-            retstr += "win"
+    def removeAllHotkeys(self):
+        self.Hotkeys.clear()
+
+    def toggleAllHotkeys(self):
+        self.allKeysDisabled = not self.allKeysDisabled
         
-        return retstr
+    def toggleHotkey(self, hotkey):
+        hotkey.enabled = not hotkey.enabled
+        
+    def disableHotkey(self, hotkey):
+        hotkey.enabled = False
 
-    def addHotkey(self, key, action=None, control=False, alt=False, shift=False, enabled=True, params=None):
-        self.Hotkeys.append( Hotkey(key, action, control, alt, shift, enabled, params) )
-
-    def removeHotkey(self, key, control=False, alt=False, shift=False):
-        for hk in self.Hotkeys:
-            if (hk.keycode == key
-            and hk.control == control
-            and hk.shift == shift
-            and hk.alt == alt):
-                self.Hotkeys.remove(hk)
-                
-    def disableHotkey(self, key, control=False, alt=False, shift=False):
-        for hk in self.Hotkeys:
-            if (hk.keycode == key
-            and hk.control == control
-            and hk.shift == shift
-            and hk.alt == alt):
-                newhk = hk._replace(enabled=False)
-                self.Hotkeys.remove(hk)
-                self.Hotkeys.append(newhk)
-                
-
-    def enableHotkey(self, key, control=False, alt=False, shift=False):
-        for hk in self.Hotkeys:
-            if (hk.keycode == key
-            and hk.control == control
-            and hk.shift == shift
-            and hk.alt == alt):
-                newhk = hk._replace(enabled=True)
-                self.Hotkeys.remove(hk)
-                self.Hotkeys.append(newhk)
+    def enableHotkey(self, hotkey):
+        hotkey.enabled = True
                 
     def getHotkeys(self):
         return self.Hotkeys
@@ -465,17 +446,19 @@ VK_CODE = {'backspace':0x08,
            'zoom_key':0xFB,
            'clear_key':0xFE,
            '+':0xBB,
-           ',':0xBC,
+           ',':0xBC, 
            '-':0xBD,
            '.':0xBE,
            '/':0xBF,
-           '`':0xC0,
+           #'`':0xC0,    #us layout?
+           "'":0xC0,    #uk\euro layout
+           '`':0xDF,    #uk\euro layout
            ';':0xBA,
            '[':0xDB,
            '\\':0xDC,
            ']':0xDD,
-           "'":0xDE,
-           '`':0xC0}
+           #"'":0xDE,    # us layout?
+           '#':0xDE}    #uk\euro layout
 VK_KEY = {v: k for k, v in VK_CODE.items()}
 
 
