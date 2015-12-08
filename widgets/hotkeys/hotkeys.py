@@ -38,15 +38,15 @@ class HotkeyWidget(widgets.WidgetBase):
         self.widget.btnAdd.clicked.connect(self._addButtonHandler)
         
 
-        self.Actions = []
-        self.Actions.append( Action('Use Jet', '', self.useJet, 0 ) )
-        self.Actions.append( Action('Use Stimpak', '', datamanager.rpcUseStimpak, 0 ) )
-        self.Actions.append( Action('Cycle Equipped Grenade', '', self.equipNextGrendae, 0 ) )
-        self.Actions.append( Action('Toggle Hotkeys On/Off', '', self.llh.toggleAllHotkeys, 0 ) )
-        self.Actions.append( Action('Use Named Item' , '(param1: Inventory Section [ie:48], param2: ItemName [ie: psycho])', self.useItemByName, 2 ) )
+        self.Actions = {}
+        self.Actions['useJet'] = Action('Use Jet', '', self.useJet, 0 ) 
+        self.Actions['useStimpak'] =Action('Use Stimpak', '', datamanager.rpcUseStimpak, 0 ) 
+        self.Actions['useequipNextGrenade'] =Action('Cycle Equipped Grenade', '', self.equipNextGrendae, 0 ) 
+        self.Actions['toggleAllHotkeys'] =Action('Toggle Hotkeys On/Off', '', self.llh.toggleAllHotkeys, 0 ) 
+        self.Actions['useNamedItem'] =Action('Use Named Item' , '(param1: Inventory Section [ie:48], param2: ItemName [ie: psycho])', self.useItemByName, 2 ) 
 
-        for action in self.Actions:
-            self.widget.actionComboBox.addItem(action.name + action.description)
+        for k, v in self.Actions.items():
+            self.widget.actionComboBox.addItem(v.name + v.description, k)
 
         self.widget.actionComboBox.currentIndexChanged.connect(self._actionComboBoxCurrentIndexChanged)
         
@@ -165,11 +165,11 @@ class HotkeyWidget(widgets.WidgetBase):
             params = self._app.settings.value(settingPath+'params', None)
             actionname = self._app.settings.value(settingPath+'action', None)
             
-            for action in self.Actions:
-                if (action.name == actionname):
-                    hk = Hotkey(keycode=keycode, control=control, alt=alt, shift=shift, params=params, action=action.action)
-                    self.llh.addHotkey(hk)
-                    break
+            action = self.Actions.get(actionname, None)
+            
+            if (action):
+                hk = Hotkey(keycode=keycode, control=control, alt=alt, shift=shift, params=params, action=action.action)
+                self.llh.addHotkey(hk)
         
         self.updateTable()
 
@@ -187,31 +187,33 @@ class HotkeyWidget(widgets.WidgetBase):
             if(hk.params):
                 self._app.settings.setValue(settingPath+'params', hk.params)
             if(hk.action):
-                for action in self.Actions:
-                    if (action.action == hk.action):
-                        self._app.settings.setValue(settingPath+'action',  action.name)
+                for k, v in self.Actions.items():
+                    if (v.action == hk.action):
+                        self._app.settings.setValue(settingPath+'action', k)
                         break
+            
     
 
     @QtCore.pyqtSlot()
     def _addButtonHandler(self):
         kc = self.widget.keycodeLineEdit.text()
         kc = int(kc, 0)
-        actionIndex = self.widget.actionComboBox.currentIndex()
+        data = self.widget.actionComboBox.currentData(QtCore.Qt.UserRole)
+
         if (kc != ""):
             hk = Hotkey( 
                 keycode=kc, 
                 control=self.widget.cbxControl.isChecked(),
                 alt=self.widget.cbxAlt.isChecked(),
                 shift=self.widget.cbxShift.isChecked(),
-                action=self.Actions[actionIndex].action)
+                action=self.Actions[data].action)
                 
             params = []
-            if (self.Actions[actionIndex].numParams > 0):
+            if (self.Actions[data].numParams > 0):
                 params.append(self.widget.param1LineEdit.text())
-            if (self.Actions[actionIndex].numParams > 1):
+            if (self.Actions[data].numParams > 1):
                 params.append(self.widget.param2LineEdit.text())
-            if (self.Actions[actionIndex].numParams > 2):
+            if (self.Actions[data].numParams > 2):
                 params.append(self.widget.param3LineEdit.text())
                 
             hk.params = params
@@ -232,6 +234,8 @@ class HotkeyWidget(widgets.WidgetBase):
 
     @QtCore.pyqtSlot(int)
     def _actionComboBoxCurrentIndexChanged(self, index):
+        data = self.widget.actionComboBox.currentData(QtCore.Qt.UserRole)
+    
         self.widget.param1Label.setVisible(False)
         self.widget.param1LineEdit.setVisible(False)
         self.widget.param2Label.setVisible(False)
@@ -239,13 +243,13 @@ class HotkeyWidget(widgets.WidgetBase):
         self.widget.param3Label.setVisible(False)
         self.widget.param3LineEdit.setVisible(False)
 
-        if (self.Actions[index].numParams > 0):
+        if (self.Actions[data].numParams > 0):
             self.widget.param1Label.setVisible(True)
             self.widget.param1LineEdit.setVisible(True)
-        if (self.Actions[index].numParams > 1):
+        if (self.Actions[data].numParams > 1):
             self.widget.param2Label.setVisible(True)
             self.widget.param2LineEdit.setVisible(True)
-        if (self.Actions[index].numParams > 2):
+        if (self.Actions[data].numParams > 2):
             self.widget.param3Label.setVisible(True)
             self.widget.param3LineEdit.setVisible(True)
         
