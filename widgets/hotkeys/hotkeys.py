@@ -20,6 +20,7 @@ class HotkeyWidget(widgets.WidgetBase):
     def __init__(self, mhandle, parent):
         super().__init__('HotkeyWidget', parent)
         self.widget = uic.loadUi(os.path.join(mhandle.basepath, 'ui', 'hotkeys.ui'))
+        self.widget.textBrowser.setSource(QtCore.QUrl.fromLocalFile(os.path.join(mhandle.basepath, 'ui', 'hotkeys.html')))
         self._logger = logging.getLogger('pypipboyapp.llhookey')
         self.setWidget(self.widget)
         self.pipPlayerInfo = None
@@ -33,6 +34,7 @@ class HotkeyWidget(widgets.WidgetBase):
         self.dataManager.registerRootObjectListener(self._onPipRootObjectEvent)
         self._app = app
         self.llh = LLHookey()
+        
         
         self.widget.btnLoad.clicked.connect(self._loadButtonHandler)
         self.widget.btnSave.clicked.connect(self._saveButtonHandler)
@@ -60,6 +62,7 @@ class HotkeyWidget(widgets.WidgetBase):
         self.widget.param2LineEdit.setVisible(False)
         self.widget.param3Label.setVisible(False)
         self.widget.param3LineEdit.setVisible(False)
+        self.widget.btnLoad.setVisible(False)
         
         self.loadHotkeys()
         if(len(self.llh.Hotkeys) == 0):
@@ -165,7 +168,7 @@ class HotkeyWidget(widgets.WidgetBase):
         self.llh.Hotkeys.clear()
     
         for index in range (0,100):
-            settingPath = 'hotkeys/'+str(index)+'/'
+            settingPath = 'hotkeyswidget/keys/'+str(index)+'/'
             keycode = self._app.settings.value(settingPath+'keycode', None)
             if(not keycode):
                 break
@@ -189,8 +192,13 @@ class HotkeyWidget(widgets.WidgetBase):
         self.saveHotkeys()
 
     def saveHotkeys(self):
+    
+        self._app.settings.beginGroup("hotkeyswidget/keys/");
+        self._app.settings.remove(""); 
+        self._app.settings.endGroup();
+    
         for index, hk in enumerate(self.llh.Hotkeys):
-            settingPath = 'hotkeys/'+str(index)+'/'
+            settingPath = 'hotkeyswidget/keys/'+str(index)+'/'
             self._app.settings.setValue(settingPath+'keycode', int(hk.keycode))
             self._app.settings.setValue(settingPath+'control', int(hk.control))
             self._app.settings.setValue(settingPath+'alt', int(hk.alt))
