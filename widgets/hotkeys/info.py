@@ -10,4 +10,7 @@ class ModuleInfo(widgets.ModuleInfoBase):
 
     @staticmethod
     def createWidgets(handle, parent):
-        return HotkeyWidget(handle, parent)
+        if platform.system() == 'Windows':
+            return HotkeyWidget(handle, parent)
+        else
+            return None
