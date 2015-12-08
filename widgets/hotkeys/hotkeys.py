@@ -383,7 +383,7 @@ from ctypes import windll
 from win32gui import GetWindowText, GetForegroundWindow
 #from win32api import MapVirtualKey
 import threading
-
+import time
 
 KeyEvent=namedtuple("KeyEvent",(['event_type', 'key_code',
                                              'scan_code', 'alt_pressed',
@@ -482,6 +482,14 @@ class LLHookey(QtCore.QObject):
                                 action.action(hk.params)
                         else:
                             action.action()
+                        
+                        ### This is a vile hack to allow each rpc call to complete
+                        ### before sending the next in cases where a single hotkey
+                        ### is bound to multiple actions
+                        ### It'll do for now, but should really find a better way 
+                        ### of handling this, queue action method on datamanager.py 
+                        ### perhaps?
+                        time.sleep(0.1)
 
     def addHotkey(self, hotkey):
         self.Hotkeys.append( hotkey )
