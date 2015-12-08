@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>564</width>
-    <height>414</height>
+    <height>412</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -27,14 +27,39 @@
    <item>
     <layout class="QFormLayout" name="formLayout">
      <item row="0" column="0">
-      <widget class="QLabel" name="keycodeLabel">
+      <widget class="QLabel" name="keyLabel">
        <property name="text">
-        <string>Keycode</string>
+        <string>Key</string>
        </property>
       </widget>
      </item>
      <item row="0" column="1">
-      <widget class="QLineEdit" name="keycodeLineEdit"/>
+      <widget class="QComboBox" name="keyComboBox"/>
+     </item>
+     <item row="1" column="1">
+      <layout class="QHBoxLayout" name="horizontalLayout_3">
+       <item>
+        <widget class="QCheckBox" name="cbxAlt">
+         <property name="text">
+          <string>Alt</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="cbxControl">
+         <property name="text">
+          <string>Control</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="cbxShift">
+         <property name="text">
+          <string>Shift</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </item>
      <item row="2" column="0">
       <widget class="QLabel" name="actionLabel">
@@ -75,31 +100,6 @@
      </item>
      <item row="5" column="1">
       <widget class="QLineEdit" name="param3LineEdit"/>
-     </item>
-     <item row="1" column="1">
-      <layout class="QHBoxLayout" name="horizontalLayout_3">
-       <item>
-        <widget class="QCheckBox" name="cbxAlt">
-         <property name="text">
-          <string>Alt</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QCheckBox" name="cbxControl">
-         <property name="text">
-          <string>Control</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QCheckBox" name="cbxShift">
-         <property name="text">
-          <string>Shift</string>
-         </property>
-        </widget>
-       </item>
-      </layout>
      </item>
     </layout>
    </item>

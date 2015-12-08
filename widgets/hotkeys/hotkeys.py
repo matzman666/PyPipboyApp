@@ -7,10 +7,12 @@ from PyQt5.QtGui import *
 from pypipboy.types import eValueType
 from .. import widgets
 from collections import namedtuple
+from collections import OrderedDict
 
 import logging
 
 Action=namedtuple("Action", (['name', 'description', 'action', 'numParams']))
+Actions = OrderedDict()
 
 class HotkeyWidget(widgets.WidgetBase):
     _signalInfoUpdated = QtCore.pyqtSignal()
@@ -38,14 +40,16 @@ class HotkeyWidget(widgets.WidgetBase):
         self.widget.btnAdd.clicked.connect(self._addButtonHandler)
         
 
-        self.Actions = {}
-        self.Actions['useJet'] = Action('Use Jet', '', self.useJet, 0 ) 
-        self.Actions['useStimpak'] =Action('Use Stimpak', '', datamanager.rpcUseStimpak, 0 ) 
-        self.Actions['useequipNextGrenade'] =Action('Cycle Equipped Grenade', '', self.equipNextGrendae, 0 ) 
-        self.Actions['toggleAllHotkeys'] =Action('Toggle Hotkeys On/Off', '', self.llh.toggleAllHotkeys, 0 ) 
-        self.Actions['useNamedItem'] =Action('Use Named Item' , '(param1: Inventory Section [ie:48], param2: ItemName [ie: psycho])', self.useItemByName, 2 ) 
+        Actions['equipNextGrenade'] =Action('Cycle Equipped Grenade', '', self.equipNextGrendae, 0 ) 
+        Actions['toggleAllHotkeys'] =Action('Toggle Hotkeys On/Off', '', self.llh.toggleAllHotkeys, 0 ) 
+        Actions['useJet'] = Action('Use Jet', '', self.useJet, 0 ) 
+        Actions['useNamedItem'] =Action('Use Named Item' , '(param1: Inventory Section [ie:48], param2: ItemName [ie: psycho])', self.useItemByName, 2 ) 
+        Actions['useStimpak'] =Action('Use Stimpak', '', datamanager.rpcUseStimpak, 0 ) 
 
-        for k, v in self.Actions.items():
+        for k, v in VK_CODE.items():
+            self.widget.keyComboBox.addItem(k, v)
+
+        for k, v in Actions.items():
             self.widget.actionComboBox.addItem(v.name + v.description, k)
 
         self.widget.actionComboBox.currentIndexChanged.connect(self._actionComboBoxCurrentIndexChanged)
@@ -57,6 +61,13 @@ class HotkeyWidget(widgets.WidgetBase):
         self.widget.param3Label.setVisible(False)
         self.widget.param3LineEdit.setVisible(False)
         
+        self.loadHotkeys()
+        if(len(self.llh.Hotkeys) == 0):
+            self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('`'), actionkey='useJet') )
+            self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('g'), actionkey='equipNextGrenade') )
+            self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('y'), actionkey='useStimpak'))
+            self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('pause'), shift=True, actionkey='toggleAllHotkeys') )
+            self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('h'), actionkey='useNamedItem', params=["48", "psycho"]) )
         
         #self.llh.addHotkey(223, action=self.useJet) #`
         #self.llh.addHotkey(36, action=self.useItemByName, params=("48", "psycho")) #home
@@ -163,12 +174,12 @@ class HotkeyWidget(widgets.WidgetBase):
             alt = self._app.settings.value(settingPath+'alt', False)
             shift = self._app.settings.value(settingPath+'shift', False)
             params = self._app.settings.value(settingPath+'params', None)
-            actionname = self._app.settings.value(settingPath+'action', None)
+            actionkey = self._app.settings.value(settingPath+'action', None)
             
-            action = self.Actions.get(actionname, None)
+            action = Actions.get(actionkey, None)
             
             if (action):
-                hk = Hotkey(keycode=keycode, control=control, alt=alt, shift=shift, params=params, action=action.action)
+                hk = Hotkey(keycode=keycode, control=control, alt=alt, shift=shift, params=params, actionkey=actionkey)
                 self.llh.addHotkey(hk)
         
         self.updateTable()
@@ -186,34 +197,31 @@ class HotkeyWidget(widgets.WidgetBase):
             self._app.settings.setValue(settingPath+'shift', int(hk.shift))
             if(hk.params):
                 self._app.settings.setValue(settingPath+'params', hk.params)
-            if(hk.action):
-                for k, v in self.Actions.items():
-                    if (v.action == hk.action):
-                        self._app.settings.setValue(settingPath+'action', k)
-                        break
+            if(hk.actionkey):
+                self._app.settings.setValue(settingPath+'action', hk.actionkey)
             
     
 
     @QtCore.pyqtSlot()
     def _addButtonHandler(self):
-        kc = self.widget.keycodeLineEdit.text()
-        kc = int(kc, 0)
-        data = self.widget.actionComboBox.currentData(QtCore.Qt.UserRole)
+        kc = self.widget.keyComboBox.currentData(QtCore.Qt.UserRole)
+        actionkey = self.widget.actionComboBox.currentData(QtCore.Qt.UserRole)
 
-        if (kc != ""):
+        if (kc):
             hk = Hotkey( 
                 keycode=kc, 
                 control=self.widget.cbxControl.isChecked(),
                 alt=self.widget.cbxAlt.isChecked(),
                 shift=self.widget.cbxShift.isChecked(),
-                action=self.Actions[data].action)
+                actionkey=actionkey)
                 
-            params = []
-            if (self.Actions[data].numParams > 0):
+            params = None
+            if (Actions[actionkey].numParams > 0):
+                params = []
                 params.append(self.widget.param1LineEdit.text())
-            if (self.Actions[data].numParams > 1):
+            if (Actions[actionkey].numParams > 1):
                 params.append(self.widget.param2LineEdit.text())
-            if (self.Actions[data].numParams > 2):
+            if (Actions[actionkey].numParams > 2):
                 params.append(self.widget.param3LineEdit.text())
                 
             hk.params = params
@@ -222,10 +230,9 @@ class HotkeyWidget(widgets.WidgetBase):
             self.llh.addHotkey(hk)
         self.updateTable()
 
-        self.widget.keycodeLineEdit.setText("")
         self.widget.param1LineEdit.setText("")
-        self.widget.param1LineEdit.setText("")
-        self.widget.param1LineEdit.setText("")
+        self.widget.param2LineEdit.setText("")
+        self.widget.param3LineEdit.setText("")
 
         self.widget.cbxControl.setChecked(False)
         self.widget.cbxAlt.setChecked(False)
@@ -243,13 +250,13 @@ class HotkeyWidget(widgets.WidgetBase):
         self.widget.param3Label.setVisible(False)
         self.widget.param3LineEdit.setVisible(False)
 
-        if (self.Actions[data].numParams > 0):
+        if (Actions[data].numParams > 0):
             self.widget.param1Label.setVisible(True)
             self.widget.param1LineEdit.setVisible(True)
-        if (self.Actions[data].numParams > 1):
+        if (Actions[data].numParams > 1):
             self.widget.param2Label.setVisible(True)
             self.widget.param2LineEdit.setVisible(True)
-        if (self.Actions[data].numParams > 2):
+        if (Actions[data].numParams > 2):
             self.widget.param3Label.setVisible(True)
             self.widget.param3LineEdit.setVisible(True)
         
@@ -282,6 +289,9 @@ class HotkeyWidget(widgets.WidgetBase):
         table.setEditTriggers(QTableWidget.NoEditTriggers)
         table.setSelectionBehavior(QTableWidget.SelectRows)
         table.setSelectionMode(QTableWidget.SingleSelection)
+        table.setColumnHidden(1, True)
+        table.setColumnHidden(5, True)
+
         
         selected = None        
         
@@ -298,11 +308,9 @@ class HotkeyWidget(widgets.WidgetBase):
             item = QTableWidgetItem(hk.getModifierString())
             table.setItem(row, 2, item)
 
-            tokenisedAction = str(hk.action).split(" ")
-            if (len(tokenisedAction) > 3):
-                item = QTableWidgetItem(tokenisedAction[2])
-            else:
-                item = QTableWidgetItem(str(hk.action))
+            action = Actions.get(hk.actionkey, None)
+            if (action):
+                item = QTableWidgetItem(action.name)
                 
             table.setItem(row, 3, item)
 
@@ -375,9 +383,9 @@ KeyEvent=namedtuple("KeyEvent",(['event_type', 'key_code',
 handlers=[]
 
 class Hotkey():
-    def __init__(self, keycode=None, action=None, control=False, alt=False, shift=False, enabled=True, params=None):
+    def __init__(self, keycode=None, actionkey=None, control=False, alt=False, shift=False, enabled=True, params=None):
         self.keycode = keycode
-        self.action = action
+        self.actionkey = actionkey
         self.control = control
         self.alt = alt
         self.shift = shift
@@ -454,17 +462,18 @@ class LLHookey(QtCore.QObject):
                 and hk.control == self.ctrldown
                 and hk.shift == self.shiftdown
                 and hk.alt == self.altdown):
-                    if(hk.enabled and hk.action):
-                        if (not self.allKeysDisabled or hk.action == self.toggleAllHotkeys):
 
-                            if(hk.params):
-                                args = hk.params
-                                try:
-                                    hk.action(*args)
-                                except:
-                                    hk.action(hk.params)
-                            else:
-                                hk.action()
+                    action = Actions.get(hk.actionkey, None)
+                    if ( (action and hk.enabled) 
+                    and ( not self.allKeysDisabled or hk.actionkey == 'toggleAllHotkeys') ):
+                        if(hk.params):
+                            args = hk.params
+                            try:
+                                action.action(*args)
+                            except:
+                                action.action(hk.params)
+                        else:
+                            action.action()
 
     def addHotkey(self, hotkey):
         self.Hotkeys.append( hotkey )
@@ -537,155 +546,157 @@ def listener():
     windll.user32.TranslateMessage(byref(msg))
     windll.user32.DispatchMessageW(byref(msg))
     
+
+VK_CODE = OrderedDict()
     
-VK_CODE = {'backspace':0x08,
-           'tab':0x09,
-           'clear':0x0C,
-           'enter':0x0D,
-           'shift':0x10,
-           'ctrl':0x11,
-           'alt':0x12,
-           'pause':0x13,
-           'caps_lock':0x14,
-           'esc':0x1B,
-           'spacebar':0x20,
-           'page_up':0x21,
-           'page_down':0x22,
-           'end':0x23,
-           'home':0x24,
-           'left_arrow':0x25,
-           'up_arrow':0x26,
-           'right_arrow':0x27,
-           'down_arrow':0x28,
-           'select':0x29,
-           'print':0x2A,
-           'execute':0x2B,
-           'print_screen':0x2C,
-           'ins':0x2D,
-           'del':0x2E,
-           'help':0x2F,
-           '0':0x30,
-           '1':0x31,
-           '2':0x32,
-           '3':0x33,
-           '4':0x34,
-           '5':0x35,
-           '6':0x36,
-           '7':0x37,
-           '8':0x38,
-           '9':0x39,
-           'a':0x41,
-           'b':0x42,
-           'c':0x43,
-           'd':0x44,
-           'e':0x45,
-           'f':0x46,
-           'g':0x47,
-           'h':0x48,
-           'i':0x49,
-           'j':0x4A,
-           'k':0x4B,
-           'l':0x4C,
-           'm':0x4D,
-           'n':0x4E,
-           'o':0x4F,
-           'p':0x50,
-           'q':0x51,
-           'r':0x52,
-           's':0x53,
-           't':0x54,
-           'u':0x55,
-           'v':0x56,
-           'w':0x57,
-           'x':0x58,
-           'y':0x59,
-           'z':0x5A,
-           'numpad_0':0x60,
-           'numpad_1':0x61,
-           'numpad_2':0x62,
-           'numpad_3':0x63,
-           'numpad_4':0x64,
-           'numpad_5':0x65,
-           'numpad_6':0x66,
-           'numpad_7':0x67,
-           'numpad_8':0x68,
-           'numpad_9':0x69,
-           'multiply_key':0x6A,
-           'add_key':0x6B,
-           'separator_key':0x6C,
-           'subtract_key':0x6D,
-           'decimal_key':0x6E,
-           'divide_key':0x6F,
-           'F1':0x70,
-           'F2':0x71,
-           'F3':0x72,
-           'F4':0x73,
-           'F5':0x74,
-           'F6':0x75,
-           'F7':0x76,
-           'F8':0x77,
-           'F9':0x78,
-           'F10':0x79,
-           'F11':0x7A,
-           'F12':0x7B,
-           'F13':0x7C,
-           'F14':0x7D,
-           'F15':0x7E,
-           'F16':0x7F,
-           'F17':0x80,
-           'F18':0x81,
-           'F19':0x82,
-           'F20':0x83,
-           'F21':0x84,
-           'F22':0x85,
-           'F23':0x86,
-           'F24':0x87,
-           'num_lock':0x90,
-           'scroll_lock':0x91,
-           'left_shift':0xA0,
-           'right_shift ':0xA1,
-           'left_control':0xA2,
-           'right_control':0xA3,
-           'left_menu':0xA4,
-           'right_menu':0xA5,
-           'browser_back':0xA6,
-           'browser_forward':0xA7,
-           'browser_refresh':0xA8,
-           'browser_stop':0xA9,
-           'browser_search':0xAA,
-           'browser_favorites':0xAB,
-           'browser_start_and_home':0xAC,
-           'volume_mute':0xAD,
-           'volume_Down':0xAE,
-           'volume_up':0xAF,
-           'next_track':0xB0,
-           'previous_track':0xB1,
-           'stop_media':0xB2,
-           'play/pause_media':0xB3,
-           'start_mail':0xB4,
-           'select_media':0xB5,
-           'start_application_1':0xB6,
-           'start_application_2':0xB7,
-           'attn_key':0xF6,
-           'crsel_key':0xF7,
-           'exsel_key':0xF8,
-           'play_key':0xFA,
-           'zoom_key':0xFB,
-           'clear_key':0xFE,
-           '+':0xBB,
-           ',':0xBC, 
-           '-':0xBD,
-           '.':0xBE,
-           '/':0xBF,
-           #'`':0xC0,    #us layout?
-           "'":0xC0,    #uk\euro layout
-           '`':0xDF,    #uk\euro layout
-           ';':0xBA,
-           '[':0xDB,
-           '\\':0xDC,
-           ']':0xDD,
-           #"'":0xDE,    # us layout?
-           '#':0xDE}    #uk\euro layout
+VK_CODE['backspace'] = 0x08
+VK_CODE['tab'] = 0x09
+VK_CODE['clear'] = 0x0C
+VK_CODE['enter'] = 0x0D
+VK_CODE['shift'] = 0x10
+VK_CODE['ctrl'] = 0x11
+VK_CODE['alt'] = 0x12
+VK_CODE['pause'] = 0x13
+VK_CODE['caps_lock'] = 0x14
+VK_CODE['esc'] = 0x1B
+VK_CODE['spacebar'] = 0x20
+VK_CODE['page_up'] = 0x21
+VK_CODE['page_down'] = 0x22
+VK_CODE['end'] = 0x23
+VK_CODE['home'] = 0x24
+VK_CODE['left_arrow'] = 0x25
+VK_CODE['up_arrow'] = 0x26
+VK_CODE['right_arrow'] = 0x27
+VK_CODE['down_arrow'] = 0x28
+VK_CODE['select'] = 0x29
+VK_CODE['print'] = 0x2A
+VK_CODE['execute'] = 0x2B
+VK_CODE['print_screen'] = 0x2C
+VK_CODE['ins'] = 0x2D
+VK_CODE['del'] = 0x2E
+VK_CODE['help'] = 0x2F
+VK_CODE['0'] = 0x30
+VK_CODE['1'] = 0x31
+VK_CODE['2'] = 0x32
+VK_CODE['3'] = 0x33
+VK_CODE['4'] = 0x34
+VK_CODE['5'] = 0x35
+VK_CODE['6'] = 0x36
+VK_CODE['7'] = 0x37
+VK_CODE['8'] = 0x38
+VK_CODE['9'] = 0x39
+VK_CODE['a'] = 0x41
+VK_CODE['b'] = 0x42
+VK_CODE['c'] = 0x43
+VK_CODE['d'] = 0x44
+VK_CODE['e'] = 0x45
+VK_CODE['f'] = 0x46
+VK_CODE['g'] = 0x47
+VK_CODE['h'] = 0x48
+VK_CODE['i'] = 0x49
+VK_CODE['j'] = 0x4A
+VK_CODE['k'] = 0x4B
+VK_CODE['l'] = 0x4C
+VK_CODE['m'] = 0x4D
+VK_CODE['n'] = 0x4E
+VK_CODE['o'] = 0x4F
+VK_CODE['p'] = 0x50
+VK_CODE['q'] = 0x51
+VK_CODE['r'] = 0x52
+VK_CODE['s'] = 0x53
+VK_CODE['t'] = 0x54
+VK_CODE['u'] = 0x55
+VK_CODE['v'] = 0x56
+VK_CODE['w'] = 0x57
+VK_CODE['x'] = 0x58
+VK_CODE['y'] = 0x59
+VK_CODE['z'] = 0x5A
+VK_CODE['numpad_0'] = 0x60
+VK_CODE['numpad_1'] = 0x61
+VK_CODE['numpad_2'] = 0x62
+VK_CODE['numpad_3'] = 0x63
+VK_CODE['numpad_4'] = 0x64
+VK_CODE['numpad_5'] = 0x65
+VK_CODE['numpad_6'] = 0x66
+VK_CODE['numpad_7'] = 0x67
+VK_CODE['numpad_8'] = 0x68
+VK_CODE['numpad_9'] = 0x69
+VK_CODE['multiply_key'] = 0x6A
+VK_CODE['add_key'] = 0x6B
+VK_CODE['separator_key'] = 0x6C
+VK_CODE['subtract_key'] = 0x6D
+VK_CODE['decimal_key'] = 0x6E
+VK_CODE['divide_key'] = 0x6F
+VK_CODE['F1'] = 0x70
+VK_CODE['F2'] = 0x71
+VK_CODE['F3'] = 0x72
+VK_CODE['F4'] = 0x73
+VK_CODE['F5'] = 0x74
+VK_CODE['F6'] = 0x75
+VK_CODE['F7'] = 0x76
+VK_CODE['F8'] = 0x77
+VK_CODE['F9'] = 0x78
+VK_CODE['F10'] = 0x79
+VK_CODE['F11'] = 0x7A
+VK_CODE['F12'] = 0x7B
+VK_CODE['F13'] = 0x7C
+VK_CODE['F14'] = 0x7D
+VK_CODE['F15'] = 0x7E
+VK_CODE['F16'] = 0x7F
+VK_CODE['F17'] = 0x80
+VK_CODE['F18'] = 0x81
+VK_CODE['F19'] = 0x82
+VK_CODE['F20'] = 0x83
+VK_CODE['F21'] = 0x84
+VK_CODE['F22'] = 0x85
+VK_CODE['F23'] = 0x86
+VK_CODE['F24'] = 0x87
+VK_CODE['num_lock'] = 0x90
+VK_CODE['scroll_lock'] = 0x91
+VK_CODE['left_shift'] = 0xA0
+VK_CODE['right_shift '] = 0xA1
+VK_CODE['left_control'] = 0xA2
+VK_CODE['right_control'] = 0xA3
+VK_CODE['left_menu'] = 0xA4
+VK_CODE['right_menu'] = 0xA5
+VK_CODE['browser_back'] = 0xA6
+VK_CODE['browser_forward'] = 0xA7
+VK_CODE['browser_refresh'] = 0xA8
+VK_CODE['browser_stop'] = 0xA9
+VK_CODE['browser_search'] = 0xAA
+VK_CODE['browser_favorites'] = 0xAB
+VK_CODE['browser_start_and_home'] = 0xAC
+VK_CODE['volume_mute'] = 0xAD
+VK_CODE['volume_Down'] = 0xAE
+VK_CODE['volume_up'] = 0xAF
+VK_CODE['next_track'] = 0xB0
+VK_CODE['previous_track'] = 0xB1
+VK_CODE['stop_media'] = 0xB2
+VK_CODE['play/pause_media'] = 0xB3
+VK_CODE['start_mail'] = 0xB4
+VK_CODE['select_media'] = 0xB5
+VK_CODE['start_application_1'] = 0xB6
+VK_CODE['start_application_2'] = 0xB7
+VK_CODE['attn_key'] = 0xF6
+VK_CODE['crsel_key'] = 0xF7
+VK_CODE['exsel_key'] = 0xF8
+VK_CODE['play_key'] = 0xFA
+VK_CODE['zoom_key'] = 0xFB
+VK_CODE['clear_key'] = 0xFE
+VK_CODE['+'] = 0xBB
+VK_CODE[','] = 0xBC, 
+VK_CODE['-'] = 0xBD
+VK_CODE['.'] = 0xBE
+VK_CODE['/'] = 0xBF
+#VK_CODE['`'] = 0xC0,    #us layout?
+VK_CODE["'"] = 0xC0    #uk\euro layout
+VK_CODE['`'] = 0xDF    #uk\euro layout
+VK_CODE[';'] = 0xBA
+VK_CODE['['] = 0xDB
+VK_CODE['\\'] = 0xDC
+VK_CODE[']'] = 0xDD
+#VK_CODE["'"]:0xDE,    # us layout?
+VK_CODE['#'] = 0xDE    #uk\euro layout
 VK_KEY = {v: k for k, v in VK_CODE.items()}
 
 
