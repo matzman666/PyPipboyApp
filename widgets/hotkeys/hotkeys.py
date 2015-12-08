@@ -33,23 +33,27 @@ class HotkeyWidget(widgets.WidgetBase):
         self.widget.pushButton.clicked.connect(self._testButtonHandler)
         
         self.llh = LLHookey()
+
+        #addHotkey(self, key, action=None, control=False, alt=False, shift=False, enabled=True, params=None)
         
-        self.llh.addHotkey(70, action=self.doThing) #f
-        self.llh.addHotkey(71, action=self.doOtherThing, control=True) #ctrl-g
-        self.llh.addHotkey(72, action=self.llh.disableHotkey, params=70) #h
-        self.llh.addHotkey(74, action=self.llh.enableHotkey, params=70) #j
+        #self.llh.addHotkey(70, action=self.doThing) #f
+        #self.llh.addHotkey(71, action=self.doOtherThing, control=True) #ctrl-g
+        #self.llh.addHotkey(72, action=self.llh.disableHotkey, params=70) #h
+        #self.llh.addHotkey(74, action=self.llh.enableHotkey, params=70) #j
 
         self.llh.addHotkey(223, action=self.useJet) #`
-        self.llh.addHotkey(36, action=self.useNamedItem, params=("48", "psycho")) #home
+        self.llh.addHotkey(36, action=self.useItemByName, params=("48", "psycho")) #home
         self.llh.addHotkey(89, action=datamanager.rpcUseStimpak) #y
         self.llh.addHotkey(71, action=self.equipNextGrendae) #g
+        self.llh.addHotkey(188, action=self.useItemByName, params=("29", "formal hat")) #,
+        self.llh.addHotkey(190, action=self.useItemByFormID, params=("43", 598551)) #.
         
         
 
         self.availableGrenades = []
         
     def equipNextGrendae(self):
-        getIndex = -1
+        getIndex = 0
         numGrenades = len(self.availableGrenades)
         if (numGrenades > 0):
             for i in range(0, numGrenades):
@@ -60,15 +64,22 @@ class HotkeyWidget(widgets.WidgetBase):
             if (getIndex == numGrenades):
                 getIndex = 0
             
-            if (getIndex >= 0):
-                self.useNamedItem("43", self.availableGrenades[getIndex][0])
+            self.useItemByName("43", self.availableGrenades[getIndex][0])
                 
 
     
     def useJet(self):   
-        self.useNamedItem("48", "jet")
+        self.useItemByName("48", "jet")
 
-    def useNamedItem(self,inventorySection, itemName):
+    def useItemByFormID(self,inventorySection, itemFormID):
+        if (self.pipInventoryInfo):
+            inventory = self.pipInventoryInfo.child(inventorySection)
+            for i in range(0, inventory.childCount()):
+                formid = inventory.child(i).child('formID').value()
+                if (formid == itemFormID):
+                    self.dataManager.rpcUseItem(inventory.child(i))
+
+    def useItemByName(self,inventorySection, itemName):
         itemName = itemName.lower()
         if (self.pipInventoryInfo):
             inventory = self.pipInventoryInfo.child(inventorySection)
@@ -283,7 +294,6 @@ class LLHookey(QtCore.QObject):
         
 def listener():
     #print("in listener")
-    """The listener listens to events and adds them to handlers"""
     from ctypes import windll, CFUNCTYPE, POINTER, c_int, c_void_p, byref
     import atexit
     event_types = {0x100: 'key down', #WM_KeyDown for normal keys
@@ -292,15 +302,6 @@ def listener():
        0x105: 'key up', # WM_SYSKEYUP, used for Alt key.
       }
     def low_level_handler(nCode, wParam, lParam):
-        """
-        """
-        """
-        """
-        """
-        """
-        """
-        Processes a low level Windows keyboard event.
-        """
         
         event = KeyEvent(event_types[wParam], lParam[0], lParam[1],
                           lParam[2] == 32, lParam[3])
