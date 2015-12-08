@@ -430,6 +430,7 @@ class PyPipboyApp(QtWidgets.QApplication):
         
             
     def setStyle(self, name):
+        name = self.styles.get(name, 'default')
         if name == 'default':
             self.setStyleSheet('')
         else:
