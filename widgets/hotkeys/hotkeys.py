@@ -72,19 +72,8 @@ class HotkeyWidget(widgets.WidgetBase):
             self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('pause'), shift=True, actionkey='toggleAllHotkeys') )
             self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('h'), actionkey='useNamedItem', params=["48", "psycho"]) )
         
-        #self.llh.addHotkey(223, action=self.useJet) #`
-        #self.llh.addHotkey(36, action=self.useItemByName, params=("48", "psycho")) #home
-        #self.llh.addHotkey(89, action=datamanager.rpcUseStimpak) #y
-        #self.llh.addHotkey(71, action=self.equipNextGrendae) #g
-        #self.llh.addHotkey(188, action=self.useItemByName, params=("29", "formal hat")) #,
         #self.llh.addHotkey(190, action=self.useItemByFormID, params=("43", 598551)) #.
-        
-#        self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('`'), action=self.useJet) )
-#        self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('g'), action=self.equipNextGrendae) )
-#        self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('y'), action=datamanager.rpcUseStimpak))
-#        self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('h'), control=True, action=self.llh.toggleAllHotkeys) )
-#
-#        self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('home'), control=True , alt=True, shift=True, action=self.useItemByName, params=("48", "psycho")))
+        #self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('home'), control=True , alt=True, shift=True, actionkey='useNamedItem', params=("48", "psycho")))
 
         #h1 = Hotkey(keycode=VK_CODE.get(','), action=self.useItemByName, params=("29", "formal hat"))
         #h2 = Hotkey(keycode=VK_CODE.get('/'), action=self.llh.removeHotkey, params=(h1))
@@ -92,7 +81,6 @@ class HotkeyWidget(widgets.WidgetBase):
         #self.llh.addHotkey( h1 )
         #self.llh.addHotkey( h2 )
         #self.llh.addHotkey( h3 )
-        #self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('#'), action=self.llh.removeAllHotkeys) )
         
         self.updateTable()
 
@@ -332,48 +320,7 @@ class HotkeyWidget(widgets.WidgetBase):
                 selected.setSelected(True)
                 table.setCurrentItem(selected)
                 table.scrollToItem(selected)
-            
-#            year = movie.year
-#            if year != movie.UNKNOWNYEAR:
-#                item = QTableWidgetItem("%d" % year)
-#                item.setTextAlignment(Qt.AlignCenter)
-#                self.table.setItem(row, 1, item)
-#            minutes = movie.minutes
-#            if minutes != movie.UNKNOWNMINUTES:
-#                item = QTableWidgetItem("%d" % minutes)
-#                item.setTextAlignment(Qt.AlignRight|Qt.AlignVCenter)
-#                self.table.setItem(row, 2, item)
-#            item = QTableWidgetItem(movie.acquired.toString(moviedata.DATEFORMAT))
-#            item.setTextAlignment(Qt.AlignRight|Qt.AlignVCenter)
-#            self.table.setItem(row, 3, item)
-#            notes = movie.notes
-#            if notes.length() > 40:
-#                notes = notes.left(39) + "..."
-#            self.table.setItem(row, 4, QTableWidgetItem(notes))
-        
-#        item = [
-#            QStandardItem(""),
-#            QStandardItem(str(key.keycode)),
-#            QStandardItem(str(key.control)),
-#            QStandardItem(str(key.alt)),
-#            QStandardItem(str(key.shift)),
-#            QStandardItem(str(key.action)),
-#            QStandardItem(str(key.params)),
-#            QStandardItem(str(key.enabled))
-#            ]
-#        
-#
-#        self.hotkeysModel.insertRow(0,item)
-#        self.hotkeysModel.setHeaderData(0, QtCore.Qt.Horizontal, "key")
-#        self.hotkeysModel.setHeaderData(1, QtCore.Qt.Horizontal, "key_code")
-#        self.hotkeysModel.setHeaderData(2, QtCore.Qt.Horizontal, "ctrl")
-#        self.hotkeysModel.setHeaderData(3, QtCore.Qt.Horizontal, "alt")
-#        self.hotkeysModel.setHeaderData(4, QtCore.Qt.Horizontal, "shift")
-#        self.hotkeysModel.setHeaderData(5, QtCore.Qt.Horizontal, "action")
-#        self.hotkeysModel.setHeaderData(6, QtCore.Qt.Horizontal, "params")
-#        self.hotkeysModel.setHeaderData(7, QtCore.Qt.Horizontal, "enabled")
-#        
-#        self.widget.hotkeysView.setModel(self.hotkeysModel)
+
 
     
 
@@ -381,7 +328,6 @@ import ctypes
 from ctypes import wintypes
 from ctypes import windll
 from win32gui import GetWindowText, GetForegroundWindow
-#from win32api import MapVirtualKey
 import threading
 import time
 
