@@ -116,6 +116,18 @@
             </widget>
            </item>
            <item>
+            <widget class="QGroupBox" name="groupBox_3">
+             <property name="title">
+              <string>Map File</string>
+             </property>
+             <layout class="QVBoxLayout" name="verticalLayout_7">
+              <item>
+               <widget class="QComboBox" name="mapFileComboBox"/>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
             <widget class="QGroupBox" name="groupBox_2">
              <property name="title">
               <string>Map Color</string>

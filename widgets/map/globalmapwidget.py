@@ -2,6 +2,7 @@
 
 
 import os
+import json
 import logging
 from PyQt5 import QtWidgets, QtCore, QtGui, uic, QtSvg
 from widgets import widgets
@@ -30,16 +31,17 @@ class PlayerMarker(PipValueMarkerBase):
     
     @QtCore.pyqtSlot()        
     def _slotPipValueUpdated(self):
-        self.setVisible(True)
-        rx = self.pipValue.child('X').value()
-        ry = self.pipValue.child('Y').value()
-        px = self.mapCoords.pip2map_x(rx)
-        py = self.mapCoords.pip2map_y(ry)
-        pr = self.pipValue.child('Rotation').value()
-        self.markerItem.setToolTip( 'Pos: (' + str(rx) + ', ' + str(ry) + ')\n'
-                                + 'Rot: ' + str(pr))
-        self.setMapPos(px, py, pr)
-        self.signalPlayerPositionUpdate.emit(px, py, pr)
+        if self.pipValue:
+            self.setVisible(True)
+            rx = self.pipValue.child('X').value()
+            ry = self.pipValue.child('Y').value()
+            px = self.mapCoords.pip2map_x(rx)
+            py = self.mapCoords.pip2map_y(ry)
+            pr = self.pipValue.child('Rotation').value()
+            self.markerItem.setToolTip( 'Pos: (' + str(rx) + ', ' + str(ry) + ')\n'
+                                    + 'Rot: ' + str(pr))
+            self.setMapPos(px, py, pr)
+            self.signalPlayerPositionUpdate.emit(px, py, pr)
 
 
 class CustomMarker(PipValueMarkerBase):
@@ -65,20 +67,21 @@ class CustomMarker(PipValueMarkerBase):
     
     @QtCore.pyqtSlot()        
     def _slotPipValueUpdated(self):
-        isVisible = self.pipValue.child('Visible').value()
-        if isVisible:
-            self.setVisible(True)
-            rx = self.pipValue.child('X').value()
-            ry = self.pipValue.child('Y').value()
-            px = self.mapCoords.pip2map_x(rx)
-            py = self.mapCoords.pip2map_y(ry)
-            height = self.pipValue.child('Height').value()
-            self.markerItem.setToolTip( 'Pos: (' + str(rx) + ', ' + str(ry) + ')\n'
-                                        + 'Visible: ' + str(isVisible) + '\n'
-                                        + 'Height: ' +str(height) )
-            self.setMapPos(px, py)
-        else:
-            self.setVisible(False)
+        if self.pipValue:
+            isVisible = self.pipValue.child('Visible').value()
+            if isVisible:
+                self.setVisible(True)
+                rx = self.pipValue.child('X').value()
+                ry = self.pipValue.child('Y').value()
+                px = self.mapCoords.pip2map_x(rx)
+                py = self.mapCoords.pip2map_y(ry)
+                height = self.pipValue.child('Height').value()
+                self.markerItem.setToolTip( 'Pos: (' + str(rx) + ', ' + str(ry) + ')\n'
+                                            + 'Visible: ' + str(isVisible) + '\n'
+                                            + 'Height: ' +str(height) )
+                self.setMapPos(px, py)
+            else:
+                self.setVisible(False)
         
     def _fillMarkerContextMenu_(self, event, menu):
         if self.pipValue:
@@ -118,21 +121,22 @@ class PowerArmorMarker(PipValueMarkerBase):
     
     @QtCore.pyqtSlot()        
     def _slotPipValueUpdated(self):
-        self.PipVisible = self.pipValue.child('Visible').value()
-        rx = self.pipValue.child('X').value()
-        ry = self.pipValue.child('Y').value()
-        px = self.mapCoords.pip2map_x(rx)
-        py = self.mapCoords.pip2map_y(ry)
-        height = self.pipValue.child('Height').value()
-        self.markerItem.setToolTip( 'Pos: (' + str(rx) + ', ' + str(ry) + ')\n'
-                                    + 'Visible: ' + str(self.PipVisible) + '\n'
-                                    + 'Height: ' +str(height) )
-        self.setMapPos(px, py, False)
-        if self.PipVisible and self.filterVisibleFlag:
-            self.setVisible(True)
-            self.doUpdate()
-        else:
-            self.setVisible(False)
+        if self.pipValue:
+            self.PipVisible = self.pipValue.child('Visible').value()
+            rx = self.pipValue.child('X').value()
+            ry = self.pipValue.child('Y').value()
+            px = self.mapCoords.pip2map_x(rx)
+            py = self.mapCoords.pip2map_y(ry)
+            height = self.pipValue.child('Height').value()
+            self.markerItem.setToolTip( 'Pos: (' + str(rx) + ', ' + str(ry) + ')\n'
+                                        + 'Visible: ' + str(self.PipVisible) + '\n'
+                                        + 'Height: ' +str(height) )
+            self.setMapPos(px, py, False)
+            if self.PipVisible and self.filterVisibleFlag:
+                self.setVisible(True)
+                self.doUpdate()
+            else:
+                self.setVisible(False)
     
 
 
@@ -159,35 +163,36 @@ class QuestMarker(PipValueMarkerBase):
         
     @QtCore.pyqtSlot()        
     def _slotPipValueUpdated(self):
-        self.setVisible(True)
-        name = self.pipValue.child('Name').value()
-        self.setLabel(name, False)
-        rx = self.pipValue.child('X').value()
-        ry = self.pipValue.child('Y').value()
-        px = self.mapCoords.pip2map_x(rx)
-        py = self.mapCoords.pip2map_y(ry)
-        height = self.pipValue.child('Height').value()
-        tttext =  'Pos: (' + str(rx) + ', ' + str(ry) + ')\n';
-        tttext += 'Height: ' +str(height)
-        onDoor = self.pipValue.child('OnDoor').value()
-        if onDoor != None:
-            tttext += '\nOnDoor: ' + str(onDoor)
-        shared = self.pipValue.child('Shared').value()
-        if shared != None:
-            tttext += '\nShared: ' + str(shared)
-        questids = self.pipValue.child('QuestId').value()
-        if questids != None:
-            tttext += '\nQuestIds: ['
-            isFirst = True
-            for q in questids:
-                if isFirst:
-                    isFirst = False
-                else:
-                    tttext += ', '
-                tttext += str(q.value())
-            tttext += ']'
-        self.markerItem.setToolTip( tttext )
-        self.setMapPos(px, py)
+        if self.pipValue:
+            self.setVisible(True)
+            name = self.pipValue.child('Name').value()
+            self.setLabel(name, False)
+            rx = self.pipValue.child('X').value()
+            ry = self.pipValue.child('Y').value()
+            px = self.mapCoords.pip2map_x(rx)
+            py = self.mapCoords.pip2map_y(ry)
+            height = self.pipValue.child('Height').value()
+            tttext =  'Pos: (' + str(rx) + ', ' + str(ry) + ')\n';
+            tttext += 'Height: ' +str(height)
+            onDoor = self.pipValue.child('OnDoor').value()
+            if onDoor != None:
+                tttext += '\nOnDoor: ' + str(onDoor)
+            shared = self.pipValue.child('Shared').value()
+            if shared != None:
+                tttext += '\nShared: ' + str(shared)
+            questids = self.pipValue.child('QuestId').value()
+            if questids != None:
+                tttext += '\nQuestIds: ['
+                isFirst = True
+                for q in questids:
+                    if isFirst:
+                        isFirst = False
+                    else:
+                        tttext += ', '
+                    tttext += str(q.value())
+                tttext += ']'
+            self.markerItem.setToolTip( tttext )
+            self.setMapPos(px, py)
         
     
 class LocationMarker(PipValueMarkerBase):
@@ -259,41 +264,42 @@ class LocationMarker(PipValueMarkerBase):
         
     @QtCore.pyqtSlot()        
     def _slotPipValueUpdated(self):
-        self.visible = self.pipValue.child('Visible').value()
-        name = self.pipValue.child('Name')
-        if name:
-            self.setLabel(name.value(), False)
-        else:
-            self.setLabel('<Location>', False)
-        loctype = self.pipValue.child('type')
-        if loctype:
-            self.locType = loctype.value()
-        else:
-            self.locType = -1
-        discovered = self.pipValue.child('Discovered')
-        if discovered:
-            self.discovered = discovered.value()
-        cleared = self.pipValue.child('ClearedStatus')
-        if cleared:
-            self.cleared = cleared.value()
-        if self.discovered != self.lastKnownDiscovered:
-            self.invalidateMarkerPixmap(False)
-        self.lastKnownDiscovered = self.discovered
-        rx = self.pipValue.child('X').value()
-        ry = self.pipValue.child('Y').value()
-        px = self.mapCoords.pip2map_x(rx)
-        py = self.mapCoords.pip2map_y(ry)
-        tttext = 'Pos: (' + str(rx) + ', ' + str(ry) + ')'
-        props = self.pipValue.value()
-        for prop in props:
-            if prop != 'X' and prop !='Y':
-                tttext += '\n' + prop + ': ' + str(props[prop].value())
-        self.markerItem.setToolTip( tttext )
-        if (self.visible or self.filterVisibilityCheatFlag) and self.filterVisibleFlag:
-            self.setVisible(True)
-            self.setMapPos(px, py)
-        else:
-            self.setMapPos(px, py, False)
+        if self.pipValue:
+            self.visible = self.pipValue.child('Visible').value()
+            name = self.pipValue.child('Name')
+            if name:
+                self.setLabel(name.value(), False)
+            else:
+                self.setLabel('<Location>', False)
+            loctype = self.pipValue.child('type')
+            if loctype:
+                self.locType = loctype.value()
+            else:
+                self.locType = -1
+            discovered = self.pipValue.child('Discovered')
+            if discovered:
+                self.discovered = discovered.value()
+            cleared = self.pipValue.child('ClearedStatus')
+            if cleared:
+                self.cleared = cleared.value()
+            if self.discovered != self.lastKnownDiscovered:
+                self.invalidateMarkerPixmap(False)
+            self.lastKnownDiscovered = self.discovered
+            rx = self.pipValue.child('X').value()
+            ry = self.pipValue.child('Y').value()
+            px = self.mapCoords.pip2map_x(rx)
+            py = self.mapCoords.pip2map_y(ry)
+            tttext = 'Pos: (' + str(rx) + ', ' + str(ry) + ')'
+            props = self.pipValue.value()
+            for prop in props:
+                if prop != 'X' and prop !='Y':
+                    tttext += '\n' + prop + ': ' + str(props[prop].value())
+            self.markerItem.setToolTip( tttext )
+            if (self.visible or self.filterVisibilityCheatFlag) and self.filterVisibleFlag:
+                self.setVisible(True)
+                self.setMapPos(px, py)
+            else:
+                self.setMapPos(px, py, False)
             
     def _labelStr_(self):
         tmp = self.label
@@ -326,31 +332,38 @@ class LocationMarker(PipValueMarkerBase):
 
 class MapGraphicsItem(QtCore.QObject):
     
-    MAP_NWX = 36
-    MAP_NWY = 50
-    MAP_NEX = 2000
-    MAP_NEY = 50
-    MAP_SWX = 36
-    MAP_SWY = 1978
-    
     class PixmapItem(QtWidgets.QGraphicsPixmapItem):
         def __init__(self, parent, qparent = None):
             super().__init__(qparent)
             self.parent = parent
 
-    def __init__(self, gwidget, imageFactory, mapfile, color = None, colorable = True, qparent = None):
+    def __init__(self, gwidget, imageFactory, color = None, qparent = None):
         super().__init__(qparent)
         self.gwidget = gwidget
         self.imageFactory = imageFactory
-        self.mapfile = mapfile
-        self.colorUpdate = color
-        self.colorable = colorable
+        self.mapfile = None
+        self.color = color
+        self.colorable = True
+        self.nw = None
+        self.ne = None
+        self.sw = None
         self.mapItem = self.PixmapItem(self)
         self.gwidget.mapScene.addItem(self.mapItem)
-        self.setMapPixmap(imageFactory.getPixmap(mapfile, color = color))
         self.mapItem.setZValue(-10)
-            
-    def setMapPixmap(self, pixmap):
+    
+    def setMapFile(self, mapfile, colorable = True, nw = [52, 52], ne = [1990, 52], sw = [52, 1990]):
+        self.mapfile = mapfile
+        self.colorable = colorable
+        self.nw = nw
+        self.ne = ne
+        self.sw = sw
+        if colorable:
+            self._setMapPixmap(self.imageFactory.getPixmap(self.mapfile, color = self.color))
+        else:
+            self._setMapPixmap(self.imageFactory.getPixmap(self.mapfile, color = None))
+        
+    
+    def _setMapPixmap(self, pixmap):
         self.mapItem.setPixmap(pixmap)
         self.gwidget.mapScene.setSceneRect(self.mapItem.sceneBoundingRect())
     
@@ -363,8 +376,9 @@ class MapGraphicsItem(QtCore.QObject):
     
     @QtCore.pyqtSlot(QtGui.QColor)
     def setColor(self, color):
-        self.colorUpdate = color
-        self.setMapPixmap(self.imageFactory.getPixmap(self.mapfile, color = color))
+        self.color = color
+        if self.colorable:
+            self._setMapPixmap(self.imageFactory.getPixmap(self.mapfile, color = color))
 
 
 
@@ -375,12 +389,13 @@ class GlobalMapWidget(widgets.WidgetBase):
     signalSetStickyLabel = QtCore.pyqtSignal(bool)
     signalLocationFilterSetVisible = QtCore.pyqtSignal(bool)
     signalLocationFilterVisibilityCheat = QtCore.pyqtSignal(bool)
+    signalMarkerForcePipValueUpdate = QtCore.pyqtSignal()
     
     _signalPipWorldQuestsUpdated = QtCore.pyqtSignal()
     _signalPipWorldLocationsUpdated = QtCore.pyqtSignal()
     
     MAPZOOM_SCALE_MAX = 4.0
-    MAPZOOM_SCALE_MIN = 0.1
+    MAPZOOM_SCALE_MIN = 0.05
   
     def __init__(self, handle, controller, parent):
         super().__init__('Global Map', parent)
@@ -388,12 +403,19 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.controller = controller
         self.widget = uic.loadUi(os.path.join(self.basepath, 'ui', 'globalmapwidget.ui'))
         self.setWidget(self.widget)
-        self.mapFilePath = os.path.join('res', 'mapgreyscale.png')
         self._logger = logging.getLogger('pypipboyapp.map.globalmap')
         self.mapZoomLevel = 1.0
         
     def init(self, app, datamanager):
         super().init(app, datamanager)
+        self._app = app
+        # Read maps config file
+        try:
+            configFile = open(os.path.join(self.basepath, 'res', 'globalmapsconfig.json'))
+            self.mapFiles = json.load(configFile)
+        except Exception as e:
+            self._logger.error('Could not load map-files: ' + str(e))
+        self.selectedMapFile = self._app.settings.value('globalmapwidget/selectedMapFile', 'default')
         # Init graphics view
         self.mapColor = QtGui.QColor.fromRgb(20,255,23)
         self.mapScene = QtWidgets.QGraphicsScene()
@@ -404,7 +426,15 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.mapView.setMouseTracking(True)
         self.mapView.centerOn(0, 0)
         # Add map graphics
-        self.mapItem = MapGraphicsItem(self, self.controller.imageFactory, self.mapFilePath, self.mapColor, True)
+        if self._app.settings.value('globalmapwidget/colour'):
+            self.mapColor = self._app.settings.value('globalmapwidget/colour')
+        self.mapItem = MapGraphicsItem(self, self.controller.imageFactory, self.mapColor)
+        mapfile = self.mapFiles[self.selectedMapFile]
+        if not mapfile:
+            self._logger.error('Could not find map "' + self.selectedMapFile + '".')
+        else:
+            file = os.path.join('res', mapfile['file'])
+            self.mapItem.setMapFile(file, mapfile['colorable'], mapfile['nw'], mapfile['ne'], mapfile['sw'])
         self.signalSetZoomLevel.connect(self.mapItem.setZoomLevel)
         self.signalSetColor.connect(self.mapItem.setColor)
         # Add player marker
@@ -429,30 +459,62 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.widget.mapZoomSpinbox.setValue(100.0)
         self.widget.mapZoomSpinbox.setSingleStep(10.0)
         self.widget.mapZoomSpinbox.valueChanged.connect(self._slotZoomSpinTriggered)
+        self.signalSetZoomLevel.connect(self.saveZoom)
+        if (self._app.settings.value('globalmapwidget/zoom')):
+            self.mapZoomLevel = float(self._app.settings.value('globalmapwidget/zoom'))
+            if self.mapZoomLevel == 1.0:
+                sliderValue = 0
+            elif self.mapZoomLevel > 1.0:
+                sliderValue = (self.mapZoomLevel/self.MAPZOOM_SCALE_MAX)*100.0
+            else:
+                sliderValue = -(self.MAPZOOM_SCALE_MIN/self.mapZoomLevel)*100.0
+            self.widget.mapZoomSlider.blockSignals(True)
+            self.widget.mapZoomSlider.setValue(sliderValue)
+            self.widget.mapZoomSlider.blockSignals(False)
+            self.widget.mapZoomSpinbox.blockSignals(True)
+            self.widget.mapZoomSpinbox.setValue(self.mapZoomLevel*100.0)
+            self.widget.mapZoomSpinbox.blockSignals(False)        
+            self.signalSetZoomLevel.emit(self.mapZoomLevel, 0, 0)
+        # Init map file combo box
+        i = 0
+        self.mapFileComboItems = []
+        for mf in self.mapFiles:
+            self.widget.mapFileComboBox.addItem(self.mapFiles[mf]['label'])
+            if mf == self.selectedMapFile:
+                self.widget.mapFileComboBox.setCurrentIndex(i)
+            i += 1
+            self.mapFileComboItems.append(mf)
+        self.widget.mapFileComboBox.currentIndexChanged.connect(self._slotMapFileComboTriggered)
         # Init color controls
         self.widget.mapColorButton.clicked.connect(self._slotMapColorSelectionTriggered)
+        self.widget.mapColorAutoToggle.setChecked(bool(self._app.settings.value('globalmapwidget/autoColour', False)))
         self.widget.mapColorAutoToggle.stateChanged.connect(self._slotMapColorAutoModeTriggered)
         # Init stickyLabels Checkbox
         self.stickyLabelsEnabled = False
-        self.widget.stickyLabelsCheckbox.setChecked(False)
         self.widget.stickyLabelsCheckbox.stateChanged.connect(self._slotStickyLabelsTriggered)
+        self.widget.stickyLabelsCheckbox.setChecked(self._app.settings.value('globalmapwidget/stickyLabels', False))
         # Init PowerMarker Enable Checkbox
-        self.widget.powerMarkerEnableCheckbox.setChecked(True)
         self.widget.powerMarkerEnableCheckbox.stateChanged.connect(self._slotPowerMarkerEnableTriggered)
+        self.widget.powerMarkerEnableCheckbox.setChecked(self._app.settings.value('globalmapwidget/powerArmourMarker', True))
         # Init Location Enable Checkbox
         self.locationFilterEnableFlag = True
-        self.widget.locationMarkerEnableCheckbox.setChecked(True)
         self.widget.locationMarkerEnableCheckbox.stateChanged.connect(self._slotLocationEnableTriggered)
+        self.widget.locationMarkerEnableCheckbox.setChecked(self._app.settings.value('globalmapwidget/locationMarker', True))
         # Init Location Visibility Cheat Checkbox
         self.locationVisibilityCheatFlag = False
-        self.widget.locationVisibilityCheatCheckbox.setChecked(False)
         self.widget.locationVisibilityCheatCheckbox.stateChanged.connect(self._slotLocationVisibilityCheatTriggered)
+        self.widget.locationVisibilityCheatCheckbox.setChecked(self._app.settings.value('globalmapwidget/locationVisibilityCheat', False))
         # Init CenterOnPlayer checkbox
         self.centerOnPlayerEnabled = False
-        self.widget.centerPlayerCheckbox.setChecked(False)
         self.widget.centerPlayerCheckbox.stateChanged.connect(self._slotCenterOnPlayerCheckToggled)
+        self.widget.centerPlayerCheckbox.setChecked(bool(self._app.settings.value('globalmapwidget/centerPlayer', False)))
         # Init SaveTo Button
         self.widget.saveToButton.clicked.connect(self._slotSaveToTriggered)
+        # Init Splitter
+        if int(self._app.settings.value('globalmapwidget/splittercollapsed', 0)):
+            self.widget.splitter.setSizes([100,0])
+        self.widget.splitter.splitterMoved.connect(self._slotSplitterMoved)
+
         # Init PyPipboy stuff
         from .controller import MapCoordinates
         self.mapCoords = MapCoordinates()
@@ -468,10 +530,29 @@ class GlobalMapWidget(widgets.WidgetBase):
         self._signalPipWorldLocationsUpdated.connect(self._slotPipWorldLocationsUpdated)
         self.datamanager.registerRootObjectListener(self._onRootObjectEvent)
 
+    @QtCore.pyqtSlot(float, float, float)
+    def saveZoom(self, zoom, mapposx, mapposy):
+        #self.widget.mapZoomSlider.setValue(sliderValue)
+        self._app.settings.setValue('globalmapwidget/zoom', zoom)
+
+        
+        
+    @QtCore.pyqtSlot(int, int)
+    def _slotSplitterMoved(self, pos, index):
+        if (self.widget.splitter.sizes()[1] == 0):
+            splittercollapsed = 1
+        else: 
+            splittercollapsed = 0
+       
+        self._app.settings.setValue('globalmapwidget/splittercollapsed', splittercollapsed)
+        pass
+
+        
     def _connectMarker(self, marker):
         self.signalSetZoomLevel.connect(marker.setZoomLevel)
         self.signalSetColor.connect(marker.setColor)
         self.signalSetStickyLabel.connect(marker.setStickyLabel)
+        self.signalMarkerForcePipValueUpdate.connect(marker._slotPipValueUpdated)
         marker.signalMarkerDestroyed.connect(self._disconnectMarker)
         if marker.markerType == 4:
             self.signalLocationFilterSetVisible.connect(marker.filterSetVisible)
@@ -483,6 +564,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.signalSetZoomLevel.disconnect(marker.setZoomLevel)
         self.signalSetStickyLabel.disconnect(marker.setStickyLabel)
         self.signalSetColor.disconnect(marker.setColor)
+        self.signalMarkerForcePipValueUpdate.disconnect(marker._slotPipValueUpdated)
         if marker.markerType == 4:
             self.signalLocationFilterSetVisible.disconnect(marker.filterSetVisible)
             self.signalLocationFilterVisibilityCheat.disconnect(marker.filterVisibilityCheat)
@@ -502,9 +584,9 @@ class GlobalMapWidget(widgets.WidgetBase):
                         extents.child('NWX').value(), extents.child('NWY').value(), 
                         extents.child('NEX').value(),  extents.child('NEY').value(), 
                         extents.child('SWX').value(), extents.child('SWY').value(), 
-                        self.mapItem.MAP_NWX, self.mapItem.MAP_NWY, 
-                        self.mapItem.MAP_NEX, self.mapItem.MAP_NEY, 
-                        self.mapItem.MAP_SWX, self.mapItem.MAP_SWY )
+                        self.mapItem.nw[0], self.mapItem.nw[1], 
+                        self.mapItem.ne[0], self.mapItem.ne[1], 
+                        self.mapItem.sw[0], self.mapItem.sw[1] )
             else:
                 self._logger.warn('No "Extents" record found. Map coordinates may be off')
             if self.widget.mapColorAutoToggle.isChecked():
@@ -526,6 +608,7 @@ class GlobalMapWidget(widgets.WidgetBase):
             if self.pipWorldLocations:
                 self.pipWorldLocations.registerValueUpdatedListener(self._onPipWorldLocationsUpdated, 0)
                 self._signalPipWorldLocationsUpdated.emit()
+                    
                     
     def _onPipWorldQuestsUpdated(self, caller, value, pathObjs):
         self._signalPipWorldQuestsUpdated.emit()
@@ -578,8 +661,36 @@ class GlobalMapWidget(widgets.WidgetBase):
     @QtCore.pyqtSlot()        
     def _slotMapColorSelectionTriggered(self):
         color = QtWidgets.QColorDialog.getColor(self.mapColor, self)
-        if color.isValid:
+        if color.isValid and color.value() != QtGui.QColor.fromRgb(0,0,0).value():
+            self._app.settings.setValue('globalmapwidget/colour', color)
+            self.widget.mapColorAutoToggle.setChecked(False)
             self.signalSetColor.emit(color)
+    
+    
+    @QtCore.pyqtSlot(int)
+    def _slotMapFileComboTriggered(self, index):
+        mapfile = self.mapFiles[self.mapFileComboItems[index]]
+        if not mapfile:
+            self._logger.error('Could not find map "' + self.selectedMapFile + '".')
+        else:
+            self.selectedMapFile = self.mapFileComboItems[index]
+            file = os.path.join('res', mapfile['file'])
+            self.mapItem.setMapFile(file, mapfile['colorable'], mapfile['nw'], mapfile['ne'], mapfile['sw'])
+            if self.pipMapWorldObject:
+                extents = self.pipMapWorldObject.child('Extents')
+                if extents:
+                    self.mapCoords.init( 
+                            extents.child('NWX').value(), extents.child('NWY').value(), 
+                            extents.child('NEX').value(),  extents.child('NEY').value(), 
+                            extents.child('SWX').value(), extents.child('SWY').value(), 
+                            self.mapItem.nw[0], self.mapItem.nw[1], 
+                            self.mapItem.ne[0], self.mapItem.ne[1], 
+                            self.mapItem.sw[0], self.mapItem.sw[1] )
+                else:
+                    self._logger.warn('No "Extents" record found. Map coordinates may be off')
+            self.signalMarkerForcePipValueUpdate.emit()
+            self._app.settings.setValue('globalmapwidget/selectedMapFile', self.selectedMapFile)
+
 
 
     @QtCore.pyqtSlot(int)        
@@ -621,25 +732,30 @@ class GlobalMapWidget(widgets.WidgetBase):
     @QtCore.pyqtSlot(bool)        
     def _slotStickyLabelsTriggered(self, value):
         self.stickyLabelsEnabled = value
+        self._app.settings.setValue('globalmapwidget/stickyLabels', value)
         self.signalSetStickyLabel.emit(value)
         
     @QtCore.pyqtSlot(bool)        
     def _slotPowerMarkerEnableTriggered(self, value):
         self.powerArmorMarker.filterSetVisible(value)
+        self._app.settings.setValue('globalmapwidget/powerArmourMarker', value)
         
     @QtCore.pyqtSlot(bool)        
     def _slotLocationEnableTriggered(self, value):
         self.locationFilterEnableFlag = value
+        self._app.settings.setValue('globalmapwidget/locationMarker', value)
         self.signalLocationFilterSetVisible.emit(value)
         
     @QtCore.pyqtSlot(bool)        
     def _slotLocationVisibilityCheatTriggered(self, value):
         self.locationVisibilityCheatFlag = value
+        self._app.settings.setValue('globalmapwidget/locationVisibilityCheat', value)
         self.signalLocationFilterVisibilityCheat.emit(value)
         
     @QtCore.pyqtSlot(bool)        
     def _slotCenterOnPlayerCheckToggled(self, value):
         self.centerOnPlayerEnabled = value
+        self._app.settings.setValue('globalmapwidget/centerPlayer', value)
         if value and self.playerMarker.markerItem.isVisible():
             self.mapView.centerOn(self.playerMarker.markerItem.pos())
             
@@ -650,6 +766,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         
     @QtCore.pyqtSlot(bool)        
     def _slotMapColorAutoModeTriggered(self, value):
+        self._app.settings.setValue('globalmapwidget/autoColour', bool(value))
         if self.pipMapObject:
             if value:
                 self.pipColor = self.pipMapObject.pipParent.child('Status').child('EffectColor')
@@ -657,7 +774,9 @@ class GlobalMapWidget(widgets.WidgetBase):
                 self._onPipColorChanged(None, None, None)
             elif self.pipColor:
                 self.pipColor.unregisterValueUpdatedListener(self._onPipColorChanged)
-            
+                if self._app.settings.value('globalmapwidget/colour'):
+                    self.signalSetColor.emit(self._app.settings.value('globalmapwidget/colour'))
+
         
     @QtCore.pyqtSlot()
     def _slotSaveToTriggered(self):

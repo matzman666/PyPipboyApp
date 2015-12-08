@@ -51,10 +51,10 @@ class MapGraphicsItem(QtCore.QObject):
         self.lwidget.mapScene.addItem(self.mapItem)
         image = QtGui.QImage(960, 640, QtGui.QImage.Format_Indexed8)
         image.fill(QtGui.QColor.fromRgb(255,255,255))
-        self.setMapPixmap(QtGui.QPixmap.fromImage(image))
+        self._setMapPixmap(QtGui.QPixmap.fromImage(image))
         self.mapItem.setZValue(-10)
             
-    def setMapPixmap(self, pixmap):
+    def _setMapPixmap(self, pixmap):
         self.mapItem.setPixmap(pixmap)
         self.lwidget.mapScene.setSceneRect(self.mapItem.sceneBoundingRect())
     
@@ -88,9 +88,11 @@ class LocalMapWidget(widgets.WidgetBase):
         self.setWidget(self.widget)
         self._logger = logging.getLogger('pypipboyapp.map.localmap')
         self.mapZoomLevel = 1.0
+        self.mapReqTimer = QtCore.QTimer()
         
     def init(self, app, datamanager):
         super().init(app, datamanager)
+        self._app = app
         self.mapScene = QtWidgets.QGraphicsScene()
         self.mapScene.setBackgroundBrush(QtGui.QBrush(QtGui.QColor.fromRgb(0,0,0)))
         self.mapColor = QtGui.QColor.fromRgb(20,255,23)
@@ -123,10 +125,37 @@ class LocalMapWidget(widgets.WidgetBase):
         self.widget.mapZoomSpinbox.setValue(100.0)
         self.widget.mapZoomSpinbox.setSingleStep(10.0)
         self.widget.mapZoomSpinbox.valueChanged.connect(self._slotZoomSpinTriggered)
+        self.signalSetZoomLevel.connect(self.saveZoom)
+        if (self._app.settings.value('localmapwidget/zoom')):
+            self.mapZoomLevel = float(self._app.settings.value('localmapwidget/zoom'))
+            if self.mapZoomLevel == 1.0:
+                sliderValue = 0
+            elif self.mapZoomLevel > 1.0:
+                sliderValue = (self.mapZoomLevel/self.MAPZOOM_SCALE_MAX)*100.0
+            else:
+                sliderValue = -(self.MAPZOOM_SCALE_MIN/self.mapZoomLevel)*100.0
+            self.widget.mapZoomSlider.blockSignals(True)
+            self.widget.mapZoomSlider.setValue(sliderValue)
+            self.widget.mapZoomSlider.blockSignals(False)
+            self.widget.mapZoomSpinbox.blockSignals(True)
+            self.widget.mapZoomSpinbox.setValue(self.mapZoomLevel*100.0)
+            self.widget.mapZoomSpinbox.blockSignals(False)        
+            self.signalSetZoomLevel.emit(self.mapZoomLevel, 0, 0)
         # Init Enable Checkbox
         self.widget.enableCheckbox.stateChanged.connect(self._slotEnableMapTriggered)
+        self.widget.enableCheckbox.setChecked(int(self._app.settings.value('localmapwidget/enabled', False)))
         # Init SaveTo Button
         self.widget.saveToButton.clicked.connect(self._slotSaveToTriggered)
+        # Init fps spinner
+        self.mapFPS = int(self._app.settings.value('localmapwidget/fps', 5))
+        self.widget.fpsSpinBox.setValue(self.mapFPS)
+        self.mapReqTimer.setInterval(int(1000/self.mapFPS))
+        self.mapReqTimer.timeout.connect(self._slotSendMapReq)
+        self.widget.fpsSpinBox.valueChanged.connect(self._slotFpsSpinnerTriggered)
+        # Init Splitter
+        if int(self._app.settings.value('localmapwidget/splittercollapsed', 0)):
+            self.widget.splitter.setSizes([100,0])
+        self.widget.splitter.splitterMoved.connect(self._slotSplitterMoved)
         # Init PyPipboy stuff
         from .controller import MapCoordinates
         self.mapCoords = MapCoordinates()
@@ -142,6 +171,20 @@ class LocalMapWidget(widgets.WidgetBase):
         self.dataManager.registerLocalMapListener(self._onLocalMapUpdate)
         self._signalMapUpdate.connect(self._slotMapUpdate)
 
+    @QtCore.pyqtSlot(float, float, float)
+    def saveZoom(self, zoom, mapposx, mapposy):
+        self._app.settings.setValue('localmapwidget/zoom', zoom)
+        
+    @QtCore.pyqtSlot(int, int)
+    def _slotSplitterMoved(self, pos, index):
+        if (self.widget.splitter.sizes()[1] == 0):
+            splittercollapsed = 1
+        else: 
+            splittercollapsed = 0
+       
+        self._app.settings.setValue('localmapwidget/splittercollapsed', splittercollapsed)
+        pass
+
     def _connectMarker(self, marker):
         self.signalSetZoomLevel.connect(marker.setZoomLevel)
         #self.signalSetColor.connect(marker.setColor)
@@ -155,15 +198,12 @@ class LocalMapWidget(widgets.WidgetBase):
             self._onPipMapReset(None, None, None)
                 
     def _onPipMapReset(self, caller, value, pathObjs):
-        print('_onPipMapReset')
         self.pipMapWorldObject = self.pipMapObject.child('Local')
         if self.pipMapWorldObject:
             pipWorldPlayer = self.pipMapWorldObject.child('Player')
             if pipWorldPlayer:
                 self.playerMarker.setPipValue(pipWorldPlayer, self.datamanager, self.mapCoords)
                 self.playerMarker.setVisible(False)
-                if self.mapEnabledFlag:
-                    self.dataManager.rpcRequestLocalMapSnapshot()
             else:
                 self.widget.enableCheckbox.setChecked(False)
         else:
@@ -172,9 +212,18 @@ class LocalMapWidget(widgets.WidgetBase):
     
     @QtCore.pyqtSlot(bool)
     def _slotEnableMapTriggered(self, value):
+        self._app.settings.setValue('localmapwidget/enabled', value)
         self.mapEnabledFlag = value
         if value:
-            self.dataManager.rpcRequestLocalMapSnapshot()
+            self.mapReqTimer.start()
+        else:
+            self.mapReqTimer.stop()
+    
+    @QtCore.pyqtSlot(int)
+    def _slotFpsSpinnerTriggered(self, value):
+        self.mapFPS = value
+        self.mapReqTimer.setInterval(int(1000/self.mapFPS))
+        self._app.settings.setValue('localmapwidget/fps', self.mapFPS)
         
     def _onLocalMapUpdate(self, lmap):
         self._mapUpdate = lmap
@@ -201,12 +250,17 @@ class LocalMapWidget(widgets.WidgetBase):
         image.setColorTable(self.COLORTABLE)
         self.playerMarker.setMapPos(self._mapUpdate.width/2, self._mapUpdate.height/2, self.playerMarker.mapPosR, False)
         if self.mapItem:
-            self.mapItem.setMapPixmap(QtGui.QPixmap.fromImage(image))
+            self.mapItem._setMapPixmap(QtGui.QPixmap.fromImage(image))
         if self.mapEnabledFlag:
             self.playerMarker.setVisible(True)
-            self.dataManager.rpcRequestLocalMapSnapshot()
         else:
             self.playerMarker.setVisible(False)
+            
+    @QtCore.pyqtSlot()
+    def _slotSendMapReq(self):
+        if self.mapEnabledFlag:
+            self.dataManager.rpcRequestLocalMapSnapshot()
+        
         
     @QtCore.pyqtSlot(int)        
     def _slotZoomSliderTriggered(self, zoom):

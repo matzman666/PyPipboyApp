@@ -36,6 +36,7 @@
     <property name="title">
      <string>Program</string>
     </property>
+    <addaction name="actionAuto_Connect_on_Start_up"/>
     <addaction name="actionConnect"/>
     <addaction name="actionConnectTo"/>
     <addaction name="actionDisconnect"/>
@@ -111,6 +112,17 @@
   <action name="actionStylesDefault">
    <property name="text">
     <string>Default</string>
+   </property>
+  </action>
+  <action name="actionAuto_Connect_on_Start_up">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Auto Connect on Startup</string>
    </property>
   </action>
  </widget>

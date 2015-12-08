@@ -5,6 +5,7 @@ import os
 import sys
 import importlib
 import traceback
+import platform
 import logging.config
 from PyQt5 import QtWidgets, QtCore, uic
 from pypipboy.network import NetworkChannel
@@ -12,8 +13,6 @@ from pypipboy.datamanager import PipboyDataManager
 from dialogs.selecthostdialog import SelectHostDialog
 from dialogs.connecthostdialog import ConnectHostDialog
 from widgets.widgets import ModuleHandle 
-from argparse import _get_action_name
-
 
 
 class ApplicationStyle(QtCore.QObject):
@@ -103,7 +102,8 @@ class PyPipboyApp(QtWidgets.QApplication):
         self._connectHostMessageBox = None
         self._connectHostThread = None
         self._logger = logging.getLogger('pypipboyapp.main')
-        
+    
+    
     # run the application
     def run(self):
         self.mainWindow = PipboyMainWindow()
@@ -126,12 +126,27 @@ class PyPipboyApp(QtWidgets.QApplication):
         self.mainWindow.signalWantsToQuit.connect(self.requestQuit)
         self.mainWindow.actionShowAbout.triggered.connect(self.showAboutDialog)
         self.mainWindow.actionShowAboutQt.triggered.connect(self.aboutQt)
+        self.mainWindow.actionAuto_Connect_on_Start_up.triggered.connect(self.autoConnectToggled)
         # Main window is ready, so show it
         self.mainWindow.init(self, self.networkChannel, self.dataManager)
         self._initWidgets()
         self.mainWindow.show()
         # start main event loop
+        if int(self.settings.value('mainwindow/autoconnect', 0)):
+            self.mainWindow.actionAuto_Connect_on_Start_up.setChecked(True)
+            host = 'localhost'
+            port = 27000
+            if self.settings.value('mainwindow/lasthost'):
+                host = self.settings.value('mainwindow/lasthost')
+            if self.settings.value('mainwindow/lastport'):
+                port = int(self.settings.value('mainwindow/lastport'))
+            self.signalConnectToHost.emit(host, port, False)
         sys.exit(self.exec_())
+
+    @QtCore.pyqtSlot(bool)
+    def autoConnectToggled(self, value):
+        self.settings.setValue('mainwindow/autoconnect', int(value))
+
         
     # Start auto discovery (non-blocking)
     # Auto discovery is done in its own thread, we don't want to block the gui
@@ -182,6 +197,14 @@ class PyPipboyApp(QtWidgets.QApplication):
     def showConnectToDialog(self):
         if not self.networkChannel.isConnected:
             connectDialog = ConnectHostDialog(self.mainWindow)
+            host = 'localhost'
+            port = 27000
+            if self.settings.value('mainwindow/lasthost'):
+                host = self.settings.value('mainwindow/lasthost')
+            if self.settings.value('mainwindow/lastport'):
+                port = self.settings.value('mainwindow/lastport')
+            connectDialog.hostInput.setText(host)
+            connectDialog.portInput.setText(str(port))
             if connectDialog.exec():
                 try:
                     host = connectDialog.hostInput.text()
@@ -193,6 +216,7 @@ class PyPipboyApp(QtWidgets.QApplication):
                     QtWidgets.QMessageBox.warning(self.mainWindow, 'Connection to host failed', 
                             'Caught exception while parsing port: ' + str(e),
                             QtWidgets.QMessageBox.Ok)
+            
                     
     # connect to specified host (non blocking)
     # connect happens in its own thread
@@ -288,7 +312,7 @@ class PyPipboyApp(QtWidgets.QApplication):
     @QtCore.pyqtSlot()        
     def requestQuit(self):
         # do you really wanna
-        if QtWidgets.QMessageBox.question(self.mainWindow, 'Close', 'Are you sure you want to quit?',
+        if not self.settings.value('mainwindow/promptBeforeQuit', True) or  QtWidgets.QMessageBox.question(self.mainWindow, 'Close', 'Are you sure you want to quit?',
                             QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
                             QtWidgets.QMessageBox.No) == QtWidgets.QMessageBox.Yes:
             # disconnect any network sessions
@@ -322,6 +346,10 @@ class PyPipboyApp(QtWidgets.QApplication):
             tmp += 'Version: ' + str(self.networkChannel.hostVersion) + ", "
             tmp += 'Lang: ' +str(self.networkChannel.hostLang) + ")"
             self.mainWindow.connectionStatusLabel.setText('Connected to ' + tmp)
+            self.settings.setValue('mainwindow/lasthost', str(self.networkChannel.hostAddr))
+            self.settings.setValue('mainwindow/lastport', self.networkChannel.hostPort)
+
+            
         else: # disconnect
             # menu management stuff
             self.mainWindow.actionConnect.setEnabled(True)
@@ -349,7 +377,7 @@ class PyPipboyApp(QtWidgets.QApplication):
                         self._logger.debug('Found info module')
                         if info.LABEL in self.modulehandles:
                             raise Exception('Module with same name already exists.')
-                        handle = ModuleHandle(dirpath)
+                        handle = ModuleHandle(self, dirpath)
                         self.modulehandles[info.LABEL] = handle
                         widgets = info.createWidgets(handle, self.mainWindow)
                         if widgets:
@@ -397,6 +425,9 @@ class PyPipboyApp(QtWidgets.QApplication):
             action = menu.addAction(self.styles[s].name)
             action.triggered.connect(_genSlotSetStyles(self, self.styles[s].name))
         self.mainWindow.actionStylesDefault.triggered.connect(_genSlotSetStyles(self, 'default'))
+        if (self.settings.value('mainwindow/lastStyle')):
+            self.setStyle(self.settings.value('mainwindow/lastStyle'))
+        
             
     def setStyle(self, name):
         if name == 'default':
@@ -405,9 +436,9 @@ class PyPipboyApp(QtWidgets.QApplication):
             style = self.styles[name]
             stylefilepath = os.path.join(style.styledir, 'style.qss')
             self.setStyleSheet('file:///' + stylefilepath)
+        self.settings.setValue('mainwindow/lastStyle', name) 
 
-
-
+            
 # Main entry point
 if __name__ == "__main__":
     try:

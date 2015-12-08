@@ -5,7 +5,8 @@ class ModuleInfoBase(object):
     pass
 
 class ModuleHandle(object):
-    def __init__(self, basepath):
+    def __init__(self, application, basepath):
+        self.application = application
         self.basepath = basepath
 
 class WidgetBase(QtWidgets.QDockWidget):
