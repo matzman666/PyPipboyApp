@@ -6,13 +6,14 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from pypipboy.types import eValueType
 from .. import widgets
+from collections import namedtuple
 
 import logging
 
+Action=namedtuple("Action", (['name', 'description', 'action', 'numParams']))
+
 class HotkeyWidget(widgets.WidgetBase):
     _signalInfoUpdated = QtCore.pyqtSignal()
-    
-    hotkeysModel = QStandardItemModel()
     
     def __init__(self, mhandle, parent):
         super().__init__('HotkeyWidget', parent)
@@ -29,11 +30,34 @@ class HotkeyWidget(widgets.WidgetBase):
         self.dataManager = datamanager
         self.dataManager.registerRootObjectListener(self._onPipRootObjectEvent)
         self._app = app
-        
-        self.widget.pushButton.clicked.connect(self._testButtonHandler)
-        
         self.llh = LLHookey()
+        
+        self.widget.btnLoad.clicked.connect(self._loadButtonHandler)
+        self.widget.btnSave.clicked.connect(self._saveButtonHandler)
+        self.widget.btnDelete.clicked.connect(self._deleteButtonHandler)
+        self.widget.btnAdd.clicked.connect(self._addButtonHandler)
+        
 
+        self.Actions = []
+        self.Actions.append( Action('Use Jet', '', self.useJet, 0 ) )
+        self.Actions.append( Action('Use Stimpak', '', datamanager.rpcUseStimpak, 0 ) )
+        self.Actions.append( Action('Cycle Equipped Grenade', '', self.equipNextGrendae, 0 ) )
+        self.Actions.append( Action('Toggle Hotkeys On/Off', '', self.llh.toggleAllHotkeys, 0 ) )
+        self.Actions.append( Action('Use Named Item' , '(param1: Inventory Section [ie:48], param2: ItemName [ie: psycho])', self.useItemByName, 2 ) )
+
+        for action in self.Actions:
+            self.widget.actionComboBox.addItem(action.name + action.description)
+
+        self.widget.actionComboBox.currentIndexChanged.connect(self._actionComboBoxCurrentIndexChanged)
+        
+        self.widget.param1Label.setVisible(False)
+        self.widget.param1LineEdit.setVisible(False)
+        self.widget.param2Label.setVisible(False)
+        self.widget.param2LineEdit.setVisible(False)
+        self.widget.param3Label.setVisible(False)
+        self.widget.param3LineEdit.setVisible(False)
+        
+        
         #self.llh.addHotkey(223, action=self.useJet) #`
         #self.llh.addHotkey(36, action=self.useItemByName, params=("48", "psycho")) #home
         #self.llh.addHotkey(89, action=datamanager.rpcUseStimpak) #y
@@ -41,10 +65,12 @@ class HotkeyWidget(widgets.WidgetBase):
         #self.llh.addHotkey(188, action=self.useItemByName, params=("29", "formal hat")) #,
         #self.llh.addHotkey(190, action=self.useItemByFormID, params=("43", 598551)) #.
         
-        self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('`'), action=self.useJet) )
-        self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('g'), action=self.equipNextGrendae) )
-        self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('y'), action=datamanager.rpcUseStimpak))
-        self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('h'), control=True, action=self.llh.toggleAllHotkeys) )
+#        self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('`'), action=self.useJet) )
+#        self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('g'), action=self.equipNextGrendae) )
+#        self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('y'), action=datamanager.rpcUseStimpak))
+#        self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('h'), control=True, action=self.llh.toggleAllHotkeys) )
+#
+#        self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('home'), control=True , alt=True, shift=True, action=self.useItemByName, params=("48", "psycho")))
 
         #h1 = Hotkey(keycode=VK_CODE.get(','), action=self.useItemByName, params=("29", "formal hat"))
         #h2 = Hotkey(keycode=VK_CODE.get('/'), action=self.llh.removeHotkey, params=(h1))
@@ -54,7 +80,7 @@ class HotkeyWidget(widgets.WidgetBase):
         #self.llh.addHotkey( h3 )
         #self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('#'), action=self.llh.removeAllHotkeys) )
         
-        
+        self.updateTable()
 
         self.availableGrenades = []
         
@@ -121,43 +147,219 @@ class HotkeyWidget(widgets.WidgetBase):
                     
 
     @QtCore.pyqtSlot()
-    def _testButtonHandler(self):
-        keys = self.llh.getHotkeys()
-        for hk in keys:
-            self.addToModel(hk )
+    def _loadButtonHandler(self):
+        self.loadHotkeys()
         
-    def addToModel(self, key):
+    def loadHotkeys(self):
+        self.llh.Hotkeys.clear()
     
-        item = [
-            QStandardItem(""),
-            QStandardItem(str(key.keycode)),
-            QStandardItem(str(key.control)),
-            QStandardItem(str(key.alt)),
-            QStandardItem(str(key.shift)),
-            QStandardItem(str(key.action)),
-            QStandardItem(str(key.params)),
-            QStandardItem(str(key.enabled))
-            ]
+        for index in range (0,100):
+            settingPath = 'hotkeys/'+str(index)+'/'
+            keycode = self._app.settings.value(settingPath+'keycode', None)
+            if(not keycode):
+                break
+            
+            control = self._app.settings.value(settingPath+'control', False)
+            alt = self._app.settings.value(settingPath+'alt', False)
+            shift = self._app.settings.value(settingPath+'shift', False)
+            params = self._app.settings.value(settingPath+'params', None)
+            actionname = self._app.settings.value(settingPath+'action', None)
+            
+            for action in self.Actions:
+                if (action.name == actionname):
+                    hk = Hotkey(keycode=keycode, control=control, alt=alt, shift=shift, params=params, action=action.action)
+                    self.llh.addHotkey(hk)
+                    break
+        
+        self.updateTable()
+
+    @QtCore.pyqtSlot()
+    def _saveButtonHandler(self):
+        self.saveHotkeys()
+
+    def saveHotkeys(self):
+        for index, hk in enumerate(self.llh.Hotkeys):
+            settingPath = 'hotkeys/'+str(index)+'/'
+            self._app.settings.setValue(settingPath+'keycode', int(hk.keycode))
+            self._app.settings.setValue(settingPath+'control', int(hk.control))
+            self._app.settings.setValue(settingPath+'alt', int(hk.alt))
+            self._app.settings.setValue(settingPath+'shift', int(hk.shift))
+            if(hk.params):
+                self._app.settings.setValue(settingPath+'params', hk.params)
+            if(hk.action):
+                for action in self.Actions:
+                    if (action.action == hk.action):
+                        self._app.settings.setValue(settingPath+'action',  action.name)
+                        break
+    
+
+    @QtCore.pyqtSlot()
+    def _addButtonHandler(self):
+        kc = self.widget.keycodeLineEdit.text()
+        kc = int(kc, 0)
+        actionIndex = self.widget.actionComboBox.currentIndex()
+        if (kc != ""):
+            hk = Hotkey( 
+                keycode=kc, 
+                control=self.widget.cbxControl.isChecked(),
+                alt=self.widget.cbxAlt.isChecked(),
+                shift=self.widget.cbxShift.isChecked(),
+                action=self.Actions[actionIndex].action)
+                
+            params = []
+            if (self.Actions[actionIndex].numParams > 0):
+                params.append(self.widget.param1LineEdit.text())
+            if (self.Actions[actionIndex].numParams > 1):
+                params.append(self.widget.param2LineEdit.text())
+            if (self.Actions[actionIndex].numParams > 2):
+                params.append(self.widget.param3LineEdit.text())
+                
+            hk.params = params
+
+                
+            self.llh.addHotkey(hk)
+        self.updateTable()
+
+        self.widget.keycodeLineEdit.setText("")
+        self.widget.param1LineEdit.setText("")
+        self.widget.param1LineEdit.setText("")
+        self.widget.param1LineEdit.setText("")
+
+        self.widget.cbxControl.setChecked(False)
+        self.widget.cbxAlt.setChecked(False)
+        self.widget.cbxShift.setChecked(False)
         
 
-        self.hotkeysModel.insertRow(0,item)
-        self.hotkeysModel.setHeaderData(0, QtCore.Qt.Horizontal, "key")
-        self.hotkeysModel.setHeaderData(1, QtCore.Qt.Horizontal, "key_code")
-        self.hotkeysModel.setHeaderData(2, QtCore.Qt.Horizontal, "ctrl")
-        self.hotkeysModel.setHeaderData(3, QtCore.Qt.Horizontal, "alt")
-        self.hotkeysModel.setHeaderData(4, QtCore.Qt.Horizontal, "shift")
-        self.hotkeysModel.setHeaderData(5, QtCore.Qt.Horizontal, "action")
-        self.hotkeysModel.setHeaderData(6, QtCore.Qt.Horizontal, "params")
-        self.hotkeysModel.setHeaderData(7, QtCore.Qt.Horizontal, "enabled")
+    @QtCore.pyqtSlot(int)
+    def _actionComboBoxCurrentIndexChanged(self, index):
+        self.widget.param1Label.setVisible(False)
+        self.widget.param1LineEdit.setVisible(False)
+        self.widget.param2Label.setVisible(False)
+        self.widget.param2LineEdit.setVisible(False)
+        self.widget.param3Label.setVisible(False)
+        self.widget.param3LineEdit.setVisible(False)
+
+        if (self.Actions[index].numParams > 0):
+            self.widget.param1Label.setVisible(True)
+            self.widget.param1LineEdit.setVisible(True)
+        if (self.Actions[index].numParams > 1):
+            self.widget.param2Label.setVisible(True)
+            self.widget.param2LineEdit.setVisible(True)
+        if (self.Actions[index].numParams > 2):
+            self.widget.param3Label.setVisible(True)
+            self.widget.param3LineEdit.setVisible(True)
         
-        self.widget.hotkeysView.setModel(self.hotkeysModel)
+    @QtCore.pyqtSlot()
+    def _deleteButtonHandler(self):
+        table = self.widget.tableWidget
+        curIndex = table.currentIndex().row()
+        
+        #print ("curIndex:" + str(curIndex))
+        if(curIndex >= 0):
+            item = table.item(curIndex, 0)
+            #print ("item:" + str(item))
+            hkid = item.data(QtCore.Qt.UserRole)
+            if(hkid):
+                print ("hkid:" + str(hkid))
+                hk = self.llh.getHotkeyById(hkid)
+                print(str(hk))
+                if (hk):
+                    self.llh.removeHotkey(hk)
+                    self.updateTable()
+        
+        
+    def updateTable(self, current=None):
+        table = self.widget.tableWidget
+        table.clear()
+        table.setRowCount(len(self.llh.Hotkeys))
+        table.setColumnCount(6)
+        table.setHorizontalHeaderLabels(["key", "keycode", "modifiers" ,"action", "params", "enabled"])
+        table.setAlternatingRowColors(True)
+        table.setEditTriggers(QTableWidget.NoEditTriggers)
+        table.setSelectionBehavior(QTableWidget.SelectRows)
+        table.setSelectionMode(QTableWidget.SingleSelection)
+        
+        selected = None        
+        
+        for row, hk in enumerate(self.llh.Hotkeys):
+            item = QTableWidgetItem(VK_KEY.get(hk.keycode))
+            table.setItem(row, 0, item)
+            if current is not None and current == id(hk):
+                selected = item
+            item.setData(QtCore.Qt.UserRole, QtCore.QVariant(id(hk)))
+            
+            item = QTableWidgetItem(str(hk.keycode))
+            table.setItem(row, 1, item)
+
+            item = QTableWidgetItem(hk.getModifierString())
+            table.setItem(row, 2, item)
+
+            tokenisedAction = str(hk.action).split(" ")
+            if (len(tokenisedAction) > 3):
+                item = QTableWidgetItem(tokenisedAction[2])
+            else:
+                item = QTableWidgetItem(str(hk.action))
+                
+            table.setItem(row, 3, item)
+
+            item = QTableWidgetItem(str(hk.params))
+            table.setItem(row, 4, item)
+            item = QTableWidgetItem(str(hk.enabled))
+            table.setItem(row, 5, item)
+            
+            table.resizeColumnsToContents()
+            if selected is not None:
+                selected.setSelected(True)
+                table.setCurrentItem(selected)
+                table.scrollToItem(selected)
+            
+#            year = movie.year
+#            if year != movie.UNKNOWNYEAR:
+#                item = QTableWidgetItem("%d" % year)
+#                item.setTextAlignment(Qt.AlignCenter)
+#                self.table.setItem(row, 1, item)
+#            minutes = movie.minutes
+#            if minutes != movie.UNKNOWNMINUTES:
+#                item = QTableWidgetItem("%d" % minutes)
+#                item.setTextAlignment(Qt.AlignRight|Qt.AlignVCenter)
+#                self.table.setItem(row, 2, item)
+#            item = QTableWidgetItem(movie.acquired.toString(moviedata.DATEFORMAT))
+#            item.setTextAlignment(Qt.AlignRight|Qt.AlignVCenter)
+#            self.table.setItem(row, 3, item)
+#            notes = movie.notes
+#            if notes.length() > 40:
+#                notes = notes.left(39) + "..."
+#            self.table.setItem(row, 4, QTableWidgetItem(notes))
+        
+#        item = [
+#            QStandardItem(""),
+#            QStandardItem(str(key.keycode)),
+#            QStandardItem(str(key.control)),
+#            QStandardItem(str(key.alt)),
+#            QStandardItem(str(key.shift)),
+#            QStandardItem(str(key.action)),
+#            QStandardItem(str(key.params)),
+#            QStandardItem(str(key.enabled))
+#            ]
+#        
+#
+#        self.hotkeysModel.insertRow(0,item)
+#        self.hotkeysModel.setHeaderData(0, QtCore.Qt.Horizontal, "key")
+#        self.hotkeysModel.setHeaderData(1, QtCore.Qt.Horizontal, "key_code")
+#        self.hotkeysModel.setHeaderData(2, QtCore.Qt.Horizontal, "ctrl")
+#        self.hotkeysModel.setHeaderData(3, QtCore.Qt.Horizontal, "alt")
+#        self.hotkeysModel.setHeaderData(4, QtCore.Qt.Horizontal, "shift")
+#        self.hotkeysModel.setHeaderData(5, QtCore.Qt.Horizontal, "action")
+#        self.hotkeysModel.setHeaderData(6, QtCore.Qt.Horizontal, "params")
+#        self.hotkeysModel.setHeaderData(7, QtCore.Qt.Horizontal, "enabled")
+#        
+#        self.widget.hotkeysView.setModel(self.hotkeysModel)
 
     
 
 import ctypes
 from ctypes import wintypes
 from ctypes import windll
-from collections import namedtuple
 from win32gui import GetWindowText, GetForegroundWindow
 #from win32api import MapVirtualKey
 import threading
@@ -177,6 +379,20 @@ class Hotkey():
         self.shift = shift
         self.enabled = enabled
         self.params = params
+     
+    def getModifierString(self):
+        seperator = " "
+        modifiers = []
+        if self.control:
+            modifiers.append("ctrl")
+        if self.alt:
+            modifiers.append("alt")
+        if self.shift:
+            modifiers.append("shift")
+            
+        retstr = seperator.join(modifiers)
+        return retstr
+
 
 class LLHookey(QtCore.QObject):
     Hotkeys=[]
@@ -269,6 +485,13 @@ class LLHookey(QtCore.QObject):
                 
     def getHotkeys(self):
         return self.Hotkeys
+        
+    def getHotkeyById(self, hkid):
+        for hk in self.Hotkeys:
+            if (id(hk) == hkid):
+                return hk
+
+        return None
         
                 
     
