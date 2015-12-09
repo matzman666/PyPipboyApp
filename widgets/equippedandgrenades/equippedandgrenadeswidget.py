@@ -71,6 +71,8 @@ class EquippedAndGrenadesWidget(widgets.WidgetBase):
                     QStandardItem(count)
                 ]
                 
+                item[2].setData(QtCore.Qt.AlignCenter, QtCore.Qt.TextAlignmentRole)
+                
                 self.grenademodel.appendRow(item)
      
             else:
@@ -87,6 +89,7 @@ class EquippedAndGrenadesWidget(widgets.WidgetBase):
         self.widget.grenadeView.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
         self.widget.grenadeView.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
         self.widget.grenadeView.verticalHeader().setStretchLastSection(False)
+        self.widget.grenadeView.horizontalHeader().setStretchLastSection(True)
         self.widget.grenadeView.setModel(self.grenademodel)
 
         
