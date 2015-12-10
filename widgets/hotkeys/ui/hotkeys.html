@@ -1,0 +1,41 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN" "http://www.w3.org/TR/REC-html40/strict.dtd">
+<html>
+    <head>
+        <meta name="qrichtext" content="1" />
+        <style type="text/css">
+
+			p, li { white-space: pre-wrap; }
+			body {font-size: 10pt;}
+
+		</style>
+    </head>
+    <body>
+		<h1>Hotkey Instructions</h1>
+		<h2>Basics</h2>
+			<p>This widget allows use hotkeys to trigger various in game actions. A small set of predefined hotkeys are included as defaults, which you can customise:</p><p>You can delete an existing hotkey by selecting it in the list, and then clicking the 'Delete Hotkey' button.</p><p>To create a new hotkey, fill in the fields below the table, and then click 'Add New Hotkey'.</p><p>To save your changes so that they are remembered when you next start PyPipBoyApp, click the 'Save Hotkeys' button.</p><p>If you've saved changes to the hotkey list and want to revert to the defaults, delete each of the hotkeys, click Save Hotkeys, and restart PyPipBoyApp.</p>
+			<p>If you assign more than one action to the same hotkey, all of those actions will be triggered (in the order they were defined)</p>
+		<dl>
+			<h2>Actions</h2>
+			<dt><h3>Cycle Equipped Grenades</h3></dt>
+			<dd>Cycles your currently equipped grenade through each of the different grenades and mines in you are carrying</dd>
+			<dd>Parameters: None</dd>
+			<dt><h3>Toggle Hotkeys On/Off</h3></dt>
+			<dd>Disable/Reenable all hotkeys, potentially useful if you've mapped keys already used by the game in certain situations</dd>
+			<dd>Parameters: None</dd>
+			<dt><h3>Use Stimpak</h3></dt>
+			<dd>Uses a Stimpak(surprise!), if you have any</dd>
+			<dd>Parameters: None</dd>
+			<dt><h3>Use Jet</h3></dt>
+			<dd>Take a hit of Jet, if you have any</dd>
+			<dd>Parameters: None</dd>
+			<dt><h3>Use Named Item</h3></dt>
+			<dd><p>Use any item identified by name and the Inventory section in which to find it. The exact meaning of use depends on item: drugs\food will be consumed, weapons\armour will be equipped (or unequipped if already equipped).</p><p>Binding multiple instances of this command to a single hotkey can be used to switch between sets of armour, or take multiple aid items at once.</p><p>Note: as this works by matching the name of the item, it will stop working if an item is renamed (ie: when armour\weapons are modified).</p></dd>
+			<dd>Parameters: 
+				<ol>
+				<li>The inventory section to search for the item named in the second parameter. You can use the DataBrowser Widget to locate your item and determine the correct section.</li>
+				<li>The fullname of the item you want to use, without quotes. This is case insensitive string comparison, so (other than case) the name must match exactly</li>
+				</ol>
+			</dd>
+		</dl>
+    </body>
+</html>
