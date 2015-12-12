@@ -88,6 +88,7 @@ class HotkeyWidget(widgets.WidgetBase):
         
     def equipNextGrendae(self):
         getIndex = 0
+        self.availableGrenades.sort()
         numGrenades = len(self.availableGrenades)
         if (numGrenades > 0):
             for i in range(0, numGrenades):
