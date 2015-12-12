@@ -3,7 +3,7 @@
 
 from widgets import widgets
 
-from .radiowidget import RadioWidget
+from .radiowidget import EffectWidget
 
 class ModuleInfo(widgets.ModuleInfoBase):
     
@@ -12,4 +12,4 @@ class ModuleInfo(widgets.ModuleInfoBase):
 
     @staticmethod
     def createWidgets(handle, parent):
-        return RadioWidget(handle, parent)
+        return EffectWidget(handle, parent)

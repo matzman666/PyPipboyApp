@@ -6,8 +6,8 @@ from PyQt5 import QtWidgets, QtCore, QtGui, uic
 from widgets import widgets
 
 
-class RadioTableModel(QtCore.QAbstractTableModel):
-    _signalRadioUpdate = QtCore.pyqtSignal()
+class EffectTableModel(QtCore.QAbstractTableModel):
+    _signalEffectsUpdate = QtCore.pyqtSignal()
     
     def __init__(self, parent = None):
         super().__init__(parent)
@@ -15,7 +15,7 @@ class RadioTableModel(QtCore.QAbstractTableModel):
         self.sortColumn = 0
         self.sortReversed = False
         self.itemList = []
-        self._signalRadioUpdate.connect(self._slotRadioUpdate)
+        self._signalEffectsUpdate.connect(self._slotRadioUpdate)
     
     def setPipRadio(self, pipValue):
         self.modelAboutToBeReset.emit()
@@ -26,12 +26,13 @@ class RadioTableModel(QtCore.QAbstractTableModel):
         self.pipRadio.registerValueUpdatedListener(self._onPipRadioUpdate, 2)
     
     def _onPipRadioUpdate(self, caller, value, pathObjs):
-        self._signalRadioUpdate.emit()
+        self._signalEffectsUpdate.emit()
     
     @QtCore.pyqtSlot()
     def _slotRadioUpdate(self):
         self.layoutAboutToBeChanged.emit()
         self.itemList = self.pipRadio.value()
+        self._sortItemList()
         self.layoutChanged.emit()
         
         
@@ -68,7 +69,7 @@ class RadioTableModel(QtCore.QAbstractTableModel):
     
     def data(self, index, role = QtCore.Qt.DisplayRole):
         if role == QtCore.Qt.DisplayRole:
-            radio = self.pipRadio.child(index.row())
+            radio = self.itemList[index.row()]
             if index.column() == 0:
                 return radio.child('text').value()
             elif index.column() == 1:
@@ -76,13 +77,13 @@ class RadioTableModel(QtCore.QAbstractTableModel):
             elif index.column() == 2:
                 return radio.child('inRange').value()
         elif role == QtCore.Qt.FontRole:
-            radio = self.pipRadio.child(index.row())
+            radio = self.itemList[index.row()]
             if radio.child('active').value():
                 font = QtGui.QFont()
                 font.setBold(True)
                 return font
         elif role == QtCore.Qt.ForegroundRole:
-            radio = self.pipRadio.child(index.row())
+            radio = self.itemList[index.row()]
             if not radio.child('inRange').value():
                 return QtGui.QColor.fromRgb(150,150,150)
         return None
@@ -106,7 +107,7 @@ class RadioTableModel(QtCore.QAbstractTableModel):
         
 
 
-class RadioWidget(widgets.WidgetBase):
+class EffectWidget(widgets.WidgetBase):
     
     def __init__(self, mhandle, parent):
         super().__init__('Radio', parent)
@@ -115,7 +116,7 @@ class RadioWidget(widgets.WidgetBase):
         
     def init(self, app, datamanager):
         super().init(app, datamanager)
-        self.radioViewModel = RadioTableModel()
+        self.radioViewModel = EffectTableModel()
         self.widget.radioView.setModel(self.radioViewModel)
         self.widget.radioView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.widget.radioView.customContextMenuRequested.connect(self._slotTableContextMenu)
