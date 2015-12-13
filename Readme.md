@@ -22,6 +22,10 @@ Currently implemented features are:
    - Player Condition (showing limb damage)
    - Date/Time
    - Map (Global and Local)
+   - Hotkeys (by akamal)
+   - Equipped Weapons and Grenades (by akamal)
+   - Active Effects
+   - Radio
 
 # Screenshots
 
