@@ -7,3 +7,4 @@ __pycache__
 /widgets/playerinfo/res/*.svg
 /widgets/playerinfo/res/*.png
 /pypipboy/
+THumbs.db
