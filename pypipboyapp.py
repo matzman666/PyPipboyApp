@@ -441,6 +441,20 @@ class PyPipboyApp(QtWidgets.QApplication):
             
 # Main entry point
 if __name__ == "__main__":
+    stdlogfile = None
+    i = 1
+    while i < len(sys.argv):
+        if sys.argv[i] == '--stdlog':
+            if i == len(sys.argv) -1 :
+                logging.error('Missing argument for --stdlog')
+            else:
+                i += 1
+                stdlogfile = sys.argv[i]
+        i += 1
+    if stdlogfile != None:
+        stdlog = open(stdlogfile, 'w')
+        sys.stdout = stdlog
+        sys.stderr = stdlog
     try:
         logging.config.fileConfig('logging.config')
     except Exception as e:
