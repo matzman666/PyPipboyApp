@@ -74,8 +74,7 @@ class SmallPlayerInfoWidget(widgets.WidgetBase):
         locationStr = ""
         if(location):
             locationStr = location.value()
-            
-        self.widget.lblLocation.setText(location.value())
+            self.widget.lblLocation.setText(location.value())
 
         activeEffects = self.pipStats.child('ActiveEffects')
         radChange = 0

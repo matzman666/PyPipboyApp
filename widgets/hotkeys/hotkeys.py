@@ -253,6 +253,8 @@ class HotkeyWidget(widgets.WidgetBase):
         self.availableGrenades = []
         if (self.pipInventoryInfo):
             weapons = self.pipInventoryInfo.child('43')
+            if(not weapons):
+                return
             for i in range(0, weapons.childCount()):
                 equipped = False
                 name = weapons.child(i).child('text').value()
