@@ -23,8 +23,8 @@ class HotkeyWidget(widgets.WidgetBase):
         self.widget.textBrowser.setSource(QtCore.QUrl.fromLocalFile(os.path.join(mhandle.basepath, 'ui', 'hotkeys.html')))
         self._logger = logging.getLogger('pypipboyapp.llhookey')
         self.setWidget(self.widget)
-        self.pipPlayerInfo = None
         self.pipInventoryInfo = None
+        self.pipRadioInfo = None
         
         self._signalInfoUpdated.connect(self._slotInfoUpdated)
         
@@ -47,7 +47,11 @@ class HotkeyWidget(widgets.WidgetBase):
         Actions['useJet'] = Action('Use Jet', '', self.useJet, 0 ) 
         Actions['useNamedItem'] =Action('Use Named Item' , '(param1: Inventory Section [ie:48], param2: ItemName [ie: psycho])', self.useItemByName, 2 ) 
         Actions['useStimpak'] =Action('Use Stimpak', '', datamanager.rpcUseStimpak, 0 ) 
+        Actions['useRadaway'] =Action('Use Radaway', '', datamanager.rpcUseRadAway, 0 ) 
+        Actions['toggleRadio'] =Action('Toggle Radio On\Off', '', self.toggleRadio, 0 ) 
+        Actions['nextRadio'] =Action('Tune to next radio station', '', self.nextRadio, 0 ) 
 
+        
         for k, v in VK_CODE.items():
             self.widget.keyComboBox.addItem(k, v)
 
@@ -66,11 +70,14 @@ class HotkeyWidget(widgets.WidgetBase):
         
         self.loadHotkeys()
         if(len(self.llh.Hotkeys) == 0):
+            self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('pause'), shift=True, actionkey='toggleAllHotkeys') )
+            self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('y'), actionkey='useStimpak'))
+            self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('u'), actionkey='useRadaway'))
             self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('`'), actionkey='useJet') )
             self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('g'), actionkey='equipNextGrenade') )
-            self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('y'), actionkey='useStimpak'))
-            self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('pause'), shift=True, actionkey='toggleAllHotkeys') )
             self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('h'), actionkey='useNamedItem', params=["48", "psycho"]) )
+            self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('page_up'), actionkey='toggleRadio'))
+            self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('page_down'), actionkey='nextRadio'))
         
         #self.llh.addHotkey(190, action=self.useItemByFormID, params=("43", 598551)) #.
         #self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('home'), control=True , alt=True, shift=True, actionkey='useNamedItem', params=("48", "psycho")))
@@ -85,6 +92,39 @@ class HotkeyWidget(widgets.WidgetBase):
         self.updateTable()
 
         self.availableGrenades = []
+        self.availableRadioStations = []
+        self.currentRadioStation = None
+
+
+    def toggleRadio(self):
+        if (self.currentRadioStation):
+            self.dataManager.rpcToggleRadioStation(self.currentRadioStation)
+        else:
+            print ('no current, trying station 0')
+            numStations = len(self.availableRadioStations)
+            if numStations > 0:
+                self.dataManager.rpcToggleRadioStation(self.availableRadioStations[0])
+        #print ('currentstation: ' + self.currentRadioStation.child('text').value())
+                
+            
+    def nextRadio(self):
+        getIndex = 0
+        numStations = len(self.availableRadioStations)
+
+        if self.currentRadioStation:
+            #print ('currentstation: ' + self.currentRadioStation.child('text').value())
+            for i in range (0, numStations):
+                if self.availableRadioStations[i].child('text').value() == self.currentRadioStation.child('text').value():
+                    getIndex = i + 1
+                    break
+            
+        if (getIndex >= numStations):
+            getIndex = 0
+            
+        if (getIndex <= numStations):
+            #print('tuning radio to: ' + self.availableRadioStations[getIndex].child('text').value())
+            self.dataManager.rpcToggleRadioStation(self.availableRadioStations[getIndex])
+                
         
     def equipNextGrendae(self):
         getIndex = 0
@@ -125,6 +165,11 @@ class HotkeyWidget(widgets.WidgetBase):
         self.pipInventoryInfo = rootObject.child('Inventory')
         if self.pipInventoryInfo:
             self.pipInventoryInfo.registerValueUpdatedListener(self._onPipPlayerInfoUpdate, 1)
+            
+        self.pipRadioInfo = rootObject.child('Radio')
+        if self.pipRadioInfo:
+            self.pipRadioInfo.registerValueUpdatedListener(self._onPipPlayerInfoUpdate, 2)
+
         self._signalInfoUpdated.emit()
         pass
 
@@ -147,6 +192,16 @@ class HotkeyWidget(widgets.WidgetBase):
                         equipped = True
                     
                     self.availableGrenades.append([name.lower(), equipped])
+                    
+        self.availableRadioStations = []
+        if(self.pipRadioInfo):
+            for i in range(0, self.pipRadioInfo.childCount()):
+                station = self.pipRadioInfo.child(i)
+                if station.child('inRange').value():
+                    self.availableRadioStations.append(station)
+                if station.child('active').value():
+                    self.currentRadioStation = station
+        
                     
 
     @QtCore.pyqtSlot()
