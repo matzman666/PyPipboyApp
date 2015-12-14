@@ -22,6 +22,23 @@
 			<dt><h3>Toggle Hotkeys On/Off</h3></dt>
 			<dd>Disable/Reenable all hotkeys, potentially useful if you've mapped keys already used by the game in certain situations</dd>
 			<dd>Parameters: None</dd>
+			<dt><h3>Save all currently equipped apparel to slot</h3></dt>
+			<dd><p>Saves all of you currently equipped items of apparel as a set to a number slot, so they can quickly equipped later.</p><p>Items sets are persisted across restarts, and any existing set is automatically overwritten when you save to that slot.</p></dd>
+			<dd>Parameters: 
+				<ol>
+				<li>The slot number in which to save the set of apparel. This must be a number from 1 to 99</li>
+				</ol>
+			</dd>
+			<dt><h3>Equip apparel from a saved slot</h3></dt>
+			<dd><p>Equips all the items of apparel that were previously saved to that numbered slot. If you are no longer carrying any of the saved items (because they've been dropped or renamed for example) they will be ignored.</p></dd>
+			<dd>Parameters: 
+				<ol>
+				<li>The slot number from which to load the set of apparel. This must be a number from 1 to 99</li>
+				</ol>
+			</dd>
+			<dt><h3>Unequip all items of apparel</h3></dt>
+			<dd>Unequip all currently equipped items of apparel, useful if some of your saved sets of apparel do not include all types of item</dd>
+			<dd>Parameters: None</dd>
 			<dt><h3>Toggle Radio On\Off</h3></dt>
 			<dd>Toggles your pipBoy radio on and off, preserving current station</dd>
 			<dd>Parameters: None</dd>

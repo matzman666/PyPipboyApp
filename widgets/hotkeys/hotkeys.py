@@ -42,17 +42,20 @@ class HotkeyWidget(widgets.WidgetBase):
         self.widget.btnAdd.clicked.connect(self._addButtonHandler)
         
 
-        Actions['equipNextGrenade'] =Action('Cycle Equipped Grenade', '', self.equipNextGrendae, 0 ) 
         Actions['toggleAllHotkeys'] =Action('Toggle Hotkeys On/Off', '', self.llh.toggleAllHotkeys, 0 ) 
-        Actions['useJet'] = Action('Use Jet', '', self.useJet, 0 ) 
-        Actions['useNamedItem'] =Action('Use Named Item' , '(param1: Inventory Section [ie:48], param2: ItemName [ie: psycho])', self.useItemByName, 2 ) 
-        Actions['useStimpak'] =Action('Use Stimpak', '', datamanager.rpcUseStimpak, 0 ) 
-        Actions['useRadaway'] =Action('Use Radaway', '', datamanager.rpcUseRadAway, 0 ) 
+        Actions['equipNextGrenade'] =Action('Cycle Equipped Grenade', '', self.equipNextGrendae, 0 ) 
+        Actions['saveEquippedApparelToSlot'] =Action('Save all currently equipped apparel to slot ', '(param1: Slot Number [1-99])', self.saveEquippedApparelToSlot, 1 ) 
+        Actions['equipApparelFromSlot'] =Action('Equip apparel from saved slot', '(param1: Slot Number [1-99])', self.equipApparelFromSlot, 1 ) 
+        Actions['unequipAllApparel'] =Action('Unequip all items of apparel', '', self.unequipAllApparel, 0 ) 
         Actions['toggleRadio'] =Action('Toggle Radio On\Off', '', self.toggleRadio, 0 ) 
         Actions['nextRadio'] =Action('Tune to next radio station', '', self.nextRadio, 0 ) 
+        Actions['useStimpak'] =Action('Use Stimpak', '', datamanager.rpcUseStimpak, 0 ) 
+        Actions['useRadaway'] =Action('Use Radaway', '', datamanager.rpcUseRadAway, 0 ) 
+        Actions['useJet'] = Action('Use Jet', '', self.useJet, 0 ) 
+        Actions['useNamedItem'] =Action('Use Named Item' , '(param1: Inventory Section [ie:48], param2: ItemName [ie: psycho])', self.useItemByName, 2 ) 
 
         
-        for k, v in VK_CODE.items():
+        for k, v in VK_CODE.items():    
             self.widget.keyComboBox.addItem(k, v)
 
         for k, v in Actions.items():
@@ -78,6 +81,13 @@ class HotkeyWidget(widgets.WidgetBase):
             self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('h'), actionkey='useNamedItem', params=["48", "psycho"]) )
             self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('page_up'), actionkey='toggleRadio'))
             self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('page_down'), actionkey='nextRadio'))
+            self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('numpad_1'), control=True, actionkey='saveEquippedApparelToSlot', params=["1"] ))
+            self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('numpad_1'), control=False, actionkey='equipApparelFromSlot', params=["1"] ))
+            self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('numpad_2'), control=True, actionkey='saveEquippedApparelToSlot', params=["2"] ))
+            self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('numpad_2'), control=False, actionkey='equipApparelFromSlot', params=["2"] ))
+            self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('numpad_3'), control=True, actionkey='saveEquippedApparelToSlot', params=["3"] ))
+            self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('numpad_3'), control=False, actionkey='equipApparelFromSlot', params=["3"] ))
+            self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('numpad_9'), actionkey='unequipAllApparel')) 
         
         #self.llh.addHotkey(190, action=self.useItemByFormID, params=("43", 598551)) #.
         #self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('home'), control=True , alt=True, shift=True, actionkey='useNamedItem', params=("48", "psycho")))
@@ -95,7 +105,68 @@ class HotkeyWidget(widgets.WidgetBase):
         self.availableRadioStations = []
         self.currentRadioStation = None
 
+        self.savedApparelSlots = {}
+        for index in range (0,100):
+            settingPath = 'hotkeyswidget/apparelslots/'
+            self.savedApparelSlots[str(index)] = self._app.settings.value(settingPath+str(index), None)
 
+
+    def unequipAllApparel(self):
+        equiped = []
+        if (self.pipInventoryInfo):
+            inventory = self.pipInventoryInfo.child('29')
+            for i in range(0, inventory.childCount()):
+                item = inventory.child(i)
+                if (item.child('equipState').value() > 0):
+                    equiped.append(item)
+    
+        for i in range(0, len(equiped)):
+             self.dataManager.rpcUseItem(equiped[i])
+#            ### This is a vile hack to allow each rpc call to complete
+#            ### before sending the next 
+#            ### It'll do for now, but should really find a better way 
+#            ### of handling this, queue action method on datamanager.py 
+#            ### perhaps?
+             time.sleep(0.1)             
+
+
+            
+    def saveEquippedApparelToSlot(self, slotIndex):
+        slotIndex = str(slotIndex)
+        #print ('saveEquippedApparelToSlot ' + str(slotIndex))
+        self.savedApparelSlots[slotIndex] = []
+        selectedSlot = self.savedApparelSlots[slotIndex]
+        
+        if (self.pipInventoryInfo):
+            inventory = self.pipInventoryInfo.child('29')
+            for i in range(0, inventory.childCount()):
+                item = inventory.child(i)
+                if (item.child('equipState').value() > 0):
+                    selectedSlot.append(item.child('text').value())
+                    
+            #print ('saving: ' + str(selectedSlot))
+            settingPath = 'hotkeyswidget/apparelslots/'
+            self._app.settings.setValue(settingPath+str(slotIndex), selectedSlot)
+
+    
+    def equipApparelFromSlot(self, slotIndex):
+        str(slotIndex)
+        selectedSlot = self.savedApparelSlots.get(slotIndex, None)
+        
+        if (not selectedSlot):
+            #print('no such slot')
+            return
+
+        for i in range(0, len(selectedSlot)):
+            self.useItemByName('29', selectedSlot[i])
+            #print ('equipping: ' + selectedSlot[i])
+            ### This is a vile hack to allow each rpc call to complete
+            ### before sending the next 
+            ### It'll do for now, but should really find a better way 
+            ### of handling this, queue action method on datamanager.py 
+            ### perhaps?
+            time.sleep(0.1)
+        
     def toggleRadio(self):
         if (self.currentRadioStation):
             self.dataManager.rpcToggleRadioStation(self.currentRadioStation)
@@ -160,6 +231,7 @@ class HotkeyWidget(widgets.WidgetBase):
                 name = inventory.child(i).child('text').value()
                 if (name.lower() == itemName):
                     self.dataManager.rpcUseItem(inventory.child(i))
+                    return
 
     def _onPipRootObjectEvent(self, rootObject):
         self.pipInventoryInfo = rootObject.child('Inventory')
@@ -181,6 +253,8 @@ class HotkeyWidget(widgets.WidgetBase):
         self.availableGrenades = []
         if (self.pipInventoryInfo):
             weapons = self.pipInventoryInfo.child('43')
+            if(not weapons):
+                return
             for i in range(0, weapons.childCount()):
                 equipped = False
                 name = weapons.child(i).child('text').value()

@@ -29,6 +29,7 @@ class EquippedAndGrenadesWidget(widgets.WidgetBase):
         self.dataManager.registerRootObjectListener(self._onPipRootObjectEvent)
         
         self._app = app
+        self.widget.label_EquipedWeapon.setText("")
         
     def _onPipRootObjectEvent(self, rootObject):
         self.pipInventoryInfo = rootObject.child('Inventory')
@@ -49,6 +50,8 @@ class EquippedAndGrenadesWidget(widgets.WidgetBase):
         grenadecounter = 0
 
         weapons = self.pipInventoryInfo.child('43')
+        if(not weapons):
+            return
         for i in range(0, weapons.childCount()):
             name = weapons.child(i).child('text').value()
             if (name.lower().find('mine') > -1 
