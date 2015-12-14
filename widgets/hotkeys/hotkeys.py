@@ -80,6 +80,7 @@ class HotkeyWidget(widgets.WidgetBase):
             self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('g'), actionkey='equipNextGrenade') )
             self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('h'), actionkey='useNamedItem', params=["48", "psycho"]) )
             self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('page_up'), actionkey='toggleRadio'))
+            self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('page_down'), actionkey='nextRadio'))
             self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('numpad_1'), control=True, actionkey='saveEquippedApparelToSlot', params=["1"] ))
             self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('numpad_1'), control=False, actionkey='equipApparelFromSlot', params=["1"] ))
             self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('numpad_2'), control=True, actionkey='saveEquippedApparelToSlot', params=["2"] ))
