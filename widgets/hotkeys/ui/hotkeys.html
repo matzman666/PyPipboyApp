@@ -17,13 +17,22 @@
 		<dl>
 			<h2>Actions</h2>
 			<dt><h3>Cycle Equipped Grenades</h3></dt>
-			<dd>Cycles your currently equipped grenade through each of the different grenades and mines in you are carrying</dd>
+			<dd>Cycles your currently equipped grenade through each of the different grenades and mines in you are carrying (in alphabetical order)</dd>
 			<dd>Parameters: None</dd>
 			<dt><h3>Toggle Hotkeys On/Off</h3></dt>
 			<dd>Disable/Reenable all hotkeys, potentially useful if you've mapped keys already used by the game in certain situations</dd>
 			<dd>Parameters: None</dd>
+			<dt><h3>Toggle Radio On\Off</h3></dt>
+			<dd>Toggles your pipBoy radio on and off, preserving current station</dd>
+			<dd>Parameters: None</dd>
+			<dt><h3>Tune to next radio station</h3></dt>
+			<dd>Tunes your pipBoy radio to the next active and in range signal</dd>
+			<dd>Parameters: None</dd>
 			<dt><h3>Use Stimpak</h3></dt>
 			<dd>Uses a Stimpak(surprise!), if you have any</dd>
+			<dd>Parameters: None</dd>
+			<dt><h3>Use Radaway</h3></dt>
+			<dd>Uses a RadAway, if you have any</dd>
 			<dd>Parameters: None</dd>
 			<dt><h3>Use Jet</h3></dt>
 			<dd>Take a hit of Jet, if you have any</dd>
@@ -32,8 +41,8 @@
 			<dd><p>Use any item identified by name and the Inventory section in which to find it. The exact meaning of use depends on item: drugs\food will be consumed, weapons\armour will be equipped (or unequipped if already equipped).</p><p>Binding multiple instances of this command to a single hotkey can be used to switch between sets of armour, or take multiple aid items at once.</p><p>Note: as this works by matching the name of the item, it will stop working if an item is renamed (ie: when armour\weapons are modified).</p></dd>
 			<dd>Parameters: 
 				<ol>
-				<li>The inventory section to search for the item named in the second parameter. You can use the DataBrowser Widget to locate your item and determine the correct section.</li>
-				<li>The fullname of the item you want to use, without quotes. This is case insensitive string comparison, so (other than case) the name must match exactly</li>
+				<li>The inventory section to search for the item named in the second parameter. You can use the DataBrowser Widget to locate your item and determine the correct section, but generally: 29 for apparel; 43 for weapons; 48 for aid.</li>
+				<li>The fullname of the item you want to use, without quotes. This is a case insensitive string comparison, so (other than case) the name must match exactly</li>
 				</ol>
 			</dd>
 		</dl>
