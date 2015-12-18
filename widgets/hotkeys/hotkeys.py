@@ -60,6 +60,7 @@ class HotkeyWidget(widgets.WidgetBase):
         Actions['useRadaway'] =Action('Use Radaway', '', datamanager.rpcUseRadAway, 0 ) 
         Actions['useJet'] = Action('Use Jet', '', self.useJet, 0 ) 
         Actions['useNamedItem'] =Action('Use Named Item' , '(param1: Inventory Section [ie:48], param2: ItemName [ie: psycho])', self.useItemByName, 2 ) 
+        Actions['cycleWidgets'] = Action('Cycle Tabbed Widgets', '(param1: Comma seperated list of widget titles to cycle through)', self.cycleWidgets, 1 ) 
 
         
         for k, v in VK_CODE.items():    
@@ -96,7 +97,7 @@ class HotkeyWidget(widgets.WidgetBase):
             self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('numpad_3'), control=True, actionkey='saveEquippedApparelToSlot', params=["3"] ))
             self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('numpad_3'), control=False, actionkey='equipApparelFromSlot', params=["3"] ))
             self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('numpad_9'), actionkey='unequipAllApparel')) 
-            self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('backspace'), actionkey='toggleEquippedGrenades')) 
+            self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('backspace'), actionkey='cycleWidgets', params=["Global Map, HotkeyWidget"])) 
         
         #self.llh.addHotkey(190, action=self.useItemByFormID, params=("43", 598551)) #.
         #self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('home'), control=True , alt=True, shift=True, actionkey='useNamedItem', params=("48", "psycho")))
@@ -122,7 +123,12 @@ class HotkeyWidget(widgets.WidgetBase):
 
 
         return
-            
+
+    def cycleWidgets(self, widgetnames):
+        widgetNameList = [ w.strip().lower() for w in widgetnames.split(',')]
+        self._app.cycleWidgets(widgetNameList)
+        return
+        
     def toggleEquippedGrenades(self):
         if (self.lastEquippedGrenade):
             self.useItemByName('43', self.lastEquippedGrenade)

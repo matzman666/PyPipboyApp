@@ -104,6 +104,13 @@
 				<li>The fullname of the item you want to use, without quotes. This is a case insensitive string comparison, so (other than case) the name must match exactly.</li>
 				</ol>
 			</dd>
+			<dt><a class='toclink' href='#toc'>^</a> Cycle Tabbed Widgets</dt>
+			<dd><p>Cycles through which tab is selected\visible when you have multiple widgets stacked in a tabbed set.</p><p>Only switches between the widgets whose titles are listed in Param1, even if there are other widgets in the same set.</p></dd>
+			<dd>Parameters: 
+				<ol>
+				<li>A comma (,) separated list of two or more WidgetTitles to cycle through. These must exactly match the titles of the widgets you want to cycle through, as displayed in the widgets' tabs. All the named widgets in the list must be in the <em>same</em> tabbed set for this to work.</li>
+				</ol>
+			</dd>
 			<dt><a class='toclink' href='#toc'>^</a> Toggle Hotkeys On/Off</dt>
 			<dd>Disable/Reenable all hotkeys, potentially useful if you've mapped keys already used by the game in certain situations. By default all configured hotkeys are enabled.</dd>
 			<dd>Parameters: None</dd>
@@ -118,6 +125,7 @@
 					<li>Saved open/close state of splitter across restarts</li>
 					<li>Unequip\Equip Current Grenade</li>
 					<li>Test Hotkey Hook</li>
+					<li>Cycle Tabbed Widgets</li>
 				</ul>
 			</li>
 			<li>20151214
