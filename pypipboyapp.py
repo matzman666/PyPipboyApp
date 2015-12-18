@@ -6,7 +6,7 @@ import sys
 import importlib
 import traceback
 import logging.config
-from PyQt5 import QtWidgets, QtCore, uic
+from PyQt5 import QtGui, QtWidgets, QtCore, uic
 from pypipboy.network import NetworkChannel
 from pypipboy.datamanager import PipboyDataManager
 from dialogs.selecthostdialog import SelectHostDialog
@@ -101,6 +101,11 @@ class PyPipboyApp(QtWidgets.QApplication):
         self._connectHostMessageBox = None
         self._connectHostThread = None
         self._logger = logging.getLogger('pypipboyapp.main')
+        
+        pipboyAppIcon = QtGui.QIcon()
+        pipboyAppIcon.addFile('ui\\res\\PyPipBoyApp-Launcher.ico')
+        self.setWindowIcon(pipboyAppIcon)
+        
     
     
     # run the application
