@@ -4,18 +4,20 @@
 import os
 from PyQt5 import QtWidgets, QtCore, QtGui, uic
 from widgets import widgets
+from widgets.shared import settings
 
 
-class EffectTableModel(QtCore.QAbstractTableModel):
-    _signalEffectsUpdate = QtCore.pyqtSignal()
+class RadioTableModel(QtCore.QAbstractTableModel):
+    _signalRadioUpdate = QtCore.pyqtSignal()
     
-    def __init__(self, parent = None):
-        super().__init__(parent)
+    def __init__(self, settings, qparent = None):
+        super().__init__(qparent)
+        self.settings = settings
         self.pipRadio = None
-        self.sortColumn = 0
-        self.sortReversed = False
+        self.sortColumn = int(self.settings.value('radiowidget/sortColumn', 0))
+        self.sortReversed = bool(int(self.settings.value('radiowidget/sortReversed', 0)))
         self.itemList = []
-        self._signalEffectsUpdate.connect(self._slotRadioUpdate)
+        self._signalRadioUpdate.connect(self._slotRadioUpdate)
     
     def setPipRadio(self, pipValue):
         self.modelAboutToBeReset.emit()
@@ -26,7 +28,7 @@ class EffectTableModel(QtCore.QAbstractTableModel):
         self.pipRadio.registerValueUpdatedListener(self._onPipRadioUpdate, 2)
     
     def _onPipRadioUpdate(self, caller, value, pathObjs):
-        self._signalEffectsUpdate.emit()
+        self._signalRadioUpdate.emit()
     
     @QtCore.pyqtSlot()
     def _slotRadioUpdate(self):
@@ -95,6 +97,8 @@ class EffectTableModel(QtCore.QAbstractTableModel):
             self.sortReversed = True
         else:
             self.sortReversed = False
+        self.settings.setValue('radiowidget/sortColumn', column)
+        self.settings.setValue('radiowidget/sortReversed', int(self.sortReversed))
         self._sortItemList()
         self.layoutChanged.emit()
         
@@ -107,7 +111,7 @@ class EffectTableModel(QtCore.QAbstractTableModel):
         
 
 
-class EffectWidget(widgets.WidgetBase):
+class RadioWidget(widgets.WidgetBase):
     
     def __init__(self, mhandle, parent):
         super().__init__('Radio', parent)
@@ -116,12 +120,23 @@ class EffectWidget(widgets.WidgetBase):
         
     def init(self, app, datamanager):
         super().init(app, datamanager)
-        self.radioViewModel = EffectTableModel()
+        self.app = app
+        self.radioViewModel = RadioTableModel(self.app.settings)
         self.widget.radioView.setModel(self.radioViewModel)
         self.widget.radioView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.widget.radioView.customContextMenuRequested.connect(self._slotTableContextMenu)
         self.widget.radioView.doubleClicked.connect(self._slotTableDoubleClicked)
-        self.widget.radioView.setColumnWidth(0, 300)
+        self.tableHeader = self.widget.radioView.horizontalHeader()
+        self.tableHeader.setSectionsMovable(True)
+        self.tableHeader.setStretchLastSection(True)
+        settings.setHeaderSectionSizes(self.tableHeader, self.app.settings.value('radiowidget/HeaderSectionSizes', []))
+        settings.setHeaderSectionVisualIndices(self.tableHeader, self.app.settings.value('radiowidget/headerSectionVisualIndices', []))
+        if self.radioViewModel.sortReversed:
+            self.widget.radioView.sortByColumn(self.radioViewModel.sortColumn, QtCore.Qt.DescendingOrder)
+        else:
+            self.widget.radioView.sortByColumn(self.radioViewModel.sortColumn, QtCore.Qt.AscendingOrder)
+        self.tableHeader.sectionResized.connect(self._slotTableSectionResized)
+        self.tableHeader.sectionMoved.connect(self._slotTableSectionMoved)
         self.dataManager = datamanager
         self.dataManager.registerRootObjectListener(self._onPipRootObjectEvent)
         
@@ -143,6 +158,14 @@ class EffectWidget(widgets.WidgetBase):
         value = self.radioViewModel.getPipValue(index.row())
         if value:
             self.dataManager.rpcToggleRadioStation(value)
+            
+    @QtCore.pyqtSlot(int, int, int)
+    def _slotTableSectionResized(self, logicalIndex, oldSize, newSize):
+        self.app.settings.setValue('radiowidget/HeaderSectionSizes', settings.getHeaderSectionSizes(self.tableHeader))
+        
+    @QtCore.pyqtSlot(int, int, int)
+    def _slotTableSectionMoved(self, logicalIndex, oldVisualIndex, newVisualIndex):
+        self.app.settings.setValue('radiowidget/headerSectionVisualIndices', settings.getHeaderSectionVisualIndices(self.tableHeader))
         
         
     def _onPipRootObjectEvent(self, rootObject):

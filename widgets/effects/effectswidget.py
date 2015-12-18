@@ -4,39 +4,46 @@
 import os
 from PyQt5 import QtWidgets, QtCore, QtGui, uic
 from widgets import widgets
+from widgets.shared import settings
 
 
-class EffectTableModel(QtCore.QAbstractTableModel):
-    _signalEffectsUpdate = QtCore.pyqtSignal()
+class RadioTableModel(QtCore.QAbstractTableModel):
+    _signalRadioUpdate = QtCore.pyqtSignal()
     
-    def __init__(self, parent = None):
-        super().__init__(parent)
+    def __init__(self, settings, qparent = None):
+        super().__init__(qparent)
+        self.settings = settings
         self.pipActiveEffects = None
-        self.sortColumn = 0
-        self.sortReversed = False
+        self.sortColumn = int(self.settings.value('effectswidget/sortColumn', 0))
+        # Buggy QSettings Linux implementation forces us to convert to int and then to bool
+        self.sortReversed = bool(int(self.settings.value('effectswidget/sortReversed', 0)))
         self.effectList = []
-        self.showPermanent = False
-        self.showEmptySources = False
-        self.showInactive = False
-        self._signalEffectsUpdate.connect(self._slotEffectsUpdate)
+        self.showPermanent = bool(int(self.settings.value('effectswidget/showPermanent', False)))
+        self.showEmptySources = bool(int(self.settings.value('effectswidget/showEmptySources', False)))
+        self.showInactive = bool(int(self.settings.value('effectswidget/showInactive', False)))
+        self._signalRadioUpdate.connect(self._slotEffectsUpdate)
         
     @QtCore.pyqtSlot(bool)
     def setShowPermanent(self, value, signal = True):
         self.showPermanent = value
+        # Buggy QSettings Linux implementation forces us to save as int
+        self.settings.setValue('effectswidget/showPermanent', int(value))
         if signal:
-            self._signalEffectsUpdate.emit()
+            self._signalRadioUpdate.emit()
         
     @QtCore.pyqtSlot(bool)
     def setShowEmptySources(self, value, signal = True):
         self.showEmptySources = value
+        self.settings.setValue('effectswidget/showEmptySources', int(value))
         if signal:
-            self._signalEffectsUpdate.emit()
+            self._signalRadioUpdate.emit()
     
     @QtCore.pyqtSlot(bool)
     def setShowInactive(self, value, signal = True):
         self.showInactive = value
+        self.settings.setValue('effectswidget/showInactive', int(value))
         if signal:
-            self._signalEffectsUpdate.emit()
+            self._signalRadioUpdate.emit()
         
     def setPipActiveEffects(self, pipValue):
         self.modelAboutToBeReset.emit()
@@ -47,7 +54,7 @@ class EffectTableModel(QtCore.QAbstractTableModel):
         self.pipActiveEffects.registerValueUpdatedListener(self._onPipEffectsUpdate, 99)
     
     def _onPipEffectsUpdate(self, caller, value, pathObjs):
-        self._signalEffectsUpdate.emit()
+        self._signalRadioUpdate.emit()
     
     @QtCore.pyqtSlot()
     def _slotEffectsUpdate(self):
@@ -58,10 +65,11 @@ class EffectTableModel(QtCore.QAbstractTableModel):
     
     def _createEffectList(self):
         self.effectList = []
-        for s in self.pipActiveEffects.value():
-            for e in s.child('Effects').value():
-                if (self.showPermanent or self._data(e, 2) > 0.0) and (self.showEmptySources or self._data(e, 1)) and (self.showInactive or self._data(e, 7)):
-                    self.effectList.append(e)
+        if self.pipActiveEffects:
+            for s in self.pipActiveEffects.value():
+                for e in s.child('Effects').value():
+                    if (self.showPermanent or self._data(e, 2) > 0.0) and (self.showEmptySources or self._data(e, 1)) and (self.showInactive or self._data(e, 7)):
+                        self.effectList.append(e)
         
         
     def _sortEffectList(self):
@@ -157,6 +165,8 @@ class EffectTableModel(QtCore.QAbstractTableModel):
             self.sortReversed = True
         else:
             self.sortReversed = False
+        self.settings.setValue('effectswidget/sortColumn', column)
+        self.settings.setValue('effectswidget/sortReversed', int(self.sortReversed))
         self._sortEffectList()
         self.layoutChanged.emit()
         
@@ -169,7 +179,7 @@ class EffectTableModel(QtCore.QAbstractTableModel):
         
 
 
-class EffectWidget(widgets.WidgetBase):
+class RadioWidget(widgets.WidgetBase):
     
     def __init__(self, mhandle, parent):
         super().__init__('Effects', parent)
@@ -178,12 +188,28 @@ class EffectWidget(widgets.WidgetBase):
         
     def init(self, app, datamanager):
         super().init(app, datamanager)
-        self.effectsViewModel = EffectTableModel()
+        self.app = app
+        self.effectsViewModel = RadioTableModel(self.app.settings)
         self.widget.effectsView.setModel(self.effectsViewModel)
-        self.widget.effectsView.setColumnWidth(0, 300)
+        self.tableHeader = self.widget.effectsView.horizontalHeader()
+        self.tableHeader.setSectionsMovable(True)
+        self.tableHeader.setStretchLastSection(True)
+        settings.setHeaderSectionSizes(self.tableHeader, self.app.settings.value('effectswidget/HeaderSectionSizes', []))
+        settings.setHeaderSectionVisualIndices(self.tableHeader, self.app.settings.value('effectswidget/headerSectionVisualIndices', []))
+        self.tableHeader.sectionResized.connect(self._slotTableSectionResized)
+        self.tableHeader.sectionMoved.connect(self._slotTableSectionMoved)
+        settings.setSplitterState(self.widget.splitter, self.app.settings.value('effectswidget/splitterState', None))
+        self.widget.splitter.splitterMoved.connect(self._slotSplitterMoved)
+        self.widget.showPermanentCheckBox.setChecked(bool(int(self.app.settings.value('effectswidget/showPermanent', 0))))
+        self.widget.showEmptySourcesCheckBox.setChecked(bool(int(self.app.settings.value('effectswidget/showEmptySources', 0))))
+        self.widget.showInactiveCheckBox.setChecked(bool(int(self.app.settings.value('effectswidget/showInactive', 0))))
         self.widget.showPermanentCheckBox.stateChanged.connect(self.effectsViewModel.setShowPermanent)
         self.widget.showEmptySourcesCheckBox.stateChanged.connect(self.effectsViewModel.setShowEmptySources)
         self.widget.showInactiveCheckBox.stateChanged.connect(self.effectsViewModel.setShowInactive)
+        if self.effectsViewModel.sortReversed:
+            self.widget.effectsView.sortByColumn(self.effectsViewModel.sortColumn, QtCore.Qt.DescendingOrder)
+        else:
+            self.widget.effectsView.sortByColumn(self.effectsViewModel.sortColumn, QtCore.Qt.AscendingOrder)
         self.dataManager = datamanager
         self.dataManager.registerRootObjectListener(self._onPipRootObjectEvent)
         
@@ -200,5 +226,16 @@ class EffectWidget(widgets.WidgetBase):
         self.pipActiveEffects = self.pipStats.child('ActiveEffects')
         if self.pipActiveEffects:
             self.effectsViewModel.setPipActiveEffects(self.pipActiveEffects)
+            
+    @QtCore.pyqtSlot(int, int, int)
+    def _slotTableSectionResized(self, logicalIndex, oldSize, newSize):
+        self.app.settings.setValue('effectswidget/HeaderSectionSizes', settings.getHeaderSectionSizes(self.tableHeader))
         
-
+    @QtCore.pyqtSlot(int, int, int)
+    def _slotTableSectionMoved(self, logicalIndex, oldVisualIndex, newVisualIndex):
+        self.app.settings.setValue('effectswidget/headerSectionVisualIndices', settings.getHeaderSectionVisualIndices(self.tableHeader))
+        
+    @QtCore.pyqtSlot(int, int)
+    def _slotSplitterMoved(self, pos, index):
+        self.app.settings.setValue('effectswidget/splitterState', settings.getSplitterState(self.widget.splitter))
+        

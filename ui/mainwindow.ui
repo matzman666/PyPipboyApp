@@ -18,7 +18,16 @@
     <property name="spacing">
      <number>8</number>
     </property>
-    <property name="margin">
+    <property name="leftMargin">
+     <number>0</number>
+    </property>
+    <property name="topMargin">
+     <number>0</number>
+    </property>
+    <property name="rightMargin">
+     <number>0</number>
+    </property>
+    <property name="bottomMargin">
      <number>0</number>
     </property>
    </layout>
@@ -29,7 +38,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>23</height>
+     <height>19</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuApp">
@@ -110,6 +119,9 @@
    </property>
   </action>
   <action name="actionStylesDefault">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Default</string>
    </property>

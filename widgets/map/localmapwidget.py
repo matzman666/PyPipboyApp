@@ -3,9 +3,9 @@
 
 import os
 import logging
-import queue
-from PyQt5 import QtWidgets, QtCore, QtGui, uic, QtSvg
+from PyQt5 import QtWidgets, QtCore, QtGui, uic
 from widgets import widgets
+from widgets.shared import settings
 from .marker import PipValueMarkerBase
 
 
@@ -126,7 +126,7 @@ class LocalMapWidget(widgets.WidgetBase):
         self.widget.mapZoomSpinbox.setSingleStep(10.0)
         self.widget.mapZoomSpinbox.valueChanged.connect(self._slotZoomSpinTriggered)
         self.signalSetZoomLevel.connect(self.saveZoom)
-        if (self._app.settings.value('localmapwidget/zoom')):
+        if self._app.settings.value('localmapwidget/zoom'):
             self.mapZoomLevel = float(self._app.settings.value('localmapwidget/zoom'))
             if self.mapZoomLevel == 1.0:
                 sliderValue = 0
@@ -143,7 +143,7 @@ class LocalMapWidget(widgets.WidgetBase):
             self.signalSetZoomLevel.emit(self.mapZoomLevel, 0, 0)
         # Init Enable Checkbox
         self.widget.enableCheckbox.stateChanged.connect(self._slotEnableMapTriggered)
-        self.widget.enableCheckbox.setChecked(int(self._app.settings.value('localmapwidget/enabled', False)))
+        self.widget.enableCheckbox.setChecked(bool(int(self._app.settings.value('localmapwidget/enabled', 0))))
         # Init SaveTo Button
         self.widget.saveToButton.clicked.connect(self._slotSaveToTriggered)
         # Init fps spinner
@@ -153,8 +153,7 @@ class LocalMapWidget(widgets.WidgetBase):
         self.mapReqTimer.timeout.connect(self._slotSendMapReq)
         self.widget.fpsSpinBox.valueChanged.connect(self._slotFpsSpinnerTriggered)
         # Init Splitter
-        if int(self._app.settings.value('localmapwidget/splittercollapsed', 0)):
-            self.widget.splitter.setSizes([100,0])
+        settings.setSplitterState(self.widget.splitter, self._app.settings.value('localmapwidget/splitterState', None))
         self.widget.splitter.splitterMoved.connect(self._slotSplitterMoved)
         # Init PyPipboy stuff
         from .controller import MapCoordinates
@@ -177,13 +176,7 @@ class LocalMapWidget(widgets.WidgetBase):
         
     @QtCore.pyqtSlot(int, int)
     def _slotSplitterMoved(self, pos, index):
-        if (self.widget.splitter.sizes()[1] == 0):
-            splittercollapsed = 1
-        else: 
-            splittercollapsed = 0
-       
-        self._app.settings.setValue('localmapwidget/splittercollapsed', splittercollapsed)
-        pass
+        self._app.settings.setValue('localmapwidget/splitterState', settings.getSplitterState(self.widget.splitter))
 
     def _connectMarker(self, marker):
         self.signalSetZoomLevel.connect(marker.setZoomLevel)
@@ -212,7 +205,7 @@ class LocalMapWidget(widgets.WidgetBase):
     
     @QtCore.pyqtSlot(bool)
     def _slotEnableMapTriggered(self, value):
-        self._app.settings.setValue('localmapwidget/enabled', value)
+        self._app.settings.setValue('localmapwidget/enabled', int(value))
         self.mapEnabledFlag = value
         if value:
             self.mapReqTimer.start()

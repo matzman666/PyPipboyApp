@@ -6,18 +6,19 @@ import os
 from PyQt5 import QtWidgets, uic, QtCore
 from pypipboy.types import eValueType
 from pypipboy.datamanager import eValueUpdatedEventType
-from .. import widgets
+from widgets import widgets
+from widgets.shared import settings
 
 
 
 class DataBrowserTreeModel(QtCore.QAbstractItemModel):
     _signalValueUpdated = QtCore.pyqtSignal()
     
-    def __init__(self, treeview, datamanager, parent=None):
+    def __init__(self, treeView, datamanager, parent=None):
         super().__init__(parent)
         self.rootObject = None
-        self.treeview = treeview
-        self.treeview.setModel(self)
+        self.treeView = treeView
+        self.treeView.setModel(self)
         self.datamanager = datamanager
         self.datamanager.registerRootObjectListener(self._onRootObjectEvent)
         self.datamanager.registerValueUpdatedListener(self._onValueUpdatedEvent)
@@ -153,9 +154,18 @@ class DataBrowserWidget(widgets.WidgetBase):
     def init(self, app, datamanager):
         super().init(app, datamanager)
         self.dataManager = datamanager
+        self.app = app
         self.treeModel = DataBrowserTreeModel(self.widget.treeView, self.dataManager)
         self.widget.treeView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.widget.treeView.customContextMenuRequested.connect(self._slotShowTreeCustomContextMenu)
+        self.treeHeader = self.widget.treeView.header()
+        self.treeHeader.setSectionsMovable(True)
+        self.treeHeader.setStretchLastSection(True)
+        settings.setHeaderSectionSizes(self.treeHeader, self.app.settings.value('databrowserwidget/HeaderSectionSizes', []))
+        settings.setHeaderSectionVisualIndices(self.treeHeader, self.app.settings.value('databrowserwidget/headerSectionVisualIndices', []))
+        self.treeHeader.sectionResized.connect(self._slotTreeSectionResized)
+        self.treeHeader.sectionMoved.connect(self._slotTreeSectionMoved)
+
         
     @QtCore.pyqtSlot(QtCore.QPoint)
     def _slotShowTreeCustomContextMenu(self, point):
@@ -189,6 +199,15 @@ class DataBrowserWidget(widgets.WidgetBase):
             contextMenu.exec(self.widget.treeView.mapToGlobal(point))
         else:
             self.selectedTreeItem = None
+        
+    @QtCore.pyqtSlot(int, int, int)
+    def _slotTreeSectionResized(self, logicalIndex, oldSize, newSize):
+        self.app.settings.setValue('databrowserwidget/HeaderSectionSizes', settings.getHeaderSectionSizes(self.treeHeader))
+        
+    @QtCore.pyqtSlot(int, int, int)
+    def _slotTreeSectionMoved(self, logicalIndex, oldVisualIndex, newVisualIndex):
+        self.app.settings.setValue('databrowserwidget/headerSectionVisualIndices', settings.getHeaderSectionVisualIndices(self.treeHeader))
+        
         
     @QtCore.pyqtSlot()
     def _slotRpcToggleRadio(self):

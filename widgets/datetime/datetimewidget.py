@@ -20,11 +20,15 @@ class DateTimeWidget(widgets.WidgetBase):
         self.dateDay = 0
         self.timeHour = 0
         self.timeMin = 0
+        self.realClockTimer = QtCore.QTimer()
+        self.realClockTimer.timeout.connect(self._realClockUpdate)
         self._signalInfoUpdated.connect(self._slotInfoUpdated)
         
     def init(self, app, datamanager):
         super().init(app, datamanager)
         self.dataManager = datamanager
+        self._realClockUpdate()
+        self.realClockTimer.start(1000)
         self.dataManager.registerRootObjectListener(self._onPipRootObjectEvent)
         
     def _onPipRootObjectEvent(self, rootObject):
@@ -35,6 +39,11 @@ class DateTimeWidget(widgets.WidgetBase):
 
     def _onPipPlayerInfoUpdate(self, caller, value, pathObjs):
         self._signalInfoUpdated.emit()
+    
+    @QtCore.pyqtSlot()
+    def _realClockUpdate(self):
+        realTime = datetime.datetime.now()
+        self.widget.realTimeLabel.setText(realTime.strftime('%H:%M'))
         
     @QtCore.pyqtSlot()
     def _slotInfoUpdated(self):
@@ -65,8 +74,6 @@ class DateTimeWidget(widgets.WidgetBase):
             gameDate += str(self.dateMonth)+ '.'
         gameDate += str(self.dateYear)
         gameTime = datetime.time(int(self.timeHour), self.timeMin)
-        realTime = datetime.datetime.now()
         self.widget.gameTimeLabel.setText(gameTime.strftime('%H:%M'))
-        self.widget.realTimeLabel.setText(realTime.strftime('%H:%M'))
         self.widget.gameDateLabel.setText(gameDate)
         

@@ -13,7 +13,7 @@ class DataUpdateLoggerWidget(widgets.WidgetBase):
     _signalPrintToLog = QtCore.pyqtSignal(str)
     
     def __init__(self, mhandle, parent):
-        super().__init__('Data Updata Logger', parent)
+        super().__init__('Data Update Logger', parent)
         self.widget = uic.loadUi(os.path.join(mhandle.basepath, 'ui', 'dataupdatelogger.ui'))
         self.setWidget(self.widget)
         self._signalPrintToLog.connect(self._slotPrintToLog)

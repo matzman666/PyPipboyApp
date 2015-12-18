@@ -24,7 +24,6 @@
 
 QProgressBar:horizontal {
     border: 1px solid #3A3939;
-    text-align: center;
     padding: 1px;
     background: #201F1F;
 }

@@ -78,7 +78,12 @@ class PlayerInfoWidget(widgets.WidgetBase):
             self.widget.apBar.setValue((self.curAP*100)/self.maxAP)
         self.widget.apLabel.setText(str(int(self.curAP)) + ' / ' + str(int(self.maxAP)))
         if self.maxWT > 0:
-            self.widget.weightBar.setValue((self.curWT*100)/self.maxWT)
+            if self.currWT > self.maxWT:
+                self.widget.weightBar.setValue(100)
+                self.widget.weightBar.setFormat('Overencumbered!')
+            else:
+                self.widget.weightBar.setValue((self.curWT*100)/self.maxWT)
+                self.widget.weightBar.setFormat('%p%')
         self.widget.weightLabel.setText(str(int(self.curWT)) + ' / ' + str(int(self.maxWT)))
         self.widget.lvlLabel.setText(str(self.xpLevel))
         self.widget.lvlBar.setValue(self.xpProgress*100)

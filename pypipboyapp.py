@@ -7,7 +7,7 @@ import importlib
 import traceback
 import platform
 import logging.config
-from PyQt5 import QtWidgets, QtCore, uic
+from PyQt5 import QtWidgets, QtCore, uic, QtGui
 from pypipboy.network import NetworkChannel
 from pypipboy.datamanager import PipboyDataManager
 from dialogs.selecthostdialog import SelectHostDialog
@@ -66,7 +66,7 @@ class PipboyMainWindow(QtWidgets.QMainWindow):
 class PyPipboyApp(QtWidgets.QApplication):
     
     PROGRAM_NAME = 'Unofficial Pipboy Application'
-    PROGRAM_VERSION = 'v0.1-prealpha'
+    PROGRAM_VERSION = 'v0.6alpha'
     PROGRAM_ABOUT_TEXT = 'ToDo: About Text'
     PROGRAM_ABOUT_LICENSE = 'ToDo'
     PROGRAM_ABOUT_COPYRIGHT = 'Copyright (c) 2015 matzman666'
@@ -118,6 +118,11 @@ class PyPipboyApp(QtWidgets.QApplication):
         savedState = self.settings.value('mainwindow/windowstate')
         if savedState:
             self.mainWindow.restoreState(savedState)
+        # Create widgets menu entry
+        widgetMenu = self.mainWindow.createPopupMenu()
+        widgetMenu.setTitle('Widgets')
+        menuActions = self.mainWindow.menuBar().actions()
+        self.mainWindow.menuBar().insertMenu(menuActions[len(menuActions)-1], widgetMenu)
         # connect with main window
         self.mainWindow.actionConnect.triggered.connect(self.startAutoDiscovery)
         self.mainWindow.actionConnectTo.triggered.connect(self.showConnectToDialog)
@@ -312,7 +317,7 @@ class PyPipboyApp(QtWidgets.QApplication):
     @QtCore.pyqtSlot()        
     def requestQuit(self):
         # do you really wanna
-        if not self.settings.value('mainwindow/promptBeforeQuit', True) or  QtWidgets.QMessageBox.question(self.mainWindow, 'Close', 'Are you sure you want to quit?',
+        if not int(self.settings.value('mainwindow/promptBeforeQuit', 1)) or  QtWidgets.QMessageBox.question(self.mainWindow, 'Close', 'Are you sure you want to quit?',
                             QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
                             QtWidgets.QMessageBox.No) == QtWidgets.QMessageBox.Yes:
             # disconnect any network sessions
@@ -364,7 +369,8 @@ class PyPipboyApp(QtWidgets.QApplication):
     # load widgets
     def _loadWidgets(self):
         self.widgets = list()
-        self.modulehandles = dict()
+        self.modulehandles = dict()        
+        lastWidget = None
         for dir in os.listdir(self.PROGRAM_WIDGETS_DIR):
             dirpath = os.path.join(self.PROGRAM_WIDGETS_DIR, dir)
             if dir != 'shared' and not dir.startswith('__') and os.path.isdir(dirpath):
@@ -390,6 +396,9 @@ class PyPipboyApp(QtWidgets.QApplication):
                                 w.setObjectName(info.LABEL + '_' + str(i))
                                 self.mainWindow.addDockWidget(QtCore.Qt.TopDockWidgetArea, w)
                                 self.widgets.append(w)
+                                if lastWidget:
+                                    self.mainWindow.tabifyDockWidget(lastWidget, w)
+                                lastWidget = w
                                 i += 1
                             self._logger.info('Successfully loaded widget dir "' + dir + '"')
                         else:
@@ -424,18 +433,31 @@ class PyPipboyApp(QtWidgets.QApplication):
         for s in self.styles:
             action = menu.addAction(self.styles[s].name)
             action.triggered.connect(_genSlotSetStyles(self, self.styles[s].name))
+            action.setCheckable(True)
         self.mainWindow.actionStylesDefault.triggered.connect(_genSlotSetStyles(self, 'default'))
         if (self.settings.value('mainwindow/lastStyle')):
             self.setStyle(self.settings.value('mainwindow/lastStyle'))
+        else:
+            self.setStyle('default')
         
             
     def setStyle(self, name):
         if (name == 'default' or not name in self.styles):
+            name = 'default'
             self.setStyleSheet('')
         else:
             style = self.styles[name]
             stylefilepath = os.path.join(style.styledir, 'style.qss')
             self.setStyleSheet('file:///' + stylefilepath)
+        actionFound = False
+        for a in self.mainWindow.menuStyles.actions():
+            if a.text() == name:
+                a.setChecked(True)
+                actionFound = True
+            else:
+                a.setChecked(False)
+        if not actionFound:
+            self.mainWindow.actionStylesDefault.setChecked(True)
         self.settings.setValue('mainwindow/lastStyle', name) 
 
             
