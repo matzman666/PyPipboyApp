@@ -26,6 +26,8 @@ class PlayerInfoWidget(widgets.WidgetBase):
         self.xpLevel = 0
         self.xpProgress = 0.0
         self.caps = 0
+        self.wtBarOverWeightState = False
+        self.wtBarLastTextVisible = None
         self._signalInfoUpdated.connect(self._slotInfoUpdated)
         
     def init(self, app, datamanager):
@@ -78,12 +80,19 @@ class PlayerInfoWidget(widgets.WidgetBase):
             self.widget.apBar.setValue((self.curAP*100)/self.maxAP)
         self.widget.apLabel.setText(str(int(self.curAP)) + ' / ' + str(int(self.maxAP)))
         if self.maxWT > 0:
-            if self.currWT > self.maxWT:
-                self.widget.weightBar.setValue(100)
-                self.widget.weightBar.setFormat('Overencumbered!')
+            if self.curWT > self.maxWT:
+                if not self.wtBarOverWeightState:
+                    self.widget.weightBar.setValue(100)
+                    self.wtBarLastTextVisible = self.widget.weightBar.isTextVisible()
+                    self.widget.weightBar.setTextVisible(True)
+                    self.widget.weightBar.setFormat('Overencumbered!')
+                    self.wtBarOverWeightState = True
             else:
+                if self.wtBarOverWeightState:
+                    self.wtBarOverWeightState = False
+                    if not self.wtBarLastTextVisible:
+                        self.widget.weightBar.setTextVisible(False)
                 self.widget.weightBar.setValue((self.curWT*100)/self.maxWT)
-                self.widget.weightBar.setFormat('%p%')
         self.widget.weightLabel.setText(str(int(self.curWT)) + ' / ' + str(int(self.maxWT)))
         self.widget.lvlLabel.setText(str(self.xpLevel))
         self.widget.lvlBar.setValue(self.xpProgress*100)

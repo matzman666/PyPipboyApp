@@ -496,11 +496,11 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.widget.stickyLabelsCheckbox.setChecked(bool(int(self._app.settings.value('globalmapwidget/stickyLabels', 0))))
         # Init PowerMarker Enable Checkbox
         self.widget.powerMarkerEnableCheckbox.stateChanged.connect(self._slotPowerMarkerEnableTriggered)
-        self.widget.powerMarkerEnableCheckbox.setChecked(bool(int(self._app.settings.value('globalmapwidget/powerArmourMarker', 0))))
+        self.widget.powerMarkerEnableCheckbox.setChecked(bool(int(self._app.settings.value('globalmapwidget/powerArmourMarker', 1))))
         # Init Location Enable Checkbox
         self.locationFilterEnableFlag = True
         self.widget.locationMarkerEnableCheckbox.stateChanged.connect(self._slotLocationEnableTriggered)
-        self.widget.locationMarkerEnableCheckbox.setChecked(bool(int(self._app.settings.value('globalmapwidget/locationMarker', 0))))
+        self.widget.locationMarkerEnableCheckbox.setChecked(bool(int(self._app.settings.value('globalmapwidget/locationMarker', 1))))
         # Init Location Visibility Cheat Checkbox
         self.locationVisibilityCheatFlag = False
         self.widget.locationVisibilityCheatCheckbox.stateChanged.connect(self._slotLocationVisibilityCheatTriggered)
@@ -514,6 +514,11 @@ class GlobalMapWidget(widgets.WidgetBase):
         # Init Splitter
         settings.setSplitterState(self.widget.splitter, self._app.settings.value('globalmapwidget/splitterState', None))
         self.widget.splitter.splitterMoved.connect(self._slotSplitterMoved)
+        # Init Toolbox
+        tbCurrent = self._app.settings.value('globalmapwidget/toolboxCurrentIndex', None)
+        if tbCurrent:
+            self.widget.toolBox.setCurrentIndex(int(tbCurrent))
+        self.widget.toolBox.currentChanged.connect(self._slotToolboxCurrentChanged)
         # Init PyPipboy stuff
         from .controller import MapCoordinates
         self.mapCoords = MapCoordinates()
@@ -536,7 +541,10 @@ class GlobalMapWidget(widgets.WidgetBase):
     @QtCore.pyqtSlot(int, int)
     def _slotSplitterMoved(self, pos, index):
         self._app.settings.setValue('globalmapwidget/splitterState', settings.getSplitterState(self.widget.splitter))
-
+    
+    @QtCore.pyqtSlot(int)
+    def _slotToolboxCurrentChanged(self, index):
+        self._app.settings.setValue('globalmapwidget/toolboxCurrentIndex', index)
         
     def _connectMarker(self, marker):
         self.signalSetZoomLevel.connect(marker.setZoomLevel)

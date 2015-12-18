@@ -22,6 +22,9 @@
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
+     <property name="handleWidth">
+      <number>6</number>
+     </property>
      <widget class="QGraphicsView" name="graphicsView">
       <property name="verticalScrollBarPolicy">
        <enum>Qt::ScrollBarAlwaysOff</enum>
@@ -111,7 +114,7 @@
        <item>
         <widget class="QPushButton" name="saveToButton">
          <property name="text">
-          <string>Save to ...</string>
+          <string>Save Map Screenshot</string>
          </property>
         </widget>
        </item>

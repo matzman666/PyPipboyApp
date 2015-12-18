@@ -22,6 +22,9 @@
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
+     <property name="handleWidth">
+      <number>6</number>
+     </property>
      <widget class="QGraphicsView" name="mapGraphicsView">
       <property name="mouseTracking">
        <bool>true</bool>
@@ -60,7 +63,7 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>261</width>
+            <width>260</width>
             <height>371</height>
            </rect>
           </property>
@@ -166,7 +169,7 @@
            <item>
             <widget class="QPushButton" name="saveToButton">
              <property name="text">
-              <string>Save To ...</string>
+              <string>Save Map Screenshot</string>
              </property>
             </widget>
            </item>
@@ -190,7 +193,7 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>261</width>
+            <width>260</width>
             <height>371</height>
            </rect>
           </property>
