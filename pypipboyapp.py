@@ -459,6 +459,43 @@ class PyPipboyApp(QtWidgets.QApplication):
         if not actionFound:
             self.mainWindow.actionStylesDefault.setChecked(True)
         self.settings.setValue('mainwindow/lastStyle', name) 
+        
+           
+            
+    def isWidgetReallyVisisble(self, widget):
+        return not widget.visibleRegion().isEmpty()
+                
+    def popWidget(self, widgetName):
+        self._logger.debug('popWidget: widgetName: ' + str(widgetName))
+        for widget in self.widgets:
+            if (widget.windowTitle().lower() == widgetName):
+                widget.raise_()
+                break
+        return
+        
+    def cycleWidgets(self, widgetNameList):
+        self._logger.debug('cycleWidgets: widgetNameList: ' + str(widgetNameList))
+        nextWidgetIndex = 0
+        currentWidget = None
+        for widget in self.widgets:
+            #self._logger.debug('cycleWidgets: \t: ' + str(widget.windowTitle()))
+            if (widget.windowTitle().lower() in widgetNameList
+            and self.isWidgetReallyVisisble(widget)):
+                currentWidget = widget
+                break
+
+        if (currentWidget):
+            for i in range(0, len(widgetNameList)):
+                if (currentWidget.windowTitle().lower() == widgetNameList[i]):
+                    nextWidgetIndex = i + 1
+                    break
+                        
+        if(nextWidgetIndex >= len(widgetNameList)):
+            nextWidgetIndex = 0
+
+        nextWidgetName = widgetNameList[nextWidgetIndex]
+        self.popWidget(nextWidgetName)   
+        return        
 
             
 # Main entry point
