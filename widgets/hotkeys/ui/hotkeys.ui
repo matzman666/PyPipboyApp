@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>687</width>
-    <height>408</height>
+    <width>669</width>
+    <height>412</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -37,7 +37,7 @@
         <widget class="QTextBrowser" name="textBrowser">
          <property name="minimumSize">
           <size>
-           <width>300</width>
+           <width>200</width>
            <height>0</height>
           </size>
          </property>
@@ -120,8 +120,8 @@
         <widget class="QTableWidget" name="tableWidget">
          <property name="minimumSize">
           <size>
-           <width>300</width>
-           <height>200</height>
+           <width>100</width>
+           <height>100</height>
           </size>
          </property>
         </widget>

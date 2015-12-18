@@ -42,8 +42,14 @@ class HotkeyWidget(widgets.WidgetBase):
         self.widget.btnDelete.clicked.connect(self._deleteButtonHandler)
         self.widget.btnAdd.clicked.connect(self._addButtonHandler)
 
-        if int(self._app.settings.value('hotkeyswidget/splittercollapsed', 0)):
+        forcedInstructionsCounter = 1
+        forceInstructions = int(self._app.settings.value('hotkeyswidget/forcedInstructionsCounter', 0)) < forcedInstructionsCounter
+        
+        if not forceInstructions and (int(self._app.settings.value('hotkeyswidget/splittercollapsed', 0)) == 1):
             self.widget.splitter.setSizes([0,100])
+
+        self._app.settings.setValue('hotkeyswidget/forcedInstructionsCounter', forcedInstructionsCounter)        
+
         self.widget.splitter.splitterMoved.connect(self._slotSplitterMoved)
 
 
