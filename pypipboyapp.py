@@ -5,9 +5,8 @@ import os
 import sys
 import importlib
 import traceback
-import platform
 import logging.config
-from PyQt5 import QtWidgets, QtCore, uic, QtGui
+from PyQt5 import QtWidgets, QtCore, uic
 from pypipboy.network import NetworkChannel
 from pypipboy.datamanager import PipboyDataManager
 from dialogs.selecthostdialog import SelectHostDialog

@@ -6,7 +6,8 @@ from PyQt5 import QtWidgets, QtCore, uic
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from pypipboy.types import eValueType
-from .. import widgets
+from widgets import widgets
+from widgets.shared import settings
 from collections import namedtuple
 from collections import OrderedDict
 
@@ -45,11 +46,15 @@ class HotkeyWidget(widgets.WidgetBase):
         forcedInstructionsCounter = 1
         forceInstructions = int(self._app.settings.value('hotkeyswidget/forcedInstructionsCounter', 0)) < forcedInstructionsCounter
         
-        if not forceInstructions and (int(self._app.settings.value('hotkeyswidget/splittercollapsed', 0)) == 1):
-            self.widget.splitter.setSizes([0,100])
+        #if not forceInstructions and (int(self._app.settings.value('hotkeyswidget/splittercollapsed', 0)) == 1):
+        #    self.widget.splitter.setSizes([0,100])
+        
+        if not forceInstructions:
+            # Better to use QSplitter.saveState() (wrapped in a shared function for more flexibility)
+            settings.setSplitterState(self.widget.splitter, self._app.settings.value('hotkeyswidget/splitterState', None))
 
-        self._app.settings.setValue('hotkeyswidget/forcedInstructionsCounter', forcedInstructionsCounter)        
-
+        self._app.settings.setValue('hotkeyswidget/forcedInstructionsCounter', forcedInstructionsCounter)
+        
         self.widget.splitter.splitterMoved.connect(self._slotSplitterMoved)
 
 
@@ -342,13 +347,13 @@ class HotkeyWidget(widgets.WidgetBase):
                     
     @QtCore.pyqtSlot(int, int)
     def _slotSplitterMoved(self, pos, index):
-        if (self.widget.splitter.sizes()[0] == 0):
-            splittercollapsed = 1
-        else: 
-            splittercollapsed = 0
+        #if (self.widget.splitter.sizes()[0] == 0):
+        #    splittercollapsed = 1
+        #else: 
+        #    splittercollapsed = 0
        
-        self._app.settings.setValue('hotkeyswidget/splittercollapsed', splittercollapsed)
-        pass
+        #self._app.settings.setValue('hotkeyswidget/splittercollapsed', splittercollapsed)
+        self._app.settings.setValue('hotkeyswidget/splitterState', settings.getSplitterState(self.widget.splitter))
 
                     
     @QtCore.pyqtSlot()
