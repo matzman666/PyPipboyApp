@@ -1,67 +1,146 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN" "http://www.w3.org/TR/REC-html40/strict.dtd">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN" "http://www.w3.org/TR/1998/REC-html40-19980424/strict.dtd">
 <html>
     <head>
-        <meta name="qrichtext" content="1" />
+		<meta http-equiv="Content-Type" content="text/html;charset=utf-8" >
+        <meta name="qrichtext" content="1">
+		<title>Hotkey Instructions</title>
         <style type="text/css">
+			p, li { white-space: no-wrap; }
+			body { font-family: serif; font-size: 10pt; }
+			a, a:visited { color:blue; }
+			h1, h2, h3 { font-family: sans-serif;}
+			dt { font-family: sans-serif; font-weight: bold;  margin-top:20px;}
 
-			p, li { white-space: pre-wrap; }
-			body {font-size: 10pt;}
-
+			.toclink { font-size: 12pt; text-decoration: none;}
+			.toc { font-family: sans-serif}
+			.important { color:red; font-weight:bold}
+			.changelog { color: black; }
+			.changelog .oldnewthing { color: #bbbbbb;}
 		</style>
     </head>
     <body>
 		<h1>Hotkey Instructions</h1>
-		<h2>Basics</h2>
-			<p>This widget allows use hotkeys to trigger various in game actions. A small set of predefined hotkeys are included as defaults, which you can customise:</p><p>You can delete an existing hotkey by selecting it in the list, and then clicking the 'Delete Hotkey' button.</p><p>To create a new hotkey, fill in the fields below the table, and then click 'Add New Hotkey'.</p><p>To save your changes so that they are remembered when you next start PyPipBoyApp, click the 'Save Hotkeys' button.</p><p>If you've saved changes to the hotkey list and want to revert to the defaults, delete each of the hotkeys, click Save Hotkeys, and restart PyPipBoyApp.</p>
-			<p>If you assign more than one action to the same hotkey, all of those actions will be triggered (in the order they were defined)</p>
+		<p class='important'><a name='toc'></a>If you are having problems getting the hotkeys to work, please read the <a href='#troubleshooting'>Troubleshooting and Limitations</a> section.</p>
+		<ol class='toc'>
+			<li><a href='#basics'>Basics</a></li>
+			<li><a href='#troubleshooting'>Troubleshooting and Limitations</a></li>
+			<li><a href='#actions'>Available Actions</a></li>
+			<li><a href='#whatsnew'>Change Log</a></li>
+		</ol>
+		<h2><a class='toclink' name='basics' href='#toc'>^</a> Basics</h2>
+		<p>This widget allows you to use hotkeys to trigger various in game actions. A small set of predefined hotkeys are included as defaults, which you can customise:</p>
+		<p>You can delete an existing hotkey by selecting it in the list, and then clicking the 'Delete Hotkey' button.</p>
+		<p>To create a new hotkey, fill in the fields below the table, and then click 'Add New Hotkey'.</p>
+		<p>To save your changes so that they are remembered when you next start PyPipBoyApp, click the 'Save Hotkeys' button.</p>
+		<p>If you've saved changes to the hotkey list and want to revert to the defaults, delete each of the hotkeys, click Save Hotkeys, and restart PyPipBoyApp.</p>
+		<p>If you assign more than one action to the same hotkey, all of those actions will be triggered (in the order they were defined).</p>
+		<h2><a class='toclink' name='troubleshooting' href='#toc'>^</a> Troubleshooting and Limitations</h2>
+		<p>There are number of limitations to the configurations in which the hotkeys will work, all of the following constraints must be met:</p>
+		<ul>
+			<li>PyPipBoyApp must be:
+				<ul>
+					<li>running on Windows.</li>
+					<li>running on the same machine as Fallout 4.</li>
+					<li>running at the same or higher privilege level as Fallout 4 (ie: if Fallout 4 is run 'as admin' then PyPipBoyApp must also be run 'as admin').</li>
+				</ul>
+			</li>
+			<li>Hotkeys are only processed when Fallout 4 has focus\is the active window.</li>
+			<li>Hotkeys are only processed during open gameplay (not in the menus, not looking at the pipboy, not in dialogue or lockpicking, etc). Generally, if you can fire your weapon then the hotkeys should work, if you can't then they shouldn't.</li>
+			<li>Most hotkeys will only work correctly if your in game language is set to English.</li>
+		</ul>
+			
+		<p>If you have checked that all of the above constraints are met but are still having problems post a message on the <a href='http://www.nexusmods.com/fallout4/mods/4664'>Nexus page</a> including the following information:</p>
+		<ul>
+			<li>Whether any of the non-hotkey functionality of PyPipBoyApp is working (ie: the world map, player status, etc)
+			<li>Whether any of the default hotkeys work.</li>
+			<li>Whether the 'Test Hotkey Hook' action causes the "Success!!" message to show in the Widget.</li>
+			<li>Which version of Windows (7, 8, 10, etc) including bitness (32 or 64) you are using.</li>
+		</ul>
+		<h2><a class='toclink' name='actions' href='#toc'>^</a> Available Actions</h2>
 		<dl>
-			<h2>Actions</h2>
-			<dt><h3>Cycle Equipped Grenades</h3></dt>
-			<dd>Cycles your currently equipped grenade through each of the different grenades and mines in you are carrying (in alphabetical order)</dd>
+			<dt><a class='toclink' href='#toc'>^</a> Cycle Equipped Grenades</dt>
+			<dd>Cycles your currently equipped grenade through each of the different grenades and mines in you are carrying (in alphabetical order).</dd>
 			<dd>Parameters: None</dd>
-			<dt><h3>Toggle Hotkeys On/Off</h3></dt>
-			<dd>Disable/Reenable all hotkeys, potentially useful if you've mapped keys already used by the game in certain situations</dd>
+			<dt><a class='toclink' href='#toc'>^</a> Unequip\Equip Current Grenade</dt>
+			<dd>Unequip the currently equipped grenade, or equip the last equipped grenade. If no grenade has been equipped, equips the first one available.</dd>
 			<dd>Parameters: None</dd>
-			<dt><h3>Save all currently equipped apparel to slot</h3></dt>
+			<dt><a class='toclink' href='#toc'>^</a> Save all currently equipped apparel to slot</dt>
 			<dd><p>Saves all of you currently equipped items of apparel as a set to a number slot, so they can quickly equipped later.</p><p>Items sets are persisted across restarts, and any existing set is automatically overwritten when you save to that slot.</p></dd>
 			<dd>Parameters: 
 				<ol>
-				<li>The slot number in which to save the set of apparel. This must be a number from 1 to 99</li>
+				<li>The slot number in which to save the set of apparel. This must be a number from 1 to 99.</li>
 				</ol>
 			</dd>
-			<dt><h3>Equip apparel from a saved slot</h3></dt>
+			<dt><a class='toclink' href='#toc'>^</a> Equip apparel from a saved slot</dt>
 			<dd><p>Equips all the items of apparel that were previously saved to that numbered slot. If you are no longer carrying any of the saved items (because they've been dropped or renamed for example) they will be ignored.</p></dd>
 			<dd>Parameters: 
 				<ol>
-				<li>The slot number from which to load the set of apparel. This must be a number from 1 to 99</li>
+				<li>The slot number from which to load the set of apparel. This must be a number from 1 to 99.</li>
 				</ol>
 			</dd>
-			<dt><h3>Unequip all items of apparel</h3></dt>
-			<dd>Unequip all currently equipped items of apparel, useful if some of your saved sets of apparel do not include all types of item</dd>
+			<dt><a class='toclink' href='#toc'>^</a> Unequip all items of apparel</dt>
+			<dd>Unequip all currently equipped items of apparel, useful if some of your saved sets of apparel do not include all types of item.</dd>
 			<dd>Parameters: None</dd>
-			<dt><h3>Toggle Radio On\Off</h3></dt>
-			<dd>Toggles your pipBoy radio on and off, preserving current station</dd>
+			<dt><a class='toclink' href='#toc'>^</a> Toggle Radio On\Off</dt>
+			<dd>Toggles your pipBoy radio on and off, preserving current station.</dd>
 			<dd>Parameters: None</dd>
-			<dt><h3>Tune to next radio station</h3></dt>
-			<dd>Tunes your pipBoy radio to the next active and in range signal</dd>
+			<dt><a class='toclink' href='#toc'>^</a> Tune to next radio station</dt>
+			<dd>Tunes your pipBoy radio to the next active and in range signal.</dd>
 			<dd>Parameters: None</dd>
-			<dt><h3>Use Stimpak</h3></dt>
-			<dd>Uses a Stimpak(surprise!), if you have any</dd>
+			<dt><a class='toclink' href='#toc'>^</a> Use Stimpak</dt>
+			<dd>Uses a Stimpak(surprise!), if you have any.</dd>
 			<dd>Parameters: None</dd>
-			<dt><h3>Use Radaway</h3></dt>
-			<dd>Uses a RadAway, if you have any</dd>
+			<dt><a class='toclink' href='#toc'>^</a> Use Radaway</dt>
+			<dd>Uses a RadAway, if you have any.</dd>
 			<dd>Parameters: None</dd>
-			<dt><h3>Use Jet</h3></dt>
-			<dd>Take a hit of Jet, if you have any</dd>
+			<dt><a class='toclink' href='#toc'>^</a> Use Jet</dt>
+			<dd>Take a hit of Jet, if you have any.</dd>
 			<dd>Parameters: None</dd>
-			<dt><h3>Use Named Item</h3></dt>
+			<dt><a class='toclink' href='#toc'>^</a> Use Named Item</dt>
 			<dd><p>Use any item identified by name and the Inventory section in which to find it. The exact meaning of use depends on item: drugs\food will be consumed, weapons\armour will be equipped (or unequipped if already equipped).</p><p>Binding multiple instances of this command to a single hotkey can be used to switch between sets of armour, or take multiple aid items at once.</p><p>Note: as this works by matching the name of the item, it will stop working if an item is renamed (ie: when armour\weapons are modified).</p></dd>
 			<dd>Parameters: 
 				<ol>
 				<li>The inventory section to search for the item named in the second parameter. You can use the DataBrowser Widget to locate your item and determine the correct section, but generally: 29 for apparel; 43 for weapons; 48 for aid.</li>
-				<li>The fullname of the item you want to use, without quotes. This is a case insensitive string comparison, so (other than case) the name must match exactly</li>
+				<li>The fullname of the item you want to use, without quotes. This is a case insensitive string comparison, so (other than case) the name must match exactly.</li>
 				</ol>
 			</dd>
+			<dt><a class='toclink' href='#toc'>^</a> Toggle Hotkeys On/Off</dt>
+			<dd>Disable/Reenable all hotkeys, potentially useful if you've mapped keys already used by the game in certain situations. By default all configured hotkeys are enabled.</dd>
+			<dd>Parameters: None</dd>
+			<dt><a class='toclink' href='#toc'>^</a> Test Hotkey Hook</dt>
+			<dd>Test function to assist with troubleshooting. Causes the text: "Success!!" to appear above the table in the widget if the key press is successfully detected by PyPipBoyApp.</dd>
+			<dd>Parameters: None</dd>
 		</dl>
+		<h2><a class='toclink' name='whatsnew' href='#toc'>^</a> Change Log</h2>
+		<ul class='changelog'>
+			<li>20151218
+				<ul>
+					<li>Saved open/close state of splitter across restarts</li>
+					<li>Unequip\Equip Current Grenade</li>
+					<li>Test Hotkey Hook</li>
+				</ul>
+			</li>
+			<li>20151214
+				<ul>
+					<li>Fixed crash bug in mainmenu</li>
+					<li>Save all currently equipped apparel to slot</li>
+					<li>Equip apparel from saved slot</li>
+					<li>Unequip all items of apparel</li>
+					<li>Toggle Radio On\Off</li>
+					<li>Tune to next radio station</li>
+				</ul>
+			</li>
+			<li class='oldnewthing'>20151208
+				<ul>
+					<li>Added Toggle hotkeys action</li>
+					<li>Reimplemented as completely self contained widget</li>
+				</ul>
+			</li>
+			<li class='oldnewthing'>20151206
+				<ul>
+					<li>Initial version, unreleased</li>
+				</ul>
+			</li>
+		</ul>
     </body>
 </html>

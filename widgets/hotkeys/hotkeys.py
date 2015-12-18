@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import datetime
+import time
 import os
 from PyQt5 import QtWidgets, QtCore, uic
 from PyQt5.QtWidgets import *
@@ -40,10 +41,16 @@ class HotkeyWidget(widgets.WidgetBase):
         self.widget.btnSave.clicked.connect(self._saveButtonHandler)
         self.widget.btnDelete.clicked.connect(self._deleteButtonHandler)
         self.widget.btnAdd.clicked.connect(self._addButtonHandler)
-        
 
+        if int(self._app.settings.value('hotkeyswidget/splittercollapsed', 0)):
+            self.widget.splitter.setSizes([0,100])
+        self.widget.splitter.splitterMoved.connect(self._slotSplitterMoved)
+
+
+        Actions['testHotkeyHook'] =Action('Test Hotkey Hook', '', self.testHotkeyHook, 0 ) 
         Actions['toggleAllHotkeys'] =Action('Toggle Hotkeys On/Off', '', self.llh.toggleAllHotkeys, 0 ) 
         Actions['equipNextGrenade'] =Action('Cycle Equipped Grenade', '', self.equipNextGrendae, 0 ) 
+        Actions['toggleEquippedGrenades'] =Action('Unequip\Equip Current Grenade', '', self.toggleEquippedGrenades, 0 ) 
         Actions['saveEquippedApparelToSlot'] =Action('Save all currently equipped apparel to slot ', '(param1: Slot Number [1-99])', self.saveEquippedApparelToSlot, 1 ) 
         Actions['equipApparelFromSlot'] =Action('Equip apparel from saved slot', '(param1: Slot Number [1-99])', self.equipApparelFromSlot, 1 ) 
         Actions['unequipAllApparel'] =Action('Unequip all items of apparel', '', self.unequipAllApparel, 0 ) 
@@ -73,6 +80,7 @@ class HotkeyWidget(widgets.WidgetBase):
         
         self.loadHotkeys()
         if(len(self.llh.Hotkeys) == 0):
+            self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('home'), actionkey='testHotkeyHook') )
             self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('pause'), shift=True, actionkey='toggleAllHotkeys') )
             self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('y'), actionkey='useStimpak'))
             self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('u'), actionkey='useRadaway'))
@@ -88,6 +96,7 @@ class HotkeyWidget(widgets.WidgetBase):
             self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('numpad_3'), control=True, actionkey='saveEquippedApparelToSlot', params=["3"] ))
             self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('numpad_3'), control=False, actionkey='equipApparelFromSlot', params=["3"] ))
             self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('numpad_9'), actionkey='unequipAllApparel')) 
+            self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('backspace'), actionkey='toggleEquippedGrenades')) 
         
         #self.llh.addHotkey(190, action=self.useItemByFormID, params=("43", 598551)) #.
         #self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('home'), control=True , alt=True, shift=True, actionkey='useNamedItem', params=("48", "psycho")))
@@ -104,6 +113,7 @@ class HotkeyWidget(widgets.WidgetBase):
         self.availableGrenades = []
         self.availableRadioStations = []
         self.currentRadioStation = None
+        self.lastEquippedGrenade = None
 
         self.savedApparelSlots = {}
         for index in range (0,100):
@@ -111,6 +121,23 @@ class HotkeyWidget(widgets.WidgetBase):
             self.savedApparelSlots[str(index)] = self._app.settings.value(settingPath+str(index), None)
 
 
+        return
+            
+    def toggleEquippedGrenades(self):
+        if (self.lastEquippedGrenade):
+            self.useItemByName('43', self.lastEquippedGrenade)
+        else:
+            self.equipNextGrendae()
+        return
+        
+    def testHotkeyHook(self):
+        msg = time.strftime("%H:%M:%S")
+        msg += " - Success!!"
+
+        self._logger.debug(msg)
+        self.widget.testMessage.setText(msg)
+        return
+    
     def unequipAllApparel(self):
         equiped = []
         if (self.pipInventoryInfo):
@@ -129,11 +156,12 @@ class HotkeyWidget(widgets.WidgetBase):
 #            ### perhaps?
              time.sleep(0.1)             
 
-
+        return
+        
             
     def saveEquippedApparelToSlot(self, slotIndex):
         slotIndex = str(slotIndex)
-        #print ('saveEquippedApparelToSlot ' + str(slotIndex))
+        self._logger.debug('saveEquippedApparelToSlot: slot ' + str(slotIndex))
         self.savedApparelSlots[slotIndex] = []
         selectedSlot = self.savedApparelSlots[slotIndex]
         
@@ -144,46 +172,51 @@ class HotkeyWidget(widgets.WidgetBase):
                 if (item.child('equipState').value() > 0):
                     selectedSlot.append(item.child('text').value())
                     
-            #print ('saving: ' + str(selectedSlot))
+            self._logger.debug('saveEquippedApparelToSlot: saving: ' + str(selectedSlot))
             settingPath = 'hotkeyswidget/apparelslots/'
             self._app.settings.setValue(settingPath+str(slotIndex), selectedSlot)
 
-    
+        return
+        
+        
     def equipApparelFromSlot(self, slotIndex):
         str(slotIndex)
         selectedSlot = self.savedApparelSlots.get(slotIndex, None)
         
         if (not selectedSlot):
-            #print('no such slot')
+            self._logger.debug('equipApparelFromSlot: no such slot')
             return
 
         for i in range(0, len(selectedSlot)):
             self.useItemByName('29', selectedSlot[i])
-            #print ('equipping: ' + selectedSlot[i])
+            self._logger.debug('equipApparelFromSlot: equipping: ' + selectedSlot[i])
             ### This is a vile hack to allow each rpc call to complete
             ### before sending the next 
             ### It'll do for now, but should really find a better way 
             ### of handling this, queue action method on datamanager.py 
             ### perhaps?
             time.sleep(0.1)
+            
+        return
         
     def toggleRadio(self):
         if (self.currentRadioStation):
             self.dataManager.rpcToggleRadioStation(self.currentRadioStation)
         else:
-            print ('no current, trying station 0')
+            self._logger.debug('toggleRadio: no current, trying station 0')
             numStations = len(self.availableRadioStations)
             if numStations > 0:
                 self.dataManager.rpcToggleRadioStation(self.availableRadioStations[0])
-        #print ('currentstation: ' + self.currentRadioStation.child('text').value())
+        self._logger.debug('toggleRadio: currentstation: ' + self.currentRadioStation.child('text').value())
                 
-            
+        return
+        
     def nextRadio(self):
         getIndex = 0
         numStations = len(self.availableRadioStations)
 
         if self.currentRadioStation:
-            #print ('currentstation: ' + self.currentRadioStation.child('text').value())
+            self._logger.debug('nextRadio: currentstation: ' + self.currentRadioStation.child('text').value())
             for i in range (0, numStations):
                 if self.availableRadioStations[i].child('text').value() == self.currentRadioStation.child('text').value():
                     getIndex = i + 1
@@ -193,27 +226,40 @@ class HotkeyWidget(widgets.WidgetBase):
             getIndex = 0
             
         if (getIndex <= numStations):
-            #print('tuning radio to: ' + self.availableRadioStations[getIndex].child('text').value())
+            self._logger.debug('nextRadio: tuning radio to: ' + self.availableRadioStations[getIndex].child('text').value())
             self.dataManager.rpcToggleRadioStation(self.availableRadioStations[getIndex])
-                
+        
+        return        
         
     def equipNextGrendae(self):
-        getIndex = 0
+        nextIndex = -1
+        lastIndex = -1 
         self.availableGrenades.sort()
         numGrenades = len(self.availableGrenades)
         if (numGrenades > 0):
             for i in range(0, numGrenades):
                 if (self.availableGrenades[i][1]):
-                    getIndex = i + 1
+                    nextIndex = i + 1
                     break
+                if (self.availableGrenades[i][0] == self.lastEquippedGrenade):
+                    lastIndex = i
                     
-            if (getIndex == numGrenades):
-                getIndex = 0
+            if (nextIndex == numGrenades):
+                nextIndex = 0
             
-            self.useItemByName("43", self.availableGrenades[getIndex][0])
+            if (nextIndex < 0 and lastIndex >= 0): 
+                nextIndex = lastIndex
+            
+            if(nextIndex < 0):
+                nextIndex = 0
+            
+            self.useItemByName("43", self.availableGrenades[nextIndex][0])
+        
+        return
                 
     def useJet(self):   
         self.useItemByName("48", "jet")
+        return
 
     def useItemByFormID(self,inventorySection, itemFormID):
         if (self.pipInventoryInfo):
@@ -222,6 +268,8 @@ class HotkeyWidget(widgets.WidgetBase):
                 formid = inventory.child(i).child('formID').value()
                 if (formid == itemFormID):
                     self.dataManager.rpcUseItem(inventory.child(i))
+                    
+        return
 
     def useItemByName(self,inventorySection, itemName):
         itemName = itemName.lower()
@@ -232,6 +280,8 @@ class HotkeyWidget(widgets.WidgetBase):
                 if (name.lower() == itemName):
                     self.dataManager.rpcUseItem(inventory.child(i))
                     return
+                    
+        return
 
     def _onPipRootObjectEvent(self, rootObject):
         self.pipInventoryInfo = rootObject.child('Inventory')
@@ -264,6 +314,7 @@ class HotkeyWidget(widgets.WidgetBase):
                     count = str(weapons.child(i).child('count').value())
                     if (weapons.child(i).child('equipState').value() == 3):
                         equipped = True
+                        self.lastEquippedGrenade = name.lower()
                     
                     self.availableGrenades.append([name.lower(), equipped])
                     
@@ -277,7 +328,17 @@ class HotkeyWidget(widgets.WidgetBase):
                     self.currentRadioStation = station
         
                     
+    @QtCore.pyqtSlot(int, int)
+    def _slotSplitterMoved(self, pos, index):
+        if (self.widget.splitter.sizes()[0] == 0):
+            splittercollapsed = 1
+        else: 
+            splittercollapsed = 0
+       
+        self._app.settings.setValue('hotkeyswidget/splittercollapsed', splittercollapsed)
+        pass
 
+                    
     @QtCore.pyqtSlot()
     def _loadButtonHandler(self):
         self.loadHotkeys()
@@ -391,15 +452,15 @@ class HotkeyWidget(widgets.WidgetBase):
         table = self.widget.tableWidget
         curIndex = table.currentIndex().row()
         
-        #print ("curIndex:" + str(curIndex))
+        self._logger.debug("_deleteButtonHandler: curIndex:" + str(curIndex))
         if(curIndex >= 0):
             item = table.item(curIndex, 0)
-            #print ("item:" + str(item))
+            self._logger.debug("_deleteButtonHandler: item:" + str(item))
             hkid = item.data(QtCore.Qt.UserRole)
             if(hkid):
-                print ("hkid:" + str(hkid))
+                self._logger.debug("_deleteButtonHandler: hkid:" + str(hkid))
                 hk = self.llh.getHotkeyById(hkid)
-                print(str(hk))
+                self._logger.debug("_deleteButtonHandler: hk: " + str(hk))
                 if (hk):
                     self.llh.removeHotkey(hk)
                     self.updateTable()
@@ -512,7 +573,6 @@ class LLHookey(QtCore.QObject):
 
         
     def _handleKeyHookEvent(self, event):
-        #print("_handleKeyHookEvent")
         self._signalKeyEvent.emit(event)        
         
     @QtCore.pyqtSlot(KeyEvent)
@@ -521,7 +581,7 @@ class LLHookey(QtCore.QObject):
         if (activeWin != "Fallout4"):
             return
         
-        #print("_onKeyEvent")
+        #print("_onKeyEvent: " + event);
         if(event.event_type == 'key up'):
             if(event.key_code == 160 or event.key_code == 161):
                 self.shiftdown = False
@@ -597,12 +657,10 @@ class LLHookey(QtCore.QObject):
                 return hk
 
         return None
-        
-                
     
         
 def listener():
-    #print("in listener")
+    #print("LLHookey: in listener")
     from ctypes import windll, CFUNCTYPE, POINTER, c_int, c_void_p, byref
     import atexit
     event_types = {0x100: 'key down', #WM_KeyDown for normal keys
@@ -614,7 +672,6 @@ def listener():
         
         event = KeyEvent(event_types[wParam], lParam[0], lParam[1],
                           lParam[2] == 32, lParam[3])
-        #print("hooked")
         for h in handlers:
             h(event)
         #Be nice, return next hook
