@@ -212,14 +212,15 @@ class HotkeyWidget(widgets.WidgetBase):
         return
         
     def toggleRadio(self):
+        
         if (self.currentRadioStation):
+            self._logger.debug('toggleRadio: currentstation: ' + self.currentRadioStation.child('text').value())
             self.dataManager.rpcToggleRadioStation(self.currentRadioStation)
         else:
             self._logger.debug('toggleRadio: no current, trying station 0')
             numStations = len(self.availableRadioStations)
             if numStations > 0:
                 self.dataManager.rpcToggleRadioStation(self.availableRadioStations[0])
-        self._logger.debug('toggleRadio: currentstation: ' + self.currentRadioStation.child('text').value())
                 
         return
         
