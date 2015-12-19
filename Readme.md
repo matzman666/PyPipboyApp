@@ -24,12 +24,14 @@ Currently implemented features are:
    - Map (Global and Local)
    - Hotkeys (by akamal)
    - Equipped Weapons and Grenades (by akamal)
+   - Small Player Info (by akamal)
    - Active Effects
    - Radio
+   - Location Browser
 
 # Screenshots
 
-![Screen 01](screenshots/screen01.png) ![Screen 02](screenshots/screen02.png)
+![Screen 01](screenshots/screen01.png) ![Screen 02](screenshots/screen02.png) ![Screen 03](screenshots/screen03.png)
  
 # Current Status
 
