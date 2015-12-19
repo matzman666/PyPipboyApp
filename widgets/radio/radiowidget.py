@@ -99,7 +99,7 @@ class SortProxyModel(QtCore.QSortFilterProxyModel):
     def headerData(self, section, orientation, role = QtCore.Qt.DisplayRole):
         if orientation == QtCore.Qt.Vertical:
             if role == QtCore.Qt.DisplayRole:
-                return section
+                return section + 1
         else:
             return super().headerData(section, orientation, role)
         

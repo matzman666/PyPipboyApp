@@ -38,7 +38,7 @@ class LocationTableModel(QtCore.QAbstractTableModel):
             return 0
         
     def columnCount(self, parent = QtCore.QModelIndex()):
-        return 3
+        return 8
     
     def headerData(self, section, orientation, role = QtCore.Qt.DisplayRole):
         if orientation == QtCore.Qt.Horizontal:
@@ -46,9 +46,19 @@ class LocationTableModel(QtCore.QAbstractTableModel):
                 if section == 0:
                     return 'Name'
                 elif section == 1:
-                    return 'Discovered'
+                    return 'Type'
                 elif section == 2:
+                    return 'Discovered'
+                elif section == 3:
                     return 'Cleared'
+                elif section == 4:
+                    return 'Owned'
+                elif section == 5:
+                    return 'Population'
+                elif section == 6:
+                    return 'Happiness'
+                elif section == 7:
+                    return 'Visible'
         return None
     
     def data(self, index, role = QtCore.Qt.DisplayRole):
@@ -59,17 +69,39 @@ class LocationTableModel(QtCore.QAbstractTableModel):
             if column == 0:
                 return location.child('Name').value()
             elif column == 1:
+                return location.child('type').value()
+            elif column == 2:
                 discovered = location.child('Discovered')
                 if discovered:
                     return discovered.value()
                 else:
                     return '-'
-            elif column == 2:
+            elif column == 3:
                 cleared = location.child('ClearedStatus')
                 if cleared:
                     return cleared.value()
                 else:
                     return '-'
+            elif column == 4:
+                owned = location.child('WorkshopOwned')
+                if owned:
+                    return owned.value()
+                else:
+                    return '-'
+            elif column == 5:
+                pop = location.child('WorkshopPopulation')
+                if pop:
+                    return pop.value()
+                else:
+                    return '-'
+            elif column == 6:
+                hap = location.child('WorkshopHappinessPct')
+                if hap:
+                    return hap.value()
+                else:
+                    return '-'
+            elif column == 7:
+                return location.child('Visible').value()
         return None
         
     def getPipValue(self, row):
@@ -111,7 +143,7 @@ class SortProxyModel(QtCore.QSortFilterProxyModel):
     def headerData(self, section, orientation, role = QtCore.Qt.DisplayRole):
         if orientation == QtCore.Qt.Vertical:
             if role == QtCore.Qt.DisplayRole:
-                return section
+                return section + 1
         else:
             return super().headerData(section, orientation, role)
         
