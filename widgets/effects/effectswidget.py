@@ -14,9 +14,6 @@ class RadioTableModel(QtCore.QAbstractTableModel):
         super().__init__(qparent)
         self.settings = settings
         self.pipActiveEffects = None
-        self.sortColumn = int(self.settings.value('effectswidget/sortColumn', 0))
-        # Buggy QSettings Linux implementation forces us to convert to int and then to bool
-        self.sortReversed = bool(int(self.settings.value('effectswidget/sortReversed', 0)))
         self.effectList = []
         self.showPermanent = bool(int(self.settings.value('effectswidget/showPermanent', False)))
         self.showEmptySources = bool(int(self.settings.value('effectswidget/showEmptySources', False)))
@@ -49,7 +46,6 @@ class RadioTableModel(QtCore.QAbstractTableModel):
         self.modelAboutToBeReset.emit()
         self.pipActiveEffects = pipValue
         self._createEffectList()
-        self._sortEffectList()
         self.modelReset.emit()
         self.pipActiveEffects.registerValueUpdatedListener(self._onPipEffectsUpdate, 99)
     
@@ -60,7 +56,6 @@ class RadioTableModel(QtCore.QAbstractTableModel):
     def _slotEffectsUpdate(self):
         self.layoutAboutToBeChanged.emit()
         self._createEffectList()
-        self._sortEffectList()
         self.layoutChanged.emit()
     
     def _createEffectList(self):
@@ -70,12 +65,6 @@ class RadioTableModel(QtCore.QAbstractTableModel):
                 for e in s.child('Effects').value():
                     if (self.showPermanent or self._data(e, 2) > 0.0) and (self.showEmptySources or self._data(e, 1)) and (self.showInactive or self._data(e, 7)):
                         self.effectList.append(e)
-        
-        
-    def _sortEffectList(self):
-        def _sortKey(pipValue):
-            return self._data(pipValue, self.sortColumn)
-        self.effectList.sort(key=_sortKey, reverse=self.sortReversed)
         
     def rowCount(self, parent = QtCore.QModelIndex()):
         return len(self.effectList)
@@ -137,9 +126,8 @@ class RadioTableModel(QtCore.QAbstractTableModel):
                 return 0.0
             elif column == 4:
                 # Immediate parent is the enclosing array, therefore we need parent.parent
-                return str(effect.pipParent.pipParent.child('type').value())
+                return effect.pipParent.pipParent.child('type').value()
             elif column == 5:
-                # Immediate parent is the enclosing array, therefore we need parent.parent
                 return effect.pipId
             elif column == 6:
                 sap = effect.child('showAsPercent')
@@ -157,9 +145,25 @@ class RadioTableModel(QtCore.QAbstractTableModel):
         #    if not effect.child('IsActive').value():
         #        return QtGui.QColor.fromRgb(150,150,150)
         return None
+        
+    def getPipValue(self, row):
+        if self.effectList and len(self.effectList) > row:
+            return self.effectList[row]
+        else:
+            return None
+
+
+
     
+class SortProxyModel(QtCore.QSortFilterProxyModel):
+    def __init__(self, settings, qparent = None):
+        super().__init__(qparent)
+        self.settings = settings
+        self.sortColumn = int(self.settings.value('effectswidget/sortColumn', 0))
+        # Buggy QSettings Linux implementation forces us to convert to int and then to bool
+        self.sortReversed = bool(int(self.settings.value('effectswidget/sortReversed', 0)))
+        
     def sort(self, column, order = QtCore.Qt.AscendingOrder):
-        self.layoutAboutToBeChanged.emit()
         self.sortColumn = column
         if order == QtCore.Qt.DescendingOrder:
             self.sortReversed = True
@@ -167,14 +171,7 @@ class RadioTableModel(QtCore.QAbstractTableModel):
             self.sortReversed = False
         self.settings.setValue('effectswidget/sortColumn', column)
         self.settings.setValue('effectswidget/sortReversed', int(self.sortReversed))
-        self._sortEffectList()
-        self.layoutChanged.emit()
-        
-    def getPipValue(self, row):
-        if self.effectList and len(self.effectList) > row:
-            return self.effectList[row]
-        else:
-            return None
+        super().sort(column, order)
     
         
 
@@ -190,7 +187,9 @@ class RadioWidget(widgets.WidgetBase):
         super().init(app, datamanager)
         self.app = app
         self.effectsViewModel = RadioTableModel(self.app.settings)
-        self.widget.effectsView.setModel(self.effectsViewModel)
+        self.sortProxyModel = SortProxyModel(self.app.settings)
+        self.sortProxyModel.setSourceModel(self.effectsViewModel)
+        self.widget.effectsView.setModel(self.sortProxyModel)
         self.tableHeader = self.widget.effectsView.horizontalHeader()
         self.tableHeader.setSectionsMovable(True)
         self.tableHeader.setStretchLastSection(True)
@@ -206,10 +205,10 @@ class RadioWidget(widgets.WidgetBase):
         self.widget.showPermanentCheckBox.stateChanged.connect(self.effectsViewModel.setShowPermanent)
         self.widget.showEmptySourcesCheckBox.stateChanged.connect(self.effectsViewModel.setShowEmptySources)
         self.widget.showInactiveCheckBox.stateChanged.connect(self.effectsViewModel.setShowInactive)
-        if self.effectsViewModel.sortReversed:
-            self.widget.effectsView.sortByColumn(self.effectsViewModel.sortColumn, QtCore.Qt.DescendingOrder)
+        if self.sortProxyModel.sortReversed:
+            self.widget.effectsView.sortByColumn(self.sortProxyModel.sortColumn, QtCore.Qt.DescendingOrder)
         else:
-            self.widget.effectsView.sortByColumn(self.effectsViewModel.sortColumn, QtCore.Qt.AscendingOrder)
+            self.widget.effectsView.sortByColumn(self.sortProxyModel.sortColumn, QtCore.Qt.AscendingOrder)
         self.dataManager = datamanager
         self.dataManager.registerRootObjectListener(self._onPipRootObjectEvent)
         

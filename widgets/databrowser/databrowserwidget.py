@@ -41,6 +41,7 @@ class DataBrowserTreeModel(QtCore.QAbstractItemModel):
             # Now we are in the correct thread to emit the dataChanged signal
             self.dataChanged.emit(self.createIndex(value.pipParentIndex, 0, value), self.createIndex(value.pipParentIndex, 4, value), [QtCore.Qt.EditRole])
             if value.valueType == eValueType.ARRAY or value.valueType == eValueType.OBJECT:
+                self.layoutAboutToBeChanged.emit()
                 self.layoutChanged.emit()
             self._valueUpdates.task_done()
         except:

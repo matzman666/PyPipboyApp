@@ -14,16 +14,11 @@ class RadioTableModel(QtCore.QAbstractTableModel):
         super().__init__(qparent)
         self.settings = settings
         self.pipRadio = None
-        self.sortColumn = int(self.settings.value('radiowidget/sortColumn', 0))
-        self.sortReversed = bool(int(self.settings.value('radiowidget/sortReversed', 0)))
-        self.itemList = []
         self._signalRadioUpdate.connect(self._slotRadioUpdate)
     
     def setPipRadio(self, pipValue):
         self.modelAboutToBeReset.emit()
         self.pipRadio = pipValue
-        self.itemList = self.pipRadio.value()
-        self._sortItemList()
         self.modelReset.emit()
         self.pipRadio.registerValueUpdatedListener(self._onPipRadioUpdate, 2)
     
@@ -33,21 +28,7 @@ class RadioTableModel(QtCore.QAbstractTableModel):
     @QtCore.pyqtSlot()
     def _slotRadioUpdate(self):
         self.layoutAboutToBeChanged.emit()
-        self.itemList = self.pipRadio.value()
-        self._sortItemList()
         self.layoutChanged.emit()
-        
-        
-    def _sortItemList(self):
-        def _sortKey(pipValue):
-            if self.sortColumn == 0:
-                return pipValue.child('text').value()
-            elif self.sortColumn == 1:
-                return pipValue.child('frequency').value()
-            elif self.sortColumn == 2:
-                return pipValue.child('inRange').value()
-        self.itemList.sort(key=_sortKey, reverse=self.sortReversed)
-        
         
     def rowCount(self, parent = QtCore.QModelIndex()):
         if self.pipRadio:
@@ -70,28 +51,42 @@ class RadioTableModel(QtCore.QAbstractTableModel):
         return None
     
     def data(self, index, role = QtCore.Qt.DisplayRole):
+        return self._data(self.pipRadio.child(index.row()), index.column(), role)
+        
+    def _data(self, radio, column, role = QtCore.Qt.DisplayRole):
         if role == QtCore.Qt.DisplayRole:
-            radio = self.itemList[index.row()]
-            if index.column() == 0:
+            if column == 0:
                 return radio.child('text').value()
-            elif index.column() == 1:
+            elif column == 1:
                 return radio.child('frequency').value()
-            elif index.column() == 2:
+            elif column == 2:
                 return radio.child('inRange').value()
         elif role == QtCore.Qt.FontRole:
-            radio = self.itemList[index.row()]
             if radio.child('active').value():
                 font = QtGui.QFont()
                 font.setBold(True)
                 return font
         elif role == QtCore.Qt.ForegroundRole:
-            radio = self.itemList[index.row()]
             if not radio.child('inRange').value():
                 return QtGui.QColor.fromRgb(150,150,150)
         return None
+        
+    def getPipValue(self, row):
+        if self.pipRadio and self.pipRadio.childCount() > row:
+            return self.pipRadio.child(row)
+        else:
+            return None
     
+
+class SortProxyModel(QtCore.QSortFilterProxyModel):
+    def __init__(self, settings, qparent = None):
+        super().__init__(qparent)
+        self.settings = settings
+        self.sortColumn = int(self.settings.value('radiowidget/sortColumn', 0))
+        # Buggy QSettings Linux implementation forces us to convert to int and then to bool
+        self.sortReversed = bool(int(self.settings.value('radiowidget/sortReversed', 0)))
+        
     def sort(self, column, order = QtCore.Qt.AscendingOrder):
-        self.layoutAboutToBeChanged.emit()
         self.sortColumn = column
         if order == QtCore.Qt.DescendingOrder:
             self.sortReversed = True
@@ -99,15 +94,7 @@ class RadioTableModel(QtCore.QAbstractTableModel):
             self.sortReversed = False
         self.settings.setValue('radiowidget/sortColumn', column)
         self.settings.setValue('radiowidget/sortReversed', int(self.sortReversed))
-        self._sortItemList()
-        self.layoutChanged.emit()
-        
-    def getPipValue(self, row):
-        if self.itemList and len(self.itemList) > row:
-            return self.itemList[row]
-        else:
-            return None
-    
+        super().sort(column, order)
         
 
 
@@ -122,7 +109,9 @@ class RadioWidget(widgets.WidgetBase):
         super().init(app, datamanager)
         self.app = app
         self.radioViewModel = RadioTableModel(self.app.settings)
-        self.widget.radioView.setModel(self.radioViewModel)
+        self.sortProxyModel = SortProxyModel(self.app.settings)
+        self.sortProxyModel.setSourceModel(self.radioViewModel)
+        self.widget.radioView.setModel(self.sortProxyModel)
         self.widget.radioView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.widget.radioView.customContextMenuRequested.connect(self._slotTableContextMenu)
         self.widget.radioView.doubleClicked.connect(self._slotTableDoubleClicked)
@@ -131,10 +120,10 @@ class RadioWidget(widgets.WidgetBase):
         self.tableHeader.setStretchLastSection(True)
         settings.setHeaderSectionSizes(self.tableHeader, self.app.settings.value('radiowidget/HeaderSectionSizes', []))
         settings.setHeaderSectionVisualIndices(self.tableHeader, self.app.settings.value('radiowidget/headerSectionVisualIndices', []))
-        if self.radioViewModel.sortReversed:
-            self.widget.radioView.sortByColumn(self.radioViewModel.sortColumn, QtCore.Qt.DescendingOrder)
+        if self.sortProxyModel.sortReversed:
+            self.widget.radioView.sortByColumn(self.sortProxyModel.sortColumn, QtCore.Qt.DescendingOrder)
         else:
-            self.widget.radioView.sortByColumn(self.radioViewModel.sortColumn, QtCore.Qt.AscendingOrder)
+            self.widget.radioView.sortByColumn(self.sortProxyModel.sortColumn, QtCore.Qt.AscendingOrder)
         self.tableHeader.sectionResized.connect(self._slotTableSectionResized)
         self.tableHeader.sectionMoved.connect(self._slotTableSectionMoved)
         self.dataManager = datamanager
@@ -144,7 +133,7 @@ class RadioWidget(widgets.WidgetBase):
     def _slotTableContextMenu(self, pos):
         index = self.widget.radioView.selectionModel().currentIndex()
         if index.isValid():
-            value = self.radioViewModel.getPipValue(index.row())
+            value = self.radioViewModel.getPipValue(self.sortProxyModel.mapToSource(index).row())
             if value:
                 menu = QtWidgets.QMenu(self.widget.radioView)
                 def _toggleRadio():
@@ -155,7 +144,7 @@ class RadioWidget(widgets.WidgetBase):
     
     @QtCore.pyqtSlot(QtCore.QModelIndex)
     def _slotTableDoubleClicked(self, index):
-        value = self.radioViewModel.getPipValue(index.row())
+        value = self.radioViewModel.getPipValue(self.sortProxyModel.mapToSource(index).row())
         if value:
             self.dataManager.rpcToggleRadioStation(value)
             
