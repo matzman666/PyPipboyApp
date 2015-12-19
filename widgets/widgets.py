@@ -13,6 +13,9 @@ class WidgetBase(QtWidgets.QDockWidget):
     def __init__(self, title, parent):
         super().__init__(title, parent)
         
+    def iwcSetup(self, framework):
+        pass
+        
     def init(self, framework, datamanager):
         pass
 

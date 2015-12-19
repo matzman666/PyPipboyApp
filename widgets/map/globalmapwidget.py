@@ -407,6 +407,9 @@ class GlobalMapWidget(widgets.WidgetBase):
         self._logger = logging.getLogger('pypipboyapp.map.globalmap')
         self.mapZoomLevel = 1.0
         
+    def iwcSetup(self, app):
+        app.iwcRegisterEndpoint('globalmapwidget', self)
+    
     def init(self, app, datamanager):
         super().init(app, datamanager)
         self._app = app
@@ -756,12 +759,12 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.centerOnPlayerEnabled = value
         self._app.settings.setValue('globalmapwidget/centerPlayer', int(value))
         if value and self.playerMarker.markerItem.isVisible():
-            self.mapView.centerOn(self.playerMarker.markerItem.pos())
+            self.playerMarker.mapCenterOn()
             
     @QtCore.pyqtSlot(float, float, float)        
     def _slotPlayerMarkerPositionUpdated(self, x, y, r):
         if self.centerOnPlayerEnabled:
-            self.mapView.centerOn(self.playerMarker.markerItem.pos())
+            self.playerMarker.mapCenterOn()
         
     @QtCore.pyqtSlot(bool)        
     def _slotMapColorAutoModeTriggered(self, value):
@@ -850,4 +853,13 @@ class GlobalMapWidget(widgets.WidgetBase):
                     self.datamanager.rpcSetCustomMarker(self.mapCoords.map2pip_x(markerPos.x()), self.mapCoords.map2pip_y(markerPos.y()))
                 return True
         return False
+    
+    
+    def iwcCenterOnLocation(self, pipId):
+        try:
+            loc = self.pipMapLocationItems[pipId]
+            loc.mapCenterOn()
+        except:
+            pass
+        
         

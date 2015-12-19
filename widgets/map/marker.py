@@ -228,6 +228,9 @@ class MarkerBase(QtCore.QObject):
             self.scene.removeItem(self.markerItem)
             self.markerItem = None
         self.signalMarkerDestroyed.emit(self)
+        
+    def mapCenterOn(self):
+        self.view.centerOn(self.mapPosX * self.zoomLevel, self.mapPosY * self.zoomLevel)
 
 
 
