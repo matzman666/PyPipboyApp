@@ -19,6 +19,7 @@ class SmallPlayerInfoWidget(widgets.WidgetBase):
         self.pipPlayerInfo = None
         self.pipCurrWorldspace = None
         self.pipStats = None
+        self.pipRadioInfo = None
         self.maxHP = 0
         self.curHP = 0
         self.maxAP = 0
@@ -48,6 +49,10 @@ class SmallPlayerInfoWidget(widgets.WidgetBase):
         if (self.pipStats):
             self.pipStats.registerValueUpdatedListener(self._onPipPlayerInfoUpdate, 1)
 
+        self.pipRadioInfo = rootObject.child('Radio')
+        if self.pipRadioInfo:
+            self.pipRadioInfo.registerValueUpdatedListener(self._onPipPlayerInfoUpdate, 2)
+            
         self._signalInfoUpdated.emit()
 
 
@@ -100,7 +105,6 @@ class SmallPlayerInfoWidget(widgets.WidgetBase):
                             if (effect.child('Name').value() == 'Rads'):
                                 radChange += effect.child('Value').value()
                    
-        
         radChangePrefix = ''
         if (radChange > 0):
             radChangePrefix = '+'
@@ -108,7 +112,15 @@ class SmallPlayerInfoWidget(widgets.WidgetBase):
         self.widget.radChangeLabel.setText(radChangePrefix + str(round(radChange)))
         self.widget.lblActiveEffects.setText(listEffectsSeperator.join(listEffects))
         
-    
+        currentRadioStationName = 'Radio off'
+        if(self.pipRadioInfo):
+            for i in range(0, self.pipRadioInfo.childCount()):
+                station = self.pipRadioInfo.child(i)
+                if station.child('active').value():
+                    currentRadioStationName = station.child('text').value()
+
+        self.widget.lblRadio.setText(currentRadioStationName)
+        
         maxHP = self.pipPlayerInfo.child('MaxHP')
         if maxHP:
             self.maxHP = maxHP.value()
