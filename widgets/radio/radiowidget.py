@@ -95,6 +95,13 @@ class SortProxyModel(QtCore.QSortFilterProxyModel):
         self.settings.setValue('radiowidget/sortColumn', column)
         self.settings.setValue('radiowidget/sortReversed', int(self.sortReversed))
         super().sort(column, order)
+    
+    def headerData(self, section, orientation, role = QtCore.Qt.DisplayRole):
+        if orientation == QtCore.Qt.Vertical:
+            if role == QtCore.Qt.DisplayRole:
+                return section
+        else:
+            return super().headerData(section, orientation, role)
         
 
 
