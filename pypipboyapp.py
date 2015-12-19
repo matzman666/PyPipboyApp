@@ -100,6 +100,7 @@ class PyPipboyApp(QtWidgets.QApplication):
         self.signalRequestQuit.connect(self.requestQuit)
         self._connectHostMessageBox = None
         self._connectHostThread = None
+        self._iwcEndpoints = dict()
         self._logger = logging.getLogger('pypipboyapp.main')
     
     
@@ -407,9 +408,24 @@ class PyPipboyApp(QtWidgets.QApplication):
                 except Exception as e:
                     self._logger.warning('Could not load widget dir "' + dir + '": ' + str(e))
                     traceback.print_exc(file=sys.stdout)
-                    
+    
+    def iwcRegisterEndpoint(self, key, endpoint):
+        self._iwcEndpoints[key] = endpoint
+        
+    def iwcUnregisterEndpoint(self, key):
+        if key in self._iwcEndpoints:
+            del self._iwcEndpoints[key]
+            
+    def iwcGetEndpoint(self, key):
+        try:
+            return self._iwcEndpoints[key]
+        except:
+            return None
+    
     # load widgets
     def _initWidgets(self):
+        for w in self.widgets:
+            w.iwcSetup(self)
         for w in self.widgets:
             w.init(self, self.dataManager)
             
