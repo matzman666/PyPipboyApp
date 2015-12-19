@@ -488,7 +488,12 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.widget.mapFileComboBox.currentIndexChanged.connect(self._slotMapFileComboTriggered)
         # Init color controls
         self.widget.mapColorButton.clicked.connect(self._slotMapColorSelectionTriggered)
-        self.widget.mapColorAutoToggle.setChecked(bool(int(self._app.settings.value('globalmapwidget/autoColour', 0))))
+        try:
+            self.widget.mapColorAutoToggle.setChecked(bool(int(self._app.settings.value('globalmapwidget/autoColour', 0))))
+        except ValueError:
+            self.widget.mapColorAutoToggle.setChecked(bool(self._app.settings.value('globalmapwidget/autoColour', False)))
+        #self.widget.mapColorAutoToggle.setChecked(False)
+        
         self.widget.mapColorAutoToggle.stateChanged.connect(self._slotMapColorAutoModeTriggered)
         # Init stickyLabels Checkbox
         self.stickyLabelsEnabled = False
@@ -773,7 +778,11 @@ class GlobalMapWidget(widgets.WidgetBase):
                 self._onPipColorChanged(None, None, None)
             elif self.pipColor:
                 self.pipColor.unregisterValueUpdatedListener(self._onPipColorChanged)
-                self.signalSetColor.emit(self.pipColor)
+                r = self.pipColor.child(0).value() * 255
+                g = self.pipColor.child(1).value() * 255
+                b = self.pipColor.child(2).value() * 255
+                pipColor = QtGui.QColor.fromRgb(r,g,b)
+                self.signalSetColor.emit(pipColor)
 
         
     @QtCore.pyqtSlot()
