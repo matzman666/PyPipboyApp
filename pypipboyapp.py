@@ -150,7 +150,7 @@ class PyPipboyApp(QtWidgets.QApplication):
                 host = self.settings.value('mainwindow/lasthost')
             if self.settings.value('mainwindow/lastport'):
                 port = int(self.settings.value('mainwindow/lastport'))
-            self.signalConnectToHost.emit(host, port, False)
+            self.signalConnectToHost.emit(host, port, True)
         sys.exit(self.exec_())
 
     @QtCore.pyqtSlot(bool)
