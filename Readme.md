@@ -28,6 +28,7 @@ Currently implemented features are:
    - Active Effects
    - Radio
    - Location Browser
+   - Quests (by killeand)
 
 # Screenshots
 
