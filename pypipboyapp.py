@@ -539,5 +539,8 @@ if __name__ == "__main__":
     except Exception as e:
         logging.basicConfig(level=logging.WARN)
         logging.error('Error while reading logging config: ' + str(e))
+    if 'nt' in os.name:
+        from ctypes import windll
+        windll.shell32.SetCurrentProcessExplicitAppUserModelID('MyPyApp.pyapp.69')
     pipboyApp = PyPipboyApp(sys.argv)
     pipboyApp.run()
