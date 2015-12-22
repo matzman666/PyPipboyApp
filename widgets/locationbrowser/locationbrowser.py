@@ -179,7 +179,7 @@ class LocationBrowserWidget(widgets.WidgetBase):
         self.widget.locationView.setModel(self.sortProxyModel)
         self.widget.locationView.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.widget.locationView.customContextMenuRequested.connect(self._slotLocationTableContextMenu)
-        self.widget.locationView.clicked.connect(self._slotLocationItemClicked)
+        self.widget.locationView.selectionModel().currentChanged.connect(self._slotLocationItemSelected)
         self.widget.locationView.doubleClicked.connect(self._slotLocationItemDoubleClicked)
         self.locationTableHeader = self.widget.locationView.horizontalHeader()
         self.locationTableHeader.setSectionsMovable(True)
@@ -233,8 +233,8 @@ class LocationBrowserWidget(widgets.WidgetBase):
                 self.globalMap.raise_()
                 self.globalMap.iwcCenterOnLocation(value.pipId)
                 
-    @QtCore.pyqtSlot(QtCore.QModelIndex)
-    def _slotLocationItemClicked(self, index):
+    @QtCore.pyqtSlot(QtCore.QModelIndex, QtCore.QModelIndex)
+    def _slotLocationItemSelected(self, index, previous):
         rindex = self.sortProxyModel.mapToSource(index)
         loc = self.locationViewModel.getPipValue(rindex.row())
         if loc:
