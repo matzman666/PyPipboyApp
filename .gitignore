@@ -8,4 +8,3 @@ __pycache__
 /widgets/playerinfo/res/*.png
 /pypipboy/
 THumbs.db
-*.orig
