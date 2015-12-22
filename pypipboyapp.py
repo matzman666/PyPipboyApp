@@ -84,6 +84,13 @@ class PyPipboyApp(QtWidgets.QApplication):
     #constructor
     def __init__(self, args):
         super().__init__(args)
+
+        self.startedFromWin32Launcher = False;
+        
+        for i in range(0, len(args)):
+            if args[i].lower() == '--startedfromwin32launcher':
+                self.startedFromWin32Launcher = True
+
         # Prepare QSettings for application-wide use
         QtCore.QCoreApplication.setOrganizationName("PyPipboyApp")
         QtCore.QCoreApplication.setApplicationName("PyPipboyApp")
@@ -112,6 +119,20 @@ class PyPipboyApp(QtWidgets.QApplication):
     # run the application
     def run(self):
         self.mainWindow = PipboyMainWindow()
+
+        if (self.startedFromWin32Launcher):
+            basepath = os.path.dirname(os.path.realpath(__file__))
+            launcherpath = os.path.abspath(os.path.join(basepath, os.pardir, 'PyPipBoyApp-Launcher.exe'))
+            print ('launcherpath: ' + str(launcherpath))
+            if 'nt' in os.name:
+                from win32com.propsys import propsys, pscon
+                import pythoncom
+                hwnd = self.mainWindow.winId()
+                propStore = propsys.SHGetPropertyStoreForWindow(hwnd, propsys.IID_IPropertyStore)
+                propStore.SetValue(pscon.PKEY_AppUserModel_ID, propsys.PROPVARIANTType(u'matzman666.pypipboyapp.win32', pythoncom.VT_ILLEGAL))
+                propStore.SetValue(pscon.PKEY_AppUserModel_RelaunchDisplayNameResource, propsys.PROPVARIANTType('PyPipBoyApp', pythoncom.VT_ILLEGAL))
+                propStore.SetValue(pscon.PKEY_AppUserModel_RelaunchCommand, propsys.PROPVARIANTType(launcherpath, pythoncom.VT_ILLEGAL))
+                propStore.Commit()        
         # Load Styles
         self._loadStyles()
         # Load widgets
@@ -150,7 +171,7 @@ class PyPipboyApp(QtWidgets.QApplication):
                 host = self.settings.value('mainwindow/lasthost')
             if self.settings.value('mainwindow/lastport'):
                 port = int(self.settings.value('mainwindow/lastport'))
-            self.signalConnectToHost.emit(host, port, False)
+            self.signalConnectToHost.emit(host, port, True)
         sys.exit(self.exec_())
 
     @QtCore.pyqtSlot(bool)
@@ -541,6 +562,6 @@ if __name__ == "__main__":
         logging.error('Error while reading logging config: ' + str(e))
     if 'nt' in os.name:
         from ctypes import windll
-        windll.shell32.SetCurrentProcessExplicitAppUserModelID('MyPyApp.pyapp.69')
+        windll.shell32.SetCurrentProcessExplicitAppUserModelID(u'matzman666.pypipboyapp')
     pipboyApp = PyPipboyApp(sys.argv)
     pipboyApp.run()
