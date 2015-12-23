@@ -38,7 +38,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>19</height>
+     <height>30</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuApp">
@@ -49,6 +49,9 @@
     <addaction name="actionConnect"/>
     <addaction name="actionConnectTo"/>
     <addaction name="actionDisconnect"/>
+    <addaction name="separator"/>
+    <addaction name="actionImportData"/>
+    <addaction name="actionExportData"/>
     <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
@@ -135,6 +138,19 @@
    </property>
    <property name="text">
     <string>Auto Connect on Startup</string>
+   </property>
+  </action>
+  <action name="actionExportData">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Export Data</string>
+   </property>
+  </action>
+  <action name="actionImportData">
+   <property name="text">
+    <string>Import Data</string>
    </property>
   </action>
  </widget>

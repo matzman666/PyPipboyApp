@@ -3,6 +3,7 @@
 
 import os
 import sys
+import json
 import importlib
 import traceback
 import logging.config
@@ -158,6 +159,8 @@ class PyPipboyApp(QtWidgets.QApplication):
         self.mainWindow.actionShowAbout.triggered.connect(self.showAboutDialog)
         self.mainWindow.actionShowAboutQt.triggered.connect(self.aboutQt)
         self.mainWindow.actionAuto_Connect_on_Start_up.triggered.connect(self.autoConnectToggled)
+        self.mainWindow.actionExportData.triggered.connect(self.exportData)
+        self.mainWindow.actionImportData.triggered.connect(self.importData)
         # Main window is ready, so show it
         self.mainWindow.init(self, self.networkChannel, self.dataManager)
         self._initWidgets()
@@ -364,6 +367,32 @@ class PyPipboyApp(QtWidgets.QApplication):
             'License:\n\n' + self.PROGRAM_ABOUT_LICENSE + ' \n\n' +
             self.PROGRAM_ABOUT_COPYRIGHT)
         
+    @QtCore.pyqtSlot()        
+    def exportData(self):
+        fileName = QtWidgets.QFileDialog.getSaveFileName(self.mainWindow, '', '', 'Pipboy Data (*.pip)')
+        if fileName[0]:
+            #try:
+                file = open(fileName[0], 'w')
+                data = {}
+                data['PipDatabase'] = self.dataManager.exportData()
+                data['PipDatabase'].reverse()
+                file.write(json.dumps(data))
+                file.close()
+            #except Exception as e:
+            #    self.showWarningMessage('Export Data', 'Could not export data: '  + str(e))
+        
+    @QtCore.pyqtSlot()        
+    def importData(self):
+        fileName = QtWidgets.QFileDialog.getOpenFileName(self.mainWindow, '', '', 'Pipboy Data (*.pip)')
+        if fileName[0]:
+            #try:
+                file = open(fileName[0], 'r')
+                self.dataManager.importData(json.loads(file.read())['PipDatabase'])
+                file.close()
+            #except Exception as e:
+            #    self.showWarningMessage('Import Data', 'Could not import data: '  + str(e))
+        
+        
     # event listener for pypipboy network state events
     def _onConnectionStateChange(self, state, errstatus = 0, errmsg = ''):
         self._logger.info('Connection State Changed: ' + str(state) + ' - ' + str(errstatus) + ' - ' + str(errmsg))
@@ -372,6 +401,8 @@ class PyPipboyApp(QtWidgets.QApplication):
             self.mainWindow.actionConnect.setEnabled(False)
             self.mainWindow.actionConnectTo.setEnabled(False)
             self.mainWindow.actionDisconnect.setEnabled(True)
+            self.mainWindow.actionExportData.setEnabled(True)
+            self.mainWindow.actionImportData.setEnabled(False)
             # status bar update
             tmp = str(self.networkChannel.hostAddr) + ':' + str(self.networkChannel.hostPort) + ' ('
             tmp += 'Version: ' + str(self.networkChannel.hostVersion) + ", "
@@ -386,6 +417,8 @@ class PyPipboyApp(QtWidgets.QApplication):
             self.mainWindow.actionConnect.setEnabled(True)
             self.mainWindow.actionConnectTo.setEnabled(True)
             self.mainWindow.actionDisconnect.setEnabled(False)
+            self.mainWindow.actionExportData.setEnabled(False)
+            self.mainWindow.actionImportData.setEnabled(True)
             # status bar update
             self.mainWindow.connectionStatusLabel.setText('No Connection')
             # error handling
