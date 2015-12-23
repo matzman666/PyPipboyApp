@@ -38,7 +38,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>30</height>
+     <height>19</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuApp">
@@ -61,6 +61,7 @@
     </property>
     <addaction name="actionShowAboutQt"/>
     <addaction name="actionShowAbout"/>
+    <addaction name="actionVersionCheck"/>
    </widget>
    <widget class="QMenu" name="menuWindow">
     <property name="title">
@@ -73,6 +74,7 @@
      <addaction name="actionStylesDefault"/>
     </widget>
     <addaction name="actionFullscreen"/>
+    <addaction name="actionStayOnTop"/>
     <addaction name="menuStyles"/>
    </widget>
    <addaction name="menuApp"/>
@@ -151,6 +153,19 @@
   <action name="actionImportData">
    <property name="text">
     <string>Import Data</string>
+   </property>
+  </action>
+  <action name="actionVersionCheck">
+   <property name="text">
+    <string>Version Check</string>
+   </property>
+  </action>
+  <action name="actionStayOnTop">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Stay on Top</string>
    </property>
   </action>
  </widget>

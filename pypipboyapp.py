@@ -7,6 +7,8 @@ import json
 import importlib
 import traceback
 import logging.config
+import threading
+import urllib.request
 from PyQt5 import QtGui, QtWidgets, QtCore, uic
 from pypipboy.network import NetworkChannel
 from pypipboy.datamanager import PipboyDataManager
@@ -66,7 +68,10 @@ class PipboyMainWindow(QtWidgets.QMainWindow):
 class PyPipboyApp(QtWidgets.QApplication):
     
     PROGRAM_NAME = 'Unofficial Pipboy Application'
-    PROGRAM_VERSION = 'v0.6alpha'
+    PROGRAM_VERSION_MAJOR = 0
+    PROGRAM_VERSION_MINOR = 0
+    PROGRAM_VERSION_REV = 0
+    PROGRAM_VERSION_SUFFIX = 'unknown'
     PROGRAM_ABOUT_TEXT = 'ToDo: About Text'
     PROGRAM_ABOUT_LICENSE = 'ToDo'
     PROGRAM_ABOUT_COPYRIGHT = 'Copyright (c) 2015 matzman666'
@@ -81,6 +86,7 @@ class PyPipboyApp(QtWidgets.QApplication):
     # internal signals
     _signalConnectToHostFinished = QtCore.pyqtSignal(bool, str)
     _signalAutodiscoveryFinished = QtCore.pyqtSignal()
+    _signalFinishedCheckVersion = QtCore.pyqtSignal(dict, bool, bool, str, bool)
     
     #constructor
     def __init__(self, args):
@@ -106,6 +112,7 @@ class PyPipboyApp(QtWidgets.QApplication):
         self._signalConnectToHostFinished.connect(self._slotConnectToHostFinished)
         self.signalShowWarningMessage.connect(self.showWarningMessage)
         self.signalRequestQuit.connect(self.requestQuit)
+        self._signalFinishedCheckVersion.connect(self._slotFinishedCheckVersion)
         self._connectHostMessageBox = None
         self._connectHostThread = None
         self._iwcEndpoints = dict()
@@ -115,6 +122,17 @@ class PyPipboyApp(QtWidgets.QApplication):
         pipboyAppIcon.addFile(os.path.join('ui', 'res', 'PyPipBoyApp-Launcher.ico'))
         self.setWindowIcon(pipboyAppIcon)
         
+        try:
+            versionFile = open('VERSION', 'r')
+            versionJSON = json.loads(versionFile.read())
+            versionFile.close()
+            self.PROGRAM_VERSION_MAJOR = versionJSON['major']
+            self.PROGRAM_VERSION_MINOR = versionJSON['minor']
+            self.PROGRAM_VERSION_REV = versionJSON['rev']
+            self.PROGRAM_VERSION_SUFFIX = versionJSON['suffix']
+        except Exception as e:
+            self._logger.warn('Could not determine program version: ' + str(e))
+
     
     
     # run the application
@@ -161,6 +179,10 @@ class PyPipboyApp(QtWidgets.QApplication):
         self.mainWindow.actionAuto_Connect_on_Start_up.triggered.connect(self.autoConnectToggled)
         self.mainWindow.actionExportData.triggered.connect(self.exportData)
         self.mainWindow.actionImportData.triggered.connect(self.importData)
+        self.mainWindow.actionVersionCheck.triggered.connect(self.startVersionCheckVerbose)
+        stayOnTop = bool(int(self.settings.value('mainwindow/stayOnTop', 0)))
+        self.mainWindow.actionStayOnTop.toggled.connect(self.setWindowStayOnTop)
+        self.mainWindow.actionStayOnTop.setChecked(stayOnTop)
         # Main window is ready, so show it
         self.mainWindow.init(self, self.networkChannel, self.dataManager)
         self._initWidgets()
@@ -175,6 +197,7 @@ class PyPipboyApp(QtWidgets.QApplication):
             if self.settings.value('mainwindow/lastport'):
                 port = int(self.settings.value('mainwindow/lastport'))
             self.signalConnectToHost.emit(host, port, True)
+        self.startVersionCheck()
         sys.exit(self.exec_())
 
     @QtCore.pyqtSlot(bool)
@@ -334,7 +357,11 @@ class PyPipboyApp(QtWidgets.QApplication):
     @QtCore.pyqtSlot(str, str)        
     def showWarningMessage(self, title, text):
             QtWidgets.QMessageBox.warning(self.mainWindow, title, text)
-            
+    
+    # Shows a info message dialog
+    @QtCore.pyqtSlot(str, str)        
+    def showInfoMessage(self, title, text):
+            QtWidgets.QMessageBox.information(self.mainWindow, title, text)
     
     # disconnects the current network session
     @QtCore.pyqtSlot()        
@@ -359,10 +386,28 @@ class PyPipboyApp(QtWidgets.QApplication):
             # quit
             self.quit()
     
+    def getVersionString(self, versionData = None):
+        if versionData:
+            major = versionData['major']
+            minor = versionData['minor']
+            rev = versionData['rev']
+            suffix = versionData['suffix']
+        else:
+            major = self.PROGRAM_VERSION_MAJOR
+            minor = self.PROGRAM_VERSION_MINOR
+            rev = self.PROGRAM_VERSION_REV
+            suffix = self.PROGRAM_VERSION_SUFFIX
+        version = 'v' + str(major) + '.' + str(minor)
+        if rev > 0:
+            version += '.' + str(rev)
+        if suffix:
+            version += '-' + suffix
+        return version
+    
     # Shows the about dialog
     def showAboutDialog(self):
         QtWidgets.QMessageBox.about(self.mainWindow, 'About ' + self.PROGRAM_NAME,
-            self.PROGRAM_NAME + ' ' + self.PROGRAM_VERSION + '\n\n' +
+            self.PROGRAM_NAME + ' ' + self.getVersionString() + '\n\n' +
             self.PROGRAM_ABOUT_TEXT + '\n\n' + 
             'License:\n\n' + self.PROGRAM_ABOUT_LICENSE + ' \n\n' +
             self.PROGRAM_ABOUT_COPYRIGHT)
@@ -425,6 +470,55 @@ class PyPipboyApp(QtWidgets.QApplication):
             if errstatus != 0:
                 self.signalShowWarningMessage.emit('Connection Error', 'Connection Error: ' + str(errmsg))
                 
+    @QtCore.pyqtSlot()
+    def startVersionCheckVerbose(self):
+        self.startVersionCheck(True)
+    
+    @QtCore.pyqtSlot()
+    def startVersionCheck(self, verbose = False):
+        def _checkVersion():
+            try:
+                rawData = urllib.request.urlopen('https://raw.githubusercontent.com/matzman666/PyPipboyApp/master/VERSION').read().decode()
+                versionData = json.loads(rawData)
+                major = versionData['major']
+                minor = versionData['minor']
+                rev = versionData['rev']
+                suffix = versionData['suffix']
+                newVersionAvailable = False
+                if (self.PROGRAM_VERSION_MAJOR < major 
+                        or (self.PROGRAM_VERSION_MAJOR == major and self.PROGRAM_VERSION_MINOR < minor) 
+                        or (self.PROGRAM_VERSION_MAJOR == major and self.PROGRAM_VERSION_MINOR == minor and self.PROGRAM_VERSION_REV < rev)):
+                    newVersionAvailable = True
+                self._signalFinishedCheckVersion.emit(versionData, newVersionAvailable, False, '', verbose)
+            except Exception as e:
+                self._logger.warn('Could not check for new version: ' + str(e))
+                self._signalFinishedCheckVersion.emit({}, False, True, str(e), verbose)
+        self._checkVersionThread = threading.Thread(target = _checkVersion)
+        self._checkVersionThread.start()
+    
+    
+    @QtCore.pyqtSlot(dict, bool, bool, str, bool)
+    def _slotFinishedCheckVersion(self, versionData, newVersionAvailable, errorState, errorString, verbose):
+        self._checkVersionThread.join()
+        self._checkVersionThread = None
+        if errorState:
+            if verbose:
+                self.showWarningMessage('Version Check', 'Could not check for new version: ' + errorString)
+        elif newVersionAvailable:
+            self.showInfoMessage('Version Check', 'New version available: ' + self.getVersionString(versionData) + '.')
+        elif verbose:
+            self.showInfoMessage('Version Check', 'No new version available.')
+    
+    @QtCore.pyqtSlot(bool)
+    def setWindowStayOnTop(self, value):
+        self.settings.setValue('mainwindow/stayOnTop', int(value))
+        if value:
+            self.mainWindow.setWindowFlags(self.mainWindow.windowFlags() | QtCore.Qt.WindowStaysOnTopHint)
+        else:
+            self.mainWindow.setWindowFlags(self.mainWindow.windowFlags() & ~QtCore.Qt.WindowStaysOnTopHint)
+        self.mainWindow.show()
+    
+    
     # load widgets
     def _loadWidgets(self):
         self.widgets = list()
