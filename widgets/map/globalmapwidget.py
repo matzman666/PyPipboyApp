@@ -10,7 +10,6 @@ from widgets.shared import settings
 from .marker import PipValueMarkerBase
 
 
-
 class PlayerMarker(PipValueMarkerBase):
     signalPlayerPositionUpdate = QtCore.pyqtSignal(float, float, float)
     
@@ -149,6 +148,7 @@ class QuestMarker(PipValueMarkerBase):
         self.imageFactory = imageFactory
         self.imageFilePath = os.path.join('res', 'mapmarkerquest.svg')
         self.pipValueListenerDepth = 1
+        self.QuestFormIds = None
         self.markerItem.setZValue(0)
         self.setColor(color,False)
         self.setLabelFont(QtGui.QFont("Times", 8, QtGui.QFont.Bold), False)
@@ -181,11 +181,11 @@ class QuestMarker(PipValueMarkerBase):
             shared = self.pipValue.child('Shared').value()
             if shared != None:
                 tttext += '\nShared: ' + str(shared)
-            questids = self.pipValue.child('QuestId').value()
-            if questids != None:
+            self.QuestFormIds = self.pipValue.child('QuestId').value()
+            if self.QuestFormIds != None:
                 tttext += '\nQuestIds: ['
                 isFirst = True
-                for q in questids:
+                for q in self.QuestFormIds:
                     if isFirst:
                         isFirst = False
                     else:
@@ -870,5 +870,17 @@ class GlobalMapWidget(widgets.WidgetBase):
             loc.mapCenterOn()
         except:
             pass
+    
+    # CENTER MAP ON QUEST MARKER
+    # formId - int - Quest formID value
+    def iwcCenterOnQuest(self, formId):
+        Quest = None
         
+        if self.pipMapQuestsItems:
+            for QuestItem in self.pipMapQuestsItems:
+                for QuestFormId in self.pipMapQuestsItems[QuestItem].QuestFormIds:
+                    if QuestFormId.value() == formId:
+                        Quest = self.pipMapQuestsItems[QuestItem]
         
+        if Quest:
+            Quest.mapCenterOn()
