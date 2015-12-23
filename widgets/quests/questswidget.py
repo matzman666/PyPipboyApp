@@ -220,7 +220,8 @@ class QuestsWidget(widgets.WidgetBase):
             if questInfoId == self.MiscellaneousId:
                 self.widget.descriptionLabel.setText("Click on an objective to activate the Show on Map button. Double click an objective to activate or deactivate it.")
             else:
-                self.widget.descriptionLabel.setText(self.QuestData.child(questInfoId).child("desc").value())
+                if self.QuestData.child(questInfoId):
+                    self.widget.descriptionLabel.setText(self.QuestData.child(questInfoId).child("desc").value())
             
             Objectives = self.QuestData.child(questInfoId).child("objectives")
             
