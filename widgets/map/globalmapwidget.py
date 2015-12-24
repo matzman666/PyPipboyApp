@@ -877,10 +877,12 @@ class GlobalMapWidget(widgets.WidgetBase):
         Quest = None
         
         if self.pipMapQuestsItems:
-            for QuestItem in self.pipMapQuestsItems:
-                for QuestFormId in self.pipMapQuestsItems[QuestItem].QuestFormIds:
-                    if QuestFormId.value() == formId:
-                        Quest = self.pipMapQuestsItems[QuestItem]
+            def _searchForQuest():
+                for QuestItem in self.pipMapQuestsItems:
+                    for QuestFormId in self.pipMapQuestsItems[QuestItem].QuestFormIds:
+                        if QuestFormId.value() == formId:
+                            return self.pipMapQuestsItems[QuestItem]
+            Quest = _searchForQuest()
         
         if Quest:
             Quest.mapCenterOn()

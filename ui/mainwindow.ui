@@ -50,6 +50,9 @@
     <addaction name="actionConnectTo"/>
     <addaction name="actionDisconnect"/>
     <addaction name="separator"/>
+    <addaction name="actionImportData"/>
+    <addaction name="actionExportData"/>
+    <addaction name="separator"/>
     <addaction name="actionQuit"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -58,6 +61,7 @@
     </property>
     <addaction name="actionShowAboutQt"/>
     <addaction name="actionShowAbout"/>
+    <addaction name="actionVersionCheck"/>
    </widget>
    <widget class="QMenu" name="menuWindow">
     <property name="title">
@@ -70,6 +74,7 @@
      <addaction name="actionStylesDefault"/>
     </widget>
     <addaction name="actionFullscreen"/>
+    <addaction name="actionStayOnTop"/>
     <addaction name="menuStyles"/>
    </widget>
    <addaction name="menuApp"/>
@@ -135,6 +140,32 @@
    </property>
    <property name="text">
     <string>Auto Connect on Startup</string>
+   </property>
+  </action>
+  <action name="actionExportData">
+   <property name="enabled">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Export Data</string>
+   </property>
+  </action>
+  <action name="actionImportData">
+   <property name="text">
+    <string>Import Data</string>
+   </property>
+  </action>
+  <action name="actionVersionCheck">
+   <property name="text">
+    <string>Version Check</string>
+   </property>
+  </action>
+  <action name="actionStayOnTop">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Stay on Top</string>
    </property>
   </action>
  </widget>
