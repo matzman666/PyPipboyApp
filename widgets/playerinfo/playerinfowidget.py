@@ -3,6 +3,7 @@
 
 import datetime
 import os
+import math
 from PyQt5 import QtWidgets, QtCore, uic
 from pypipboy.types import eValueType
 from widgets import widgets
@@ -94,7 +95,11 @@ class PlayerInfoWidget(widgets.WidgetBase):
                         self.widget.weightBar.setTextVisible(False)
                 self.widget.weightBar.setValue((self.curWT*100)/self.maxWT)
         self.widget.weightLabel.setText(str(int(self.curWT)) + ' / ' + str(int(self.maxWT)))
-        self.widget.lvlLabel.setText(str(self.xpLevel))
+        
+        XPNextLevel = 200 + ((self.xpLevel - 1) * 75)
+        XPCurrentLevel = math.floor(XPNextLevel * self.xpProgress)
+        self.widget.lvlLabel.setText("LVL: " + str(self.xpLevel) + " XP: " + str(XPCurrentLevel) + " / " + str(XPNextLevel))
+        
         self.widget.lvlBar.setValue(self.xpProgress*100)
         self.widget.capsLabel.setText(str(self.caps))
             

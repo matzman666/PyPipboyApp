@@ -361,13 +361,13 @@
        <widget class="QLabel" name="lvlLabel">
         <property name="font">
          <font>
-          <pointsize>14</pointsize>
+          <pointsize>10</pointsize>
           <weight>75</weight>
           <bold>true</bold>
          </font>
         </property>
         <property name="text">
-         <string>0</string>
+         <string>LVL: 0 XP: 0 / 0</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
