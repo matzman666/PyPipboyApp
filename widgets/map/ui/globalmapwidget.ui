@@ -14,7 +14,16 @@
    <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
-   <property name="margin">
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>0</number>
+   </property>
+   <property name="bottomMargin">
     <number>0</number>
    </property>
    <item>
@@ -44,7 +53,16 @@
      </widget>
      <widget class="QWidget" name="sidebar" native="true">
       <layout class="QVBoxLayout" name="verticalLayout">
-       <property name="margin">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
         <number>0</number>
        </property>
        <item>
@@ -63,8 +81,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>260</width>
-            <height>371</height>
+            <width>269</width>
+            <height>464</height>
            </rect>
           </property>
           <attribute name="label">
@@ -77,7 +95,16 @@
               <string>Zoom</string>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_3">
-              <property name="margin">
+              <property name="leftMargin">
+               <number>8</number>
+              </property>
+              <property name="topMargin">
+               <number>8</number>
+              </property>
+              <property name="rightMargin">
+               <number>8</number>
+              </property>
+              <property name="bottomMargin">
                <number>8</number>
               </property>
               <item>
@@ -136,7 +163,16 @@
               <string>Map Color</string>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_4">
-              <property name="margin">
+              <property name="leftMargin">
+               <number>8</number>
+              </property>
+              <property name="topMargin">
+               <number>8</number>
+              </property>
+              <property name="rightMargin">
+               <number>8</number>
+              </property>
+              <property name="bottomMargin">
                <number>8</number>
               </property>
               <item>
@@ -193,8 +229,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>260</width>
-            <height>371</height>
+            <width>302</width>
+            <height>339</height>
            </rect>
           </property>
           <attribute name="label">
@@ -237,7 +273,7 @@
            <item>
             <widget class="QCheckBox" name="locationVisibilityCheatCheckbox">
              <property name="text">
-              <string>Location Visibility Cheat</string>
+              <string>Show Unknown Locations</string>
              </property>
             </widget>
            </item>

@@ -7,8 +7,8 @@ from widgets import widgets
 from widgets.shared import settings
 
 
-class RadioTableModel(QtCore.QAbstractTableModel):
-    _signalRadioUpdate = QtCore.pyqtSignal()
+class EffectsTableModel(QtCore.QAbstractTableModel):
+    signalEffectsUpdate = QtCore.pyqtSignal()
     
     def __init__(self, settings, qparent = None):
         super().__init__(qparent)
@@ -18,7 +18,7 @@ class RadioTableModel(QtCore.QAbstractTableModel):
         self.showPermanent = bool(int(self.settings.value('effectswidget/showPermanent', False)))
         self.showEmptySources = bool(int(self.settings.value('effectswidget/showEmptySources', False)))
         self.showInactive = bool(int(self.settings.value('effectswidget/showInactive', False)))
-        self._signalRadioUpdate.connect(self._slotEffectsUpdate)
+        self.signalEffectsUpdate.connect(self._slotEffectsUpdate)
         
     @QtCore.pyqtSlot(bool)
     def setShowPermanent(self, value, signal = True):
@@ -26,21 +26,21 @@ class RadioTableModel(QtCore.QAbstractTableModel):
         # Buggy QSettings Linux implementation forces us to save as int
         self.settings.setValue('effectswidget/showPermanent', int(value))
         if signal:
-            self._signalRadioUpdate.emit()
+            self.signalEffectsUpdate.emit()
         
     @QtCore.pyqtSlot(bool)
     def setShowEmptySources(self, value, signal = True):
         self.showEmptySources = value
         self.settings.setValue('effectswidget/showEmptySources', int(value))
         if signal:
-            self._signalRadioUpdate.emit()
+            self.signalEffectsUpdate.emit()
     
     @QtCore.pyqtSlot(bool)
     def setShowInactive(self, value, signal = True):
         self.showInactive = value
         self.settings.setValue('effectswidget/showInactive', int(value))
         if signal:
-            self._signalRadioUpdate.emit()
+            self.signalEffectsUpdate.emit()
         
     def setPipActiveEffects(self, pipValue):
         self.modelAboutToBeReset.emit()
@@ -50,7 +50,7 @@ class RadioTableModel(QtCore.QAbstractTableModel):
         self.pipActiveEffects.registerValueUpdatedListener(self._onPipEffectsUpdate, 99)
     
     def _onPipEffectsUpdate(self, caller, value, pathObjs):
-        self._signalRadioUpdate.emit()
+        self.signalEffectsUpdate.emit()
     
     @QtCore.pyqtSlot()
     def _slotEffectsUpdate(self):
@@ -63,14 +63,14 @@ class RadioTableModel(QtCore.QAbstractTableModel):
         if self.pipActiveEffects:
             for s in self.pipActiveEffects.value():
                 for e in s.child('Effects').value():
-                    if (self.showPermanent or self._data(e, 2) > 0.0) and (self.showEmptySources or self._data(e, 1)) and (self.showInactive or self._data(e, 7)):
+                    if (self.showPermanent or self._data(e, 2) > 0.0) and (self.showEmptySources or self._data(e, 1)) and (self.showInactive or self._data(e, 5)):
                         self.effectList.append(e)
         
     def rowCount(self, parent = QtCore.QModelIndex()):
         return len(self.effectList)
         
     def columnCount(self, parent = QtCore.QModelIndex()):
-        return 8
+        return 6
     
     def headerData(self, section, orientation, role = QtCore.Qt.DisplayRole):
         if orientation == QtCore.Qt.Horizontal:
@@ -86,11 +86,7 @@ class RadioTableModel(QtCore.QAbstractTableModel):
                 elif section == 4:
                     return 'Type'
                 elif section == 5:
-                    return 'pipID'
-                elif section == 6:
-                    return 'showAsPercent'
-                elif section == 7:
-                    return 'IsActive'
+                    return 'A'
         return None
 
     def data(self, index, role = QtCore.Qt.DisplayRole):
@@ -106,10 +102,13 @@ class RadioTableModel(QtCore.QAbstractTableModel):
                 else:
                     text = effect.child('Name').value()
                     value = effect.child('Value').value()
+                    showAsPercent = effect.child('showAsPercent')
                     if value > 0:
                         text += ' +' + str(value)
                     elif value < 0:
                         text += ' ' + str(value)
+                    if showAsPercent and showAsPercent.value():
+                        text += '%'
                     return text
             elif column == 1:
                 # Immediate parent is the enclosing array, therefore we need parent.parent
@@ -128,22 +127,28 @@ class RadioTableModel(QtCore.QAbstractTableModel):
                 # Immediate parent is the enclosing array, therefore we need parent.parent
                 return effect.pipParent.pipParent.child('type').value()
             elif column == 5:
-                return effect.pipId
-            elif column == 6:
-                sap = effect.child('showAsPercent')
-                if sap:
-                    return sap.value()
-                return False
-            elif column == 7:
-                return effect.child('IsActive').value()
+                if effect.child('IsActive').value():
+                    return '◼'
+                else:
+                    return ''
         elif role == QtCore.Qt.FontRole:
             if effect.child('IsActive').value():
                 font = QtGui.QFont()
                 font.setBold(True)
                 return font
-        #elif role == QtCore.Qt.ForegroundRole:
-        #    if not effect.child('IsActive').value():
-        #        return QtGui.QColor.fromRgb(150,150,150)
+        elif role == QtCore.Qt.TextAlignmentRole:
+            if column == 0:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignLeft
+            elif column == 1:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignLeft
+            elif column == 2:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight
+            elif column == 3:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight
+            elif column == 4:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight
+            elif column == 5:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignCenter
         return None
         
     def getPipValue(self, row):
@@ -176,7 +181,7 @@ class SortProxyModel(QtCore.QSortFilterProxyModel):
         
 
 
-class RadioWidget(widgets.WidgetBase):
+class EffectsWidget(widgets.WidgetBase):
     
     def __init__(self, mhandle, parent):
         super().__init__('Effects', parent)
@@ -186,7 +191,7 @@ class RadioWidget(widgets.WidgetBase):
     def init(self, app, datamanager):
         super().init(app, datamanager)
         self.app = app
-        self.effectsViewModel = RadioTableModel(self.app.settings)
+        self.effectsViewModel = EffectsTableModel(self.app.settings)
         self.sortProxyModel = SortProxyModel(self.app.settings)
         self.sortProxyModel.setSourceModel(self.effectsViewModel)
         self.widget.effectsView.setModel(self.sortProxyModel)

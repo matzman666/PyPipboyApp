@@ -37,17 +37,19 @@ class RadioTableModel(QtCore.QAbstractTableModel):
             return 0
         
     def columnCount(self, parent = QtCore.QModelIndex()):
-        return 3
+        return 4
     
     def headerData(self, section, orientation, role = QtCore.Qt.DisplayRole):
         if orientation == QtCore.Qt.Horizontal:
             if role == QtCore.Qt.DisplayRole:
                 if section == 0:
-                    return 'Name'
+                    return 'A'
                 elif section == 1:
-                    return 'Frequency'
+                    return 'Name'
                 elif section == 2:
-                    return 'In Range'
+                    return 'Frequency'
+                elif section == 3:
+                    return 'Range'
         return None
     
     def data(self, index, role = QtCore.Qt.DisplayRole):
@@ -56,11 +58,19 @@ class RadioTableModel(QtCore.QAbstractTableModel):
     def _data(self, radio, column, role = QtCore.Qt.DisplayRole):
         if role == QtCore.Qt.DisplayRole:
             if column == 0:
-                return radio.child('text').value()
+                if radio.child('active').value():
+                    return '◼'
+                else:
+                    return ''
             elif column == 1:
-                return radio.child('frequency').value()
+                return radio.child('text').value()
             elif column == 2:
-                return radio.child('inRange').value()
+                return radio.child('frequency').value()
+            elif column == 3:
+                if radio.child('inRange').value():
+                    return '◼'
+                else:
+                    return ''
         elif role == QtCore.Qt.FontRole:
             if radio.child('active').value():
                 font = QtGui.QFont()
@@ -69,6 +79,15 @@ class RadioTableModel(QtCore.QAbstractTableModel):
         elif role == QtCore.Qt.ForegroundRole:
             if not radio.child('inRange').value():
                 return QtGui.QColor.fromRgb(150,150,150)
+        elif role == QtCore.Qt.TextAlignmentRole:
+            if column == 0:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignCenter
+            elif column == 1:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignLeft
+            elif column == 2:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight
+            elif column == 3:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignCenter
         return None
         
     def getPipValue(self, row):

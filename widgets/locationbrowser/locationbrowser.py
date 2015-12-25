@@ -73,19 +73,28 @@ class LocationTableModel(QtCore.QAbstractTableModel):
             elif column == 2:
                 discovered = location.child('Discovered')
                 if discovered:
-                    return discovered.value()
+                    if discovered.value():
+                        return 'yes'
+                    else:
+                        return 'no'
                 else:
                     return '-'
             elif column == 3:
                 cleared = location.child('ClearedStatus')
                 if cleared:
-                    return cleared.value()
+                    if cleared.value():
+                        return 'yes'
+                    else:
+                        return 'no'
                 else:
                     return '-'
             elif column == 4:
                 owned = location.child('WorkshopOwned')
                 if owned:
-                    return owned.value()
+                    if owned.value():
+                        return 'yes'
+                    else:
+                        return 'no'
                 else:
                     return '-'
             elif column == 5:
@@ -101,7 +110,15 @@ class LocationTableModel(QtCore.QAbstractTableModel):
                 else:
                     return '-'
             elif column == 7:
-                return location.child('Visible').value()
+                    if location.child('Visible').value():
+                        return 'yes'
+                    else:
+                        return 'no'
+        elif role == QtCore.Qt.TextAlignmentRole:
+            if column == 0:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignLeft
+            else:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight
         return None
         
     def getPipValue(self, row):
