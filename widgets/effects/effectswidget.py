@@ -121,7 +121,7 @@ class EffectsTableModel(QtCore.QAbstractTableModel):
             elif column == 3:
                 value = effect.child('Value')
                 if value:
-                    return value.value()
+                    return round(value.value(), 2)
                 return 0.0
             elif column == 4:
                 # Immediate parent is the enclosing array, therefore we need parent.parent

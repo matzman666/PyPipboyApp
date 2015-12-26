@@ -14,17 +14,24 @@ class SortProxyModel(QtCore.QSortFilterProxyModel):
         self.settings = settings
         self._settingsPrefix = prefix
         self.sortColumn = int(self.settings.value(prefix + '/sortColumn', 0))
+        self.lastSortColumn = int(self.settings.value(prefix + '/lastSortColumn', 0))
         # Buggy QSettings Linux implementation forces us to convert to int and then to bool
         self.sortReversed = bool(int(self.settings.value(prefix + '/sortReversed', 0)))
+        self.lastSortReversed = bool(int(self.settings.value(prefix + '/lastSortReversed', 0)))
         self.filterString = ''
         
     def sort(self, column, order = QtCore.Qt.AscendingOrder):
-        self.sortColumn = column
+        if self.sortColumn != column:
+            self.lastSortColumn = self.sortColumn
+            self.settings.setValue(self._settingsPrefix + '/lastSortColumn', self.lastSortColumn)
+            self.lastSortReversed = self.sortReversed
+            self.settings.setValue(self._settingsPrefix + '/lastSortReversed', int(self.lastSortReversed))
+            self.sortColumn = column
+            self.settings.setValue(self._settingsPrefix + '/sortColumn', column)
         if order == QtCore.Qt.DescendingOrder:
             self.sortReversed = True
         else:
             self.sortReversed = False
-        self.settings.setValue(self._settingsPrefix + '/sortColumn', column)
         self.settings.setValue(self._settingsPrefix + '/sortReversed', int(self.sortReversed))
         super().sort(column, order)
         
@@ -40,8 +47,13 @@ class SortProxyModel(QtCore.QSortFilterProxyModel):
         leftData = self.sourceModel().data(left)
         rightData = self.sourceModel().data(right)
         try:
-            if left.column() != 0 and leftData == rightData:
-                return super().lessThan(self.sourceModel().index(left.row(), 0), self.sourceModel().index(right.row(), 0))
+            if leftData == rightData and left.column() != self.lastSortColumn:
+                comp = self.lessThan(self.sourceModel().index(left.row(), self.lastSortColumn), 
+                                        self.sourceModel().index(right.row(), self.lastSortColumn))
+                if self.lastSortReversed:
+                    return not comp
+                else:
+                    return comp
         except:
             pass
         return super().lessThan(left, right)

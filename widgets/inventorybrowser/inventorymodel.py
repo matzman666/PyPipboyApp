@@ -121,19 +121,23 @@ class InventoryTableModel(QtCore.QAbstractTableModel):
             elif column == 1:
                 return item.child('count').value()
             elif column == 2:
-                return inventoryutils.itemFindItemCardInfoValue(item, inventoryutils.eItemCardInfoValueText.Value)
+                return round(inventoryutils.itemFindItemCardInfoValue(item, 
+                                inventoryutils.eItemCardInfoValueText.Value), 2)
             elif column == 3:
-                return inventoryutils.itemFindItemCardInfoValue(item, inventoryutils.eItemCardInfoValueText.Weight)
+                return round(inventoryutils.itemFindItemCardInfoValue(item, 
+                                inventoryutils.eItemCardInfoValueText.Weight), 2)
             elif column == 4:
-                value = inventoryutils.itemFindItemCardInfoValue(item, inventoryutils.eItemCardInfoValueText.Value)
-                weight = inventoryutils.itemFindItemCardInfoValue(item, inventoryutils.eItemCardInfoValueText.Weight)
+                value = inventoryutils.itemFindItemCardInfoValue(item, 
+                            inventoryutils.eItemCardInfoValueText.Value)
+                weight = inventoryutils.itemFindItemCardInfoValue(item, 
+                            inventoryutils.eItemCardInfoValueText.Weight)
                 try:
                     if value == 0.0:
                         return 0.0
                     elif weight == 0.0:
                         return float('inf')
                     else:
-                        return value/weight
+                        return round(value/weight, 2)
                 except:
                     return None
         elif role == QtCore.Qt.TextAlignmentRole:
@@ -258,7 +262,7 @@ class CatAllModel(InventoryTableModel):
                             else:
                                 text += ', '
                             text += cat[1]
-                    item.setUserCache('componentstext', text, 1)
+                    item.setUserCache('categorytext', text, 1)
                 else:
                     text = cached.value
                 return text
@@ -352,13 +356,21 @@ class CatWeaponsModel(InventoryTableModel):
                     else:
                         return None
                 else:
-                    return rof
+                    return round(rof, 2)
             elif column == pc + 4:
-                return inventoryutils.itemFindItemCardInfoValue(item, 
+                rng = inventoryutils.itemFindItemCardInfoValue(item, 
                         inventoryutils.eItemCardInfoValueText.Range)
+                if rng == None:
+                    return None
+                else:
+                    return round(rng, 2)
             elif column == pc + 5:
-                return inventoryutils.itemFindItemCardInfoValue(item, 
+                val = inventoryutils.itemFindItemCardInfoValue(item, 
                         inventoryutils.eItemCardInfoValueText.Accuracy)
+                if val == None:
+                    return None
+                else:
+                    return round(val, 2)
             elif column == pc + 6:
                 return inventoryutils.itemFindItemCardInfoValue(item, True, 'showAsDescription', 'text')
             elif column == pc + 7:
