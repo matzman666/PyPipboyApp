@@ -67,14 +67,14 @@ class PipboyMainWindow(QtWidgets.QMainWindow):
 # Main application class
 class PyPipboyApp(QtWidgets.QApplication):
     
-    PROGRAM_NAME = 'Unofficial Pipboy Application'
+    PROGRAM_NAME = 'PyPipboyApp'
     PROGRAM_VERSION_MAJOR = 0
     PROGRAM_VERSION_MINOR = 0
     PROGRAM_VERSION_REV = 0
     PROGRAM_VERSION_SUFFIX = 'unknown'
-    PROGRAM_ABOUT_TEXT = 'ToDo: About Text'
-    PROGRAM_ABOUT_LICENSE = 'ToDo'
-    PROGRAM_ABOUT_COPYRIGHT = 'Copyright (c) 2015 matzman666'
+    #PROGRAM_ABOUT_TEXT = 'ToDo: About Text'
+    PROGRAM_ABOUT_LICENSE = 'GPL 3.0<br><br>Contains Graphical Assets owned by Bethesda and subject to their terms of service'
+    PROGRAM_ABOUT_AUTHORS = '<li>matzman666</li><li>akamal</li><li>killean</li>'
     PROGRAM_WIDGETS_DIR = 'widgets'
     PROGRAM_STYLES_DIR = 'styles'
     
@@ -407,10 +407,10 @@ class PyPipboyApp(QtWidgets.QApplication):
     # Shows the about dialog
     def showAboutDialog(self):
         QtWidgets.QMessageBox.about(self.mainWindow, 'About ' + self.PROGRAM_NAME,
-            self.PROGRAM_NAME + ' ' + self.getVersionString() + '\n\n' +
-            self.PROGRAM_ABOUT_TEXT + '\n\n' + 
-            'License:\n\n' + self.PROGRAM_ABOUT_LICENSE + ' \n\n' +
-            self.PROGRAM_ABOUT_COPYRIGHT)
+            '<b>' + self.PROGRAM_NAME + '</b><br>' + self.getVersionString() + '<br><br>' +
+            #self.PROGRAM_ABOUT_TEXT + '<br><br>' + 
+            '<b>License:</b><br>' + self.PROGRAM_ABOUT_LICENSE + '<br><br>' +
+            '<b>Authors:</b><ul>' + self.PROGRAM_ABOUT_AUTHORS + '<ul>')
         
     @QtCore.pyqtSlot()        
     def exportData(self):
