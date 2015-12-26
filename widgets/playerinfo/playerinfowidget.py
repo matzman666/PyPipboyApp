@@ -98,7 +98,8 @@ class PlayerInfoWidget(widgets.WidgetBase):
         
         XPNextLevel = 200 + ((self.xpLevel - 1) * 75)
         XPCurrentLevel = math.floor(XPNextLevel * self.xpProgress)
-        self.widget.lvlLabel.setText("LVL: " + str(self.xpLevel) + " XP: " + str(XPCurrentLevel) + " / " + str(XPNextLevel))
+        self.widget.xpLabel.setText(str(XPCurrentLevel) + ' / ' + str(XPNextLevel))
+        self.widget.lvlLabel.setText(str(self.xpLevel))
         
         self.widget.lvlBar.setValue(self.xpProgress*100)
         self.widget.capsLabel.setText(str(self.caps))

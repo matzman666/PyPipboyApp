@@ -12,8 +12,10 @@ import urllib.request
 from PyQt5 import QtGui, QtWidgets, QtCore, uic
 from pypipboy.network import NetworkChannel
 from pypipboy.datamanager import PipboyDataManager
+from pypipboy.relayserver import RelayController
 from dialogs.selecthostdialog import SelectHostDialog
 from dialogs.connecthostdialog import ConnectHostDialog
+from dialogs.relaysettingsdialog import RelaySettingsDialog
 from widgets.widgets import ModuleHandle 
 
 
@@ -67,14 +69,14 @@ class PipboyMainWindow(QtWidgets.QMainWindow):
 # Main application class
 class PyPipboyApp(QtWidgets.QApplication):
     
-    PROGRAM_NAME = 'Unofficial Pipboy Application'
+    PROGRAM_NAME = 'PyPipboyApp'
     PROGRAM_VERSION_MAJOR = 0
     PROGRAM_VERSION_MINOR = 0
     PROGRAM_VERSION_REV = 0
     PROGRAM_VERSION_SUFFIX = 'unknown'
-    PROGRAM_ABOUT_TEXT = 'ToDo: About Text'
-    PROGRAM_ABOUT_LICENSE = 'ToDo'
-    PROGRAM_ABOUT_COPYRIGHT = 'Copyright (c) 2015 matzman666'
+    #PROGRAM_ABOUT_TEXT = 'ToDo: About Text'
+    PROGRAM_ABOUT_LICENSE = 'GPL 3.0<br><br>Contains Graphical Assets owned by Bethesda and subject to their terms of service'
+    PROGRAM_ABOUT_AUTHORS = '<li>matzman666</li><li>akamal</li><li>killean</li>'
     PROGRAM_WIDGETS_DIR = 'widgets'
     PROGRAM_STYLES_DIR = 'styles'
     
@@ -183,6 +185,16 @@ class PyPipboyApp(QtWidgets.QApplication):
         stayOnTop = bool(int(self.settings.value('mainwindow/stayOnTop', 0)))
         self.mainWindow.actionStayOnTop.toggled.connect(self.setWindowStayOnTop)
         self.mainWindow.actionStayOnTop.setChecked(stayOnTop)
+        self.mainWindow.actionRelayModeSettings.triggered.connect(self._slotRelayModeSettings)
+        # Init Relay Mode
+        self.relayModeEnabled = bool(int(self.settings.value('mainwindow/relayModeEnabled', 0)))
+        self.relayModeAutodiscovery = bool(int(self.settings.value('mainwindow/relayModeAutodiscovery', 0)))
+        self.relayModePort = int(self.settings.value('mainwindow/relayModePort', 27000))
+        self.relayController = RelayController(self.dataManager)
+        if self.relayModeEnabled:
+            self.relayController.startRelayService(port=self.relayModePort)
+            if self.relayModeAutodiscovery:
+                self.relayController.startAutodiscoverService()
         # Main window is ready, so show it
         self.mainWindow.init(self, self.networkChannel, self.dataManager)
         self._initWidgets()
@@ -379,6 +391,9 @@ class PyPipboyApp(QtWidgets.QApplication):
             # disconnect any network sessions
             if self.networkChannel.isConnected:
                 self.networkChannel.disconnect()
+            # Close Relay Service
+            self.relayController.stopRelayService()
+            self.relayController.stopAutodiscoverService()
             # save state
             self.settings.setValue('mainwindow/geometry', self.mainWindow.saveGeometry())
             self.settings.setValue('mainwindow/windowstate', self.mainWindow.saveState())
@@ -407,10 +422,10 @@ class PyPipboyApp(QtWidgets.QApplication):
     # Shows the about dialog
     def showAboutDialog(self):
         QtWidgets.QMessageBox.about(self.mainWindow, 'About ' + self.PROGRAM_NAME,
-            self.PROGRAM_NAME + ' ' + self.getVersionString() + '\n\n' +
-            self.PROGRAM_ABOUT_TEXT + '\n\n' + 
-            'License:\n\n' + self.PROGRAM_ABOUT_LICENSE + ' \n\n' +
-            self.PROGRAM_ABOUT_COPYRIGHT)
+            '<b>' + self.PROGRAM_NAME + '</b><br>' + self.getVersionString() + '<br><br>' +
+            #self.PROGRAM_ABOUT_TEXT + '<br><br>' + 
+            '<b>License:</b><br>' + self.PROGRAM_ABOUT_LICENSE + '<br><br>' +
+            '<b>Authors:</b><ul>' + self.PROGRAM_ABOUT_AUTHORS + '<ul>')
         
     @QtCore.pyqtSlot()        
     def exportData(self):
@@ -505,9 +520,14 @@ class PyPipboyApp(QtWidgets.QApplication):
             if verbose:
                 self.showWarningMessage('Version Check', 'Could not check for new version: ' + errorString)
         elif newVersionAvailable:
-            self.showInfoMessage('Version Check', 'New version available: ' + self.getVersionString(versionData) + '.')
+            self.showInfoMessage('Version Check', '<b>New version is available!<br><br>' 
+                                                + self.getVersionString(versionData) + '</b> (current: ' 
+                                                + self.getVersionString() + ').<br><br>'
+                                                + 'Download from:<ul>'
+                                                + '<li><a href="http://www.nexusmods.com/fallout4/mods/4664">nexusmods.com</a><li>'
+                                                + '<li><a href="http://github.com/matzman666/PyPipboyApp">github.com</a></li></ul>')
         elif verbose:
-            self.showInfoMessage('Version Check', 'No new version available.')
+            self.showInfoMessage('Version Check', 'Current version is up-to-date.')
     
     @QtCore.pyqtSlot(bool)
     def setWindowStayOnTop(self, value):
@@ -517,6 +537,36 @@ class PyPipboyApp(QtWidgets.QApplication):
         else:
             self.mainWindow.setWindowFlags(self.mainWindow.windowFlags() & ~QtCore.Qt.WindowStaysOnTopHint)
         self.mainWindow.show()
+    
+    def _slotRelayModeSettings(self):
+        dialog = RelaySettingsDialog(self.mainWindow)
+        dialog.relayGroupBox.setChecked(self.relayModeEnabled)
+        dialog.autodiscoveryCheckBox.setChecked(self.relayModeAutodiscovery)
+        dialog.relayPortEdit.setText(str(self.relayModePort))
+        if dialog.exec():
+            try:
+                enabled = dialog.relayGroupBox.isChecked()
+                autodiscovery = dialog.autodiscoveryCheckBox.isChecked()
+                port = int(dialog.relayPortEdit.text())
+                if not enabled:
+                    self.relayController.stopAutodiscoverService()
+                    self.relayController.stopRelayService()
+                else:
+                    if not autodiscovery:
+                        self.relayController.stopAutodiscoverService()
+                    else:
+                        self.relayController.startAutodiscoverService()
+                    if self.relayModePort != port:
+                        self.relayController.stopRelayService()
+                    self.relayController.startRelayService(port=port)
+                self.relayModeAutodiscovery = autodiscovery
+                self.relayModePort = port
+                self.relayModeEnabled = enabled
+                self.settings.setValue('mainwindow/relayModeEnabled', int(self.relayModeEnabled))
+                self.settings.setValue('mainwindow/relayModeAutodiscovery', int(self.relayModeAutodiscovery))
+                self.settings.setValue('mainwindow/relayModePort', self.relayModePort)
+            except Exception as e:
+                self.showWarningMessage('Relay Mode', 'Could not change settings: ' + str(e))
     
     
     # load widgets

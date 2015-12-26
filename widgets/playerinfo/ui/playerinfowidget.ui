@@ -326,13 +326,7 @@
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
      </property>
-     <layout class="QFormLayout" name="formLayout_4">
-      <property name="horizontalSpacing">
-       <number>4</number>
-      </property>
-      <property name="verticalSpacing">
-       <number>0</number>
-      </property>
+     <layout class="QGridLayout" name="gridLayout">
       <property name="leftMargin">
        <number>4</number>
       </property>
@@ -345,6 +339,12 @@
       <property name="bottomMargin">
        <number>0</number>
       </property>
+      <property name="horizontalSpacing">
+       <number>4</number>
+      </property>
+      <property name="verticalSpacing">
+       <number>0</number>
+      </property>
       <item row="0" column="0">
        <widget class="QLabel" name="label_4">
         <property name="font">
@@ -354,23 +354,6 @@
         </property>
         <property name="text">
          <string>LVL</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="1">
-       <widget class="QLabel" name="lvlLabel">
-        <property name="font">
-         <font>
-          <pointsize>10</pointsize>
-          <weight>75</weight>
-          <bold>true</bold>
-         </font>
-        </property>
-        <property name="text">
-         <string>LVL: 0 XP: 0 / 0</string>
-        </property>
-        <property name="alignment">
-         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
         </property>
        </widget>
       </item>
@@ -390,6 +373,40 @@
         </property>
         <property name="format">
          <string>%p% </string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="lvlLabel">
+        <property name="font">
+         <font>
+          <weight>75</weight>
+          <italic>false</italic>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>0</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLabel" name="xpLabel">
+        <property name="font">
+         <font>
+          <pointsize>10</pointsize>
+          <weight>75</weight>
+          <bold>true</bold>
+         </font>
+        </property>
+        <property name="text">
+         <string>0 / 0</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
         </property>
        </widget>
       </item>

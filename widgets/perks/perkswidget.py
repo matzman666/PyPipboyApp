@@ -144,56 +144,62 @@ class PerksWidget(widgets.WidgetBase):
         # If no perk has been selected yet, select first one in sorted view
         if self.SelectedPerkId == -1:
             Index = self.PerksModel.index(0, 0)
-            DataId = int(self.PerksModel.data(Index))
+            data = self.PerksModel.data(Index)
+            if data:
+                DataId = int(data)
             
-            self.SetPerkViewData(DataId)
+                self.SetPerkViewData(DataId)
     
     # UPDATE PERK DESCRIPTION BASED ON RANK SELECTED
     def UpdatePerkDescription(self):
-        Text = self.PerksData.child(self.SelectedPerkId).child("Perks").child(self.SelectedPerkRCur - 1).child("Description").value()
-        self.widget.descriptionLabel.setText(Text)
+        perk = self.PerksData.child(self.SelectedPerkId)
+        if perk:
+            Text = self.PerksData.child(self.SelectedPerkId).child("Perks").child(self.SelectedPerkRCur - 1).child("Description").value()
+            self.widget.descriptionLabel.setText(Text)
     
     # UPDATE STAR GRAPHIC VIEW BASED ON RANK SELECTED
     def UpdateStarView(self):
-        AreaWidth = self.widget.rankStars.rect().width()
-        StarWidth = self.StarDefaultWidth
-        Override = False
-        StarFilled = None
-        StarEmpty = None
-        
-        # Stars are too big to fit in to current view. Resize default images
-        if (AreaWidth / StarWidth) < self.SelectedPerkRMax:
-            StarWidth = math.floor(AreaWidth / self.SelectedPerkRMax)
-            Override = True
-            StarFilled = self.StarDefaultFilled.scaledToWidth(StarWidth)
-            StarEmpty = self.StarDefaultEmpty.scaledToWidth(StarWidth)
-        
-        StarMaxWidth = self.SelectedPerkRMax * StarWidth
-        
-        # Create scene and set its area
-        self.StarScene = QGraphicsScene(None)
-        self.StarScene.setSceneRect(0, 0, StarMaxWidth, StarWidth)
-        
-        Star = None
-        
-        # Filled Stars
-        for i in range(0, self.SelectedPerkRCur):
-            if Override:
-                Star = self.StarScene.addPixmap(StarFilled)
-            else:
-                Star = self.StarScene.addPixmap(self.StarDefaultFilled)
-                
-            Star.setOffset(i * StarWidth, 0)
-        
-        # Empty Stars
-        for i in range(self.SelectedPerkRCur, self.SelectedPerkRMax):
-            if Override:
-                Star = self.StarScene.addPixmap(StarEmpty)
-            else:
-                Star = self.StarScene.addPixmap(self.StarDefaultEmpty)
-                
-            Star.setOffset(i * StarWidth, 0)
-
-        # Set the widget and show its glory
-        self.widget.rankStars.setScene(self.StarScene)
-        self.widget.rankStars.show()
+        perk = self.PerksData.child(self.SelectedPerkId)
+        if perk:
+            AreaWidth = self.widget.rankStars.rect().width()
+            StarWidth = self.StarDefaultWidth
+            Override = False
+            StarFilled = None
+            StarEmpty = None
+            
+            # Stars are too big to fit in to current view. Resize default images
+            if (AreaWidth / StarWidth) < self.SelectedPerkRMax:
+                StarWidth = math.floor(AreaWidth / self.SelectedPerkRMax)
+                Override = True
+                StarFilled = self.StarDefaultFilled.scaledToWidth(StarWidth)
+                StarEmpty = self.StarDefaultEmpty.scaledToWidth(StarWidth)
+            
+            StarMaxWidth = self.SelectedPerkRMax * StarWidth
+            
+            # Create scene and set its area
+            self.StarScene = QGraphicsScene(None)
+            self.StarScene.setSceneRect(0, 0, StarMaxWidth, StarWidth)
+            
+            Star = None
+            
+            # Filled Stars
+            for i in range(0, self.SelectedPerkRCur):
+                if Override:
+                    Star = self.StarScene.addPixmap(StarFilled)
+                else:
+                    Star = self.StarScene.addPixmap(self.StarDefaultFilled)
+                    
+                Star.setOffset(i * StarWidth, 0)
+            
+            # Empty Stars
+            for i in range(self.SelectedPerkRCur, self.SelectedPerkRMax):
+                if Override:
+                    Star = self.StarScene.addPixmap(StarEmpty)
+                else:
+                    Star = self.StarScene.addPixmap(self.StarDefaultEmpty)
+                    
+                Star.setOffset(i * StarWidth, 0)
+    
+            # Set the widget and show its glory
+            self.widget.rankStars.setScene(self.StarScene)
+            self.widget.rankStars.show()
