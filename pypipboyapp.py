@@ -12,8 +12,10 @@ import urllib.request
 from PyQt5 import QtGui, QtWidgets, QtCore, uic
 from pypipboy.network import NetworkChannel
 from pypipboy.datamanager import PipboyDataManager
+from pypipboy.relayserver import RelayController
 from dialogs.selecthostdialog import SelectHostDialog
 from dialogs.connecthostdialog import ConnectHostDialog
+from dialogs.relaysettingsdialog import RelaySettingsDialog
 from widgets.widgets import ModuleHandle 
 
 
@@ -183,6 +185,16 @@ class PyPipboyApp(QtWidgets.QApplication):
         stayOnTop = bool(int(self.settings.value('mainwindow/stayOnTop', 0)))
         self.mainWindow.actionStayOnTop.toggled.connect(self.setWindowStayOnTop)
         self.mainWindow.actionStayOnTop.setChecked(stayOnTop)
+        self.mainWindow.actionRelayModeSettings.triggered.connect(self._slotRelayModeSettings)
+        # Init Relay Mode
+        self.relayModeEnabled = bool(int(self.settings.value('mainwindow/relayModeEnabled', 0)))
+        self.relayModeAutodiscovery = bool(int(self.settings.value('mainwindow/relayModeAutodiscovery', 0)))
+        self.relayModePort = int(self.settings.value('mainwindow/relayModePort', 27000))
+        self.relayController = RelayController(self.dataManager)
+        if self.relayModeEnabled:
+            self.relayController.startRelayService(port=self.relayModePort)
+            if self.relayModeAutodiscovery:
+                self.relayController.startAutodiscoverService()
         # Main window is ready, so show it
         self.mainWindow.init(self, self.networkChannel, self.dataManager)
         self._initWidgets()
@@ -379,6 +391,9 @@ class PyPipboyApp(QtWidgets.QApplication):
             # disconnect any network sessions
             if self.networkChannel.isConnected:
                 self.networkChannel.disconnect()
+            # Close Relay Service
+            self.relayController.stopRelayService()
+            self.relayController.stopAutodiscoverService()
             # save state
             self.settings.setValue('mainwindow/geometry', self.mainWindow.saveGeometry())
             self.settings.setValue('mainwindow/windowstate', self.mainWindow.saveState())
@@ -522,6 +537,36 @@ class PyPipboyApp(QtWidgets.QApplication):
         else:
             self.mainWindow.setWindowFlags(self.mainWindow.windowFlags() & ~QtCore.Qt.WindowStaysOnTopHint)
         self.mainWindow.show()
+    
+    def _slotRelayModeSettings(self):
+        dialog = RelaySettingsDialog(self.mainWindow)
+        dialog.relayGroupBox.setChecked(self.relayModeEnabled)
+        dialog.autodiscoveryCheckBox.setChecked(self.relayModeAutodiscovery)
+        dialog.relayPortEdit.setText(str(self.relayModePort))
+        if dialog.exec():
+            try:
+                enabled = dialog.relayGroupBox.isChecked()
+                autodiscovery = dialog.autodiscoveryCheckBox.isChecked()
+                port = int(dialog.relayPortEdit.text())
+                if not enabled:
+                    self.relayController.stopAutodiscoverService()
+                    self.relayController.stopRelayService()
+                else:
+                    if not autodiscovery:
+                        self.relayController.stopAutodiscoverService()
+                    else:
+                        self.relayController.startAutodiscoverService()
+                    if self.relayModePort != port:
+                        self.relayController.stopRelayService()
+                    self.relayController.startRelayService(port=port)
+                self.relayModeAutodiscovery = autodiscovery
+                self.relayModePort = port
+                self.relayModeEnabled = enabled
+                self.settings.setValue('mainwindow/relayModeEnabled', int(self.relayModeEnabled))
+                self.settings.setValue('mainwindow/relayModeAutodiscovery', int(self.relayModeAutodiscovery))
+                self.settings.setValue('mainwindow/relayModePort', self.relayModePort)
+            except Exception as e:
+                self.showWarningMessage('Relay Mode', 'Could not change settings: ' + str(e))
     
     
     # load widgets
