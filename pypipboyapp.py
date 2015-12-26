@@ -505,9 +505,14 @@ class PyPipboyApp(QtWidgets.QApplication):
             if verbose:
                 self.showWarningMessage('Version Check', 'Could not check for new version: ' + errorString)
         elif newVersionAvailable:
-            self.showInfoMessage('Version Check', 'New version available: ' + self.getVersionString(versionData) + '.')
+            self.showInfoMessage('Version Check', '<b>New version is available!<br><br>' 
+                                                + self.getVersionString(versionData) + '</b> (current: ' 
+                                                + self.getVersionString() + ').<br><br>'
+                                                + 'Download from:<ul>'
+                                                + '<li><a href="http://www.nexusmods.com/fallout4/mods/4664">nexusmods.com</a><li>'
+                                                + '<li><a href="http://github.com/matzman666/PyPipboyApp">github.com</a></li></ul>')
         elif verbose:
-            self.showInfoMessage('Version Check', 'No new version available.')
+            self.showInfoMessage('Version Check', 'Current version is up-to-date.')
     
     @QtCore.pyqtSlot(bool)
     def setWindowStayOnTop(self, value):
