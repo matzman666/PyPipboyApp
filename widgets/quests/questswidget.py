@@ -7,18 +7,16 @@ from PyQt5.QtWidgets import *
 from widgets import widgets
 
 class QuestsWidget(widgets.WidgetBase):
-    # As I've learned, this allows for proper and seamless updates of the
-    # widget ui. So you should only make ui updates through the signal
     _signalInfoUpdated = QtCore.pyqtSignal()
     
-    # QT INIT
+    # CLASS INIT
     def __init__(self, mhandle, parent):
         super().__init__('Quests', parent)
         self.widget = uic.loadUi(os.path.join(mhandle.basepath, 'ui', 'questswidget.ui'))
         self.setWidget(self.widget)
         self._signalInfoUpdated.connect(self.UpdateTableViews)
     
-    # CLASS INIT
+    # QT INIT
     def init(self, app, datamanager):
         super().init(app, datamanager)
         

@@ -5,21 +5,22 @@ from PyQt5 import QtCore, QtWidgets, QtGui, uic
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
+from widgets.shared.graphics import ImageFactory
 from widgets import widgets
 
 class PerksWidget(widgets.WidgetBase):
-    # As I've learned, this allows for proper and seamless updates of the
-    # widget ui. So you should only make ui updates through the signal
     _signalInfoUpdated = QtCore.pyqtSignal()
+    PipboyColorUpdatedSignal = QtCore.pyqtSignal(QColor)
     
-    # QT INIT
+    # CLASS INIT
     def __init__(self, mhandle, parent):
         super().__init__('Perks', parent)
         self.widget = uic.loadUi(os.path.join(mhandle.basepath, 'ui', 'perkswidget.ui'))
         self.setWidget(self.widget)
         self._signalInfoUpdated.connect(self.UpdateUI)
+        self.PipboyColorUpdatedSignal.connect(self.UpdateColorData)
     
-    # CLASS INIT
+    # QT INIT
     def init(self, app, datamanager):
         super().init(app, datamanager)
 		
@@ -39,21 +40,32 @@ class PerksWidget(widgets.WidgetBase):
         self.SelectedPerkRCur = -1
         
         # Fancy Graphics Stuff
-        self.StarsImage = QPixmap(512, 256)
-        self.StarsImage.load(os.path.join("ui", "res", "Stars-GreenOnBlack.png"))
-        self.StarDefaultWidth = 30
-        self.StarDefaultEmpty = self.StarsImage.copy(QRect(0, 0, 256, 256)).scaledToWidth(self.StarDefaultWidth)
-        self.StarDefaultFilled = self.StarsImage.copy(QRect(256, 0, 256, 256)).scaledToWidth(self.StarDefaultWidth)
-        self.StarScene = QGraphicsScene()
+        self.ImageLoader = ImageFactory(os.path.join("ui", "res"))
+        self.StarColor = QColor.fromRgb(255, 255, 255)
+        self.StarSize = 29
+        self.StarFilled = None
+        self.StarEmpty = None
     
     # DATA MANAGER OBJECT HAS CHANGED AT SOME LEVEL
     def DataManagerUpdated(self, rootObject):
         # Create a class level hook to the Perks data
         self.PerksData = rootObject.child('Perks')
         
+        # Create a class level hook to the pip boy color data
+        self.PipboyColorData = rootObject.child("Status").child("EffectColor")
+        
         # We want to track Perk data changes down to the Rank level
         if self.PerksData:
             self.PerksData.registerValueUpdatedListener(self.PerksDataUpdated, 2)
+            
+        # We want to track pip boy color changes
+        if self.PipboyColorData:
+            self.PipboyColorData.registerValueUpdatedListener(self.PipboyColorDataUpdated, 2)
+            
+            R = self.PipboyColorData.child(0).value() * 255
+            G = self.PipboyColorData.child(1).value() * 255
+            B = self.PipboyColorData.child(2).value() * 255
+            self.PipboyColorUpdatedSignal.emit(QColor.fromRgb(R, G, B))
         
         # Update Widget Table Views
         self._signalInfoUpdated.emit()
@@ -63,11 +75,23 @@ class PerksWidget(widgets.WidgetBase):
         # Update Widget Table Views
         self._signalInfoUpdated.emit()
     
+    def PipboyColorDataUpdated(self, caller, value, pathObjs):
+        R = self.PipboyColorData.child(0).value() * 255
+        G = self.PipboyColorData.child(1).value() * 255
+        B = self.PipboyColorData.child(2).value() * 255
+        self.PipboyColorUpdatedSignal.emit(QColor.fromRgb(R, G, B))
+    
     # UPDATE UI ELEMENTS
     @QtCore.pyqtSlot()
     def UpdateUI(self):
         self.UpdatePerks()
         self.UpdatePerkDescription()
+        self.UpdateStarView()
+    
+    # UPDATE STAR COLORS
+    @QtCore.pyqtSlot(QColor)
+    def UpdateColorData(self, pipboyColor):
+        self.StarColor = pipboyColor
         self.UpdateStarView()
     
     # PERK TABLE VIEW - CLICK SIGNAL
@@ -162,44 +186,33 @@ class PerksWidget(widgets.WidgetBase):
         perk = self.PerksData.child(self.SelectedPerkId)
         if perk:
             AreaWidth = self.widget.rankStars.rect().width()
-            StarWidth = self.StarDefaultWidth
-            Override = False
-            StarFilled = None
-            StarEmpty = None
+            MaxStarSize = math.floor(AreaWidth / self.SelectedPerkRMax)
             
-            # Stars are too big to fit in to current view. Resize default images
-            if (AreaWidth / StarWidth) < self.SelectedPerkRMax:
-                StarWidth = math.floor(AreaWidth / self.SelectedPerkRMax)
-                Override = True
-                StarFilled = self.StarDefaultFilled.scaledToWidth(StarWidth)
-                StarEmpty = self.StarDefaultEmpty.scaledToWidth(StarWidth)
+            # The stars only get so large
+            if MaxStarSize > 29:
+                MaxStarSize = 29
             
-            StarMaxWidth = self.SelectedPerkRMax * StarWidth
+            # Update Star Size and Images
+            self.StarSize = MaxStarSize
+            self.StarFilled = self.ImageLoader.getPixmap("star-filled.svg", self.StarSize, self.StarSize, self.StarColor)
+            self.StarEmpty = self.ImageLoader.getPixmap("star-empty.svg", self.StarSize, self.StarSize, self.StarColor)
+            
+            MaxStarArea = self.SelectedPerkRMax * self.StarSize
             
             # Create scene and set its area
-            self.StarScene = QGraphicsScene(None)
-            self.StarScene.setSceneRect(0, 0, StarMaxWidth, StarWidth)
-            
-            Star = None
-            
+            StarScene = QGraphicsScene()
+            StarScene.setSceneRect(0, 0, MaxStarArea, self.StarSize)
+
             # Filled Stars
             for i in range(0, self.SelectedPerkRCur):
-                if Override:
-                    Star = self.StarScene.addPixmap(StarFilled)
-                else:
-                    Star = self.StarScene.addPixmap(self.StarDefaultFilled)
-                    
-                Star.setOffset(i * StarWidth, 0)
+                Star = StarScene.addPixmap(self.StarFilled)
+                Star.setOffset(i * self.StarSize, 0)
             
             # Empty Stars
             for i in range(self.SelectedPerkRCur, self.SelectedPerkRMax):
-                if Override:
-                    Star = self.StarScene.addPixmap(StarEmpty)
-                else:
-                    Star = self.StarScene.addPixmap(self.StarDefaultEmpty)
-                    
-                Star.setOffset(i * StarWidth, 0)
+                Star = StarScene.addPixmap(self.StarEmpty)  
+                Star.setOffset(i * self.StarSize, 0)
     
             # Set the widget and show its glory
-            self.widget.rankStars.setScene(self.StarScene)
+            self.widget.rankStars.setScene(StarScene)
             self.widget.rankStars.show()
