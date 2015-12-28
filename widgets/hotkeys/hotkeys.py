@@ -595,17 +595,15 @@ class LLHookey(QtCore.QObject):
         
     @QtCore.pyqtSlot(KeyEvent)
     def _onKeyEvent(self, event):
-        activeWin = GetWindowText(GetForegroundWindow())
-        if (activeWin != "Fallout4"):
-            return
-        
         #print("_onKeyEvent: " + event);
+        self.altdown = event.alt_pressed
+        
         if(event.event_type == 'key up'):
             if(event.key_code == 160 or event.key_code == 161):
                 self.shiftdown = False
             if(event.key_code == 162 or event.key_code == 163):
                 self.ctrldown = False
-            if(event.key_code == 164):
+            if(event.key_code == 164 or event.key_code == 165 or event.key_code == 18):
                 self.altdown = False
             if(event.key_code == 91):
                 self.windown = False
@@ -614,10 +612,14 @@ class LLHookey(QtCore.QObject):
                 self.shiftdown = True
             if(event.key_code == 162 or event.key_code == 163):
                 self.ctrldown = True
-            if(event.key_code == 164):
+            if(event.key_code == 164 or event.key_code == 165 or event.key_code == 18):
                 self.altdown = True
             if(event.key_code == 91):
                 self.windown = True
+
+            activeWin = GetWindowText(GetForegroundWindow())
+            if (activeWin != "Fallout4"):
+                return
                 
             for hk in self.Hotkeys:
                 if (hk.keycode == event.key_code
