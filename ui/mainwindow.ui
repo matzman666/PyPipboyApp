@@ -75,6 +75,7 @@
     </widget>
     <addaction name="actionFullscreen"/>
     <addaction name="actionStayOnTop"/>
+    <addaction name="actionPromptBeforeQuit"/>
     <addaction name="menuStyles"/>
    </widget>
    <widget class="QMenu" name="menuSettings">
@@ -128,6 +129,14 @@
    </property>
    <property name="text">
     <string>Fullscreen</string>
+   </property>
+  </action>
+  <action name="actionPromptBeforeQuit">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Prompt Before Closing</string>
    </property>
   </action>
   <action name="actionStylesDefault">
