@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import datetime
 import os
-from PyQt5 import QtWidgets, QtCore, uic
+from PyQt5 import QtGui, QtWidgets, QtCore, uic
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from pypipboy.types import eValueType
@@ -22,6 +22,7 @@ itemCardInfoDamageTypes = [
 
 class EquippedAndGrenadesWidget(widgets.WidgetBase):
     _signalInfoUpdated = QtCore.pyqtSignal()
+    _signalColorUpdated = QtCore.pyqtSignal(QtGui.QColor)
     grenademodel = QStandardItemModel()
     
     def __init__(self, mhandle, parent):
@@ -29,10 +30,13 @@ class EquippedAndGrenadesWidget(widgets.WidgetBase):
         self.widget = uic.loadUi(os.path.join(mhandle.basepath, 'ui', 'equippedandgrenadeswidget.ui'))
         self._logger = logging.getLogger('pypipboyapp.equippedandgrenadeswidget')
         self.setWidget(self.widget)
-        self.pipPlayerInfo = None
+        self.pipColour = None
         self.pipInventoryInfo = None
+        self.iconColor = QtGui.QColor.fromRgb(0,255,0)
+        
         
         self._signalInfoUpdated.connect(self._slotInfoUpdated)
+        self._signalColorUpdated.connect(self._slotColorUpdated)
 
     def init(self, app, datamanager):
         super().init(app, datamanager)
@@ -42,22 +46,24 @@ class EquippedAndGrenadesWidget(widgets.WidgetBase):
         self._app = app
         self.widget.label_EquipedWeapon.setText("")
 
-        self.pDmgIcon = QPixmap(16, 16)
-        self.pDmgIcon.load(os.path.join("ui", "res", "dmg-physical.png"))
-        self.widget.lblPdmgIcon.setPixmap(self.pDmgIcon)
+        #self.pDmgIcon = QPixmap(16, 16)
+        #self.pDmgIcon.load(os.path.join("ui", "res", "dmg-physical.png"))
+        #self.widget.lblPdmgIcon.setPixmap(self.pDmgIcon)
 
-        self.eDmgIcon = QPixmap(16, 16)
-        self.eDmgIcon.load(os.path.join("ui", "res", "dmg-energy.png"))
-        self.widget.lblEdmgIcon.setPixmap(self.eDmgIcon)
+        self._slotColorUpdated(self.iconColor)
 
-        self.rDmgIcon = QPixmap(16, 16)
-        self.rDmgIcon.load(os.path.join("ui", "res", "dmg-radiation.png"))
-        self.widget.lblRdmgIcon.setPixmap(self.rDmgIcon)
-
-        self.poDmgIcon = QPixmap(16, 16)
-        self.poDmgIcon.load(os.path.join("ui", "res", "dmg-poison.png"))
-        self.widget.lblPodmgIcon.setPixmap(self.poDmgIcon)
-
+    def colouriseIcon(self, img, colour):
+        size = img.size()
+        image = QImage(QtCore.QSize(size.width()+1,size.height()+1), QImage.Format_ARGB32_Premultiplied)
+        image.fill(QtCore.Qt.transparent)
+        p = QPainter(image)
+        p.setCompositionMode(QPainter.CompositionMode_SourceOver)
+        p.drawImage(QtCore.QRect(1,1,size.width(), size.height()), img)
+        p.setCompositionMode(QPainter.CompositionMode_SourceAtop)
+        p.setBrush(colour)
+        p.drawRect(QtCore.QRect(0,0,size.width()+1,size.height()+1))
+        p.end()
+        return QPixmap.fromImage(image)        
         
     def _onPipRootObjectEvent(self, rootObject):
         self.pipInventoryInfo = rootObject.child('Inventory')
@@ -65,8 +71,36 @@ class EquippedAndGrenadesWidget(widgets.WidgetBase):
             self.pipInventoryInfo.registerValueUpdatedListener(self._onPipPlayerInfoUpdate, 1)
         self._signalInfoUpdated.emit()
 
+        self.pipColor = rootObject.child('Status').child('EffectColor')
+        self.pipColor.registerValueUpdatedListener(self._onPipColorChanged, 1)
+        self._onPipColorChanged(None, None, None)
+        
+    def _onPipColorChanged(self, caller, value, pathObjs):
+        if self.pipColor:
+            r = self.pipColor.child(0).value() * 255
+            g = self.pipColor.child(1).value() * 255
+            b = self.pipColor.child(2).value() * 255
+            self.iconColor = QtGui.QColor.fromRgb(r,g,b)
+            self._signalColorUpdated.emit(self.iconColor)
+
+        
     def _onPipPlayerInfoUpdate(self, caller, value, pathObjs):
         self._signalInfoUpdated.emit()
+
+    @QtCore.pyqtSlot(QtGui.QColor)
+    def _slotColorUpdated(self, color):
+        self.pDmgIcon = self.colouriseIcon(QImage(os.path.join("ui", "res", "dmg-physical.png")), self.iconColor)
+        self.widget.lblPdmgIcon.setPixmap(self.pDmgIcon)
+        
+        self.eDmgIcon = self.colouriseIcon(QImage(os.path.join("ui", "res", "dmg-energy.png")), self.iconColor)
+        self.widget.lblEdmgIcon.setPixmap(self.eDmgIcon)
+
+        self.rDmgIcon = self.colouriseIcon(QImage(os.path.join("ui", "res", "dmg-radiation.png")), self.iconColor)
+        self.widget.lblRdmgIcon.setPixmap(self.rDmgIcon)
+
+        self.poDmgIcon = self.colouriseIcon(QImage(os.path.join("ui", "res", "dmg-poison.png")), self.iconColor)
+        self.widget.lblPodmgIcon.setPixmap(self.poDmgIcon)
+        return
         
     @QtCore.pyqtSlot()
     def _slotInfoUpdated(self):

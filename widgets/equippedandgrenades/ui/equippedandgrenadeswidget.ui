@@ -71,7 +71,7 @@
         </sizepolicy>
        </property>
        <property name="text">
-        <string>0</string>
+        <string>P</string>
        </property>
        <property name="margin">
         <number>6</number>
@@ -103,7 +103,7 @@
         </sizepolicy>
        </property>
        <property name="text">
-        <string>0</string>
+        <string>E</string>
        </property>
        <property name="margin">
         <number>6</number>
@@ -135,7 +135,7 @@
         </sizepolicy>
        </property>
        <property name="text">
-        <string>0</string>
+        <string>R</string>
        </property>
        <property name="margin">
         <number>6</number>
@@ -167,7 +167,7 @@
         </sizepolicy>
        </property>
        <property name="text">
-        <string>0</string>
+        <string>Po</string>
        </property>
        <property name="margin">
         <number>6</number>
