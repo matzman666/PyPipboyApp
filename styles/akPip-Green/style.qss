@@ -36,6 +36,7 @@
 }
 
 #akStatusWidget QTableView{
+	font-family:Consolas;
 	font-size:11pt;
 }
  
