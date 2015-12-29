@@ -78,19 +78,16 @@ class StatsWidget(widgets.WidgetBase):
     # DATA MANAGER OBJECT HAS CHANGED AT SOME LEVEL
     def DataManagerUpdated(self, rootObject):
         # Create a class level hook to the data we are using
-        self.PlayerInfoData = rootObject.child("PlayerInfo")
-        self.StatsData = rootObject.child("Stats")
+        self.TotalDamageData = rootObject.child("PlayerInfo").child("TotalDamages")
+        self.TotalResistsData = rootObject.child("PlayerInfo").child("TotalResists")
         self.StatusData = rootObject.child("Status").child("EffectColor")
-        self.SpecialData = rootObject.child("Special")
         
-        # We want to track Player Info data down to total damage/resist level
-        if self.PlayerInfoData:
-            self.PlayerInfoData.registerValueUpdatedListener(self.DataUpdated, 4)
+        if self.TotalDamageData:
+            self.TotalDamageData.registerValueUpdatedListener(self.DataUpdated, 2)
         
-        # We want to track Stats data down to its base level
-        if self.StatsData:
-            self.StatsData.registerValueUpdatedListener(self.DataUpdated, 2)
-        
+        if self.TotalResistsData:
+            self.TotalResistsData.registerValueUpdatedListener(self.DataUpdated, 2)
+
         # We want to track Status data down to its color information
         if self.StatusData:
             self.StatusData.registerValueUpdatedListener(self.ColorDataUpdated, 1)
@@ -99,11 +96,7 @@ class StatsWidget(widgets.WidgetBase):
             G = self.StatusData.child(1).value() * 255
             B = self.StatusData.child(2).value() * 255
             self.PipColorUpdatedSignal.emit(QColor.fromRgb(R, G, B))
-        
-        # We want to track Special data down to its base level
-        if self.SpecialData:
-            self.SpecialData.registerValueUpdatedListener(self.DataUpdated, 2)
-        
+
         # Update Widget information
         self._signalInfoUpdated.emit()
 
@@ -118,33 +111,17 @@ class StatsWidget(widgets.WidgetBase):
         G = self.StatusData.child(1).value() * 255
         B = self.StatusData.child(2).value() * 255
         self.PipColorUpdatedSignal.emit(QColor.fromRgb(R, G, B))
-    
-    # UPDATE UI ELEMENTS
-    @QtCore.pyqtSlot()
-    def UpdateUI(self):
-        self.UpdateLimbStatus()
-        self.UpdateDamageResist()
-        self.UpdateSpecial()
-    
+
     # UPDATE ICONS
     @QtCore.pyqtSlot(QColor)
     def UpdateIconColors(self, iconColor):
         for i in self.Icons:
             i.Color = iconColor
-            i.Update()
+            i.Update()      
     
-    # UPDATE LIMB STATUS
-    def UpdateLimbStatus(self):
-        if self.StatsData.childCount():
-            self.widget.headStatus.setValue(self.StatsData.child("HeadCondition").value())
-            self.widget.bodyStatus.setValue(self.StatsData.child("TorsoCondition").value())
-            self.widget.leftarmStatus.setValue(self.StatsData.child("LArmCondition").value())
-            self.widget.rightarmStatus.setValue(self.StatsData.child("RArmCondition").value())
-            self.widget.leftlegStatus.setValue(self.StatsData.child("LLegCondition").value())
-            self.widget.rightlegStatus.setValue(self.StatsData.child("RLegCondition").value())
-    
-    # UPDATE DAMAGE AND RESIST VALUES
-    def UpdateDamageResist(self):
+    # UPDATE UI ELEMENTS
+    @QtCore.pyqtSlot()
+    def UpdateUI(self):
         self.widget.damageNormalLabel.setText("0")
         self.widget.damageEnergyLabel.setText("0")
         self.widget.damagePoisonLabel.setText("0")
@@ -154,10 +131,10 @@ class StatsWidget(widgets.WidgetBase):
         self.widget.resistPoisonLabel.setText("0")
         self.widget.resistRadiationLabel.setText("0")
         
-        if self.PlayerInfoData.childCount():
-            for i in range(0, self.PlayerInfoData.child("TotalDamages").childCount()):
-                DamageValue = int(self.PlayerInfoData.child("TotalDamages").child(i).child("Value").value())
-                DamageType = self.PlayerInfoData.child("TotalDamages").child(i).child("type").value()
+        if self.TotalDamageData:
+            for i in range(0, self.TotalDamageData.childCount()):
+                DamageValue = int(self.TotalDamageData.child(i).child("Value").value())
+                DamageType = self.TotalDamageData.child(i).child("type").value()
                 
                 if DamageType == eEffectType.NORMAL:
                     self.widget.damageNormalLabel.setText(str(DamageValue))
@@ -168,9 +145,10 @@ class StatsWidget(widgets.WidgetBase):
                 elif DamageType == eEffectType.RADIATION:
                     self.widget.damageRadiationLabel.setText(str(DamageValue))
             
-            for i in range(0, self.PlayerInfoData.child("TotalResists").childCount()):
-                ResistValue = int(self.PlayerInfoData.child("TotalResists").child(i).child("Value").value())
-                ResistType = self.PlayerInfoData.child("TotalResists").child(i).child("type").value()
+        if self.TotalResistsData:
+            for i in range(0, self.TotalResistsData.childCount()):
+                ResistValue = int(self.TotalResistsData.child(i).child("Value").value())
+                ResistType = self.TotalResistsData.child(i).child("type").value()
                 
                 if ResistType == eEffectType.NORMAL:
                     self.widget.resistNormalLabel.setText(str(ResistValue))
@@ -180,26 +158,3 @@ class StatsWidget(widgets.WidgetBase):
                     self.widget.resistPoisonLabel.setText(str(ResistValue))
                 elif ResistType == eEffectType.RADIATION:
                     self.widget.resistRadiationLabel.setText(str(ResistValue))
-    
-    # UPDATE SPECIAL VALUES
-    def UpdateSpecial(self):
-        if self.SpecialData.childCount():
-            for i in range(0, self.SpecialData.childCount()):
-                Name = self.SpecialData.child(i).child("Name").value()
-                Description = self.SpecialData.child(i).child("Description").value()
-                Total = self.SpecialData.child(i).child("Value").value()
-                Modifier = self.SpecialData.child(i).child("Modifier").value()
-                Base = Total - Modifier
-                
-                TitleLabel = self.findChild(QtWidgets.QLabel, "titleS" + str(i + 1) + "Label")
-                TitleLabel.setText(Name)
-                TitleLabel.setToolTip(Description)
-                
-                BaseLabel = self.findChild(QtWidgets.QLabel, "baseS" + str(i + 1) + "Label")
-                BaseLabel.setText(str(Base))
-                
-                ModLabel = self.findChild(QtWidgets.QLabel, "modS" + str(i + 1) + "Label")
-                ModLabel.setText(str(Modifier))
-                
-                TotalLabel = self.findChild(QtWidgets.QLabel, "totalS" + str(i + 1) + "Label")
-                TotalLabel.setText(str(Total))
