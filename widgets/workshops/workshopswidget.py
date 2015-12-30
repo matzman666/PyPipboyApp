@@ -55,7 +55,8 @@ class WorkshopsWidget(widgets.WidgetBase):
         self.WorkshopInfoSignal.connect(self.UpdateWorkshopInfo)
         self.ColorUpdateSignal.connect(self.UpdateIconColor)
         
-        self.Widgets.workshopList.clicked.connect(self.WorkshopListClicked)
+        self.Widgets.workshopList.setModel(self.WorkshopListModel) # we need to call setModel() before selectionModel() (and never afterwards)
+        self.Widgets.workshopList.selectionModel().currentChanged.connect(self.WorkshopListCurrentChanged)
     
     def init(self, app, dataManager):
         super().init(app, dataManager)
@@ -114,8 +115,8 @@ class WorkshopsWidget(widgets.WidgetBase):
                 i.Enabled = state
                 i.Update()
     
-    @QtCore.pyqtSlot(QModelIndex)
-    def WorkshopListClicked(self, index):
+    @QtCore.pyqtSlot(QModelIndex, QModelIndex)
+    def WorkshopListCurrentChanged(self, index, previous):
         NewIndex = self.WorkshopListModel.index(index.row(), 0)
         DataId = self.WorkshopListModel.data(NewIndex)
         
@@ -156,7 +157,6 @@ class WorkshopsWidget(widgets.WidgetBase):
                     ]
                     self.WorkshopListModel.appendRow(ListItem)
                     
-            self.Widgets.workshopList.setModel(self.WorkshopListModel)
             self.Widgets.workshopList.sortByColumn(1, Qt.AscendingOrder)
             self.Widgets.workshopList.hideColumn(0)
             

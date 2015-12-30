@@ -29,7 +29,8 @@ class GameStatsWidget(widgets.WidgetBase):
         self.SectionsListSignal.connect(self.UpdateSectionsList)
         self.StatsListSignal.connect(self.UpdateStatsList)
         
-        self.Widgets.sectionsList.clicked.connect(self.SectionsListClicked)
+        self.Widgets.sectionsList.setModel(self.SectionsListModel) # we need to call setModel() before selectionModel() (and never afterwards)
+        self.Widgets.sectionsList.selectionModel().currentChanged.connect(self.SectionsListCurrentChanged)
     
     def init(self, app, dataManager):
         super().init(app, dataManager)
@@ -67,8 +68,8 @@ class GameStatsWidget(widgets.WidgetBase):
         
         self.StatsListSignal.emit()
 
-    @QtCore.pyqtSlot(QtCore.QModelIndex)
-    def SectionsListClicked(self, index):
+    @QtCore.pyqtSlot(QtCore.QModelIndex, QtCore.QModelIndex)
+    def SectionsListCurrentChanged(self, index, previous):
         ModelIndex = self.SectionsListModel.index(index.row(), 0)
         DataId = self.SectionsListModel.data(ModelIndex)
         
@@ -90,7 +91,6 @@ class GameStatsWidget(widgets.WidgetBase):
                 ]
                 self.SectionsListModel.appendRow(ListItem)
             
-            self.Widgets.sectionsList.setModel(self.SectionsListModel)
             self.Widgets.sectionsList.hideColumn(0)
     
     @QtCore.pyqtSlot()

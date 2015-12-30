@@ -34,9 +34,11 @@ class QuestsWidget(widgets.WidgetBase):
         self.QuestListSignal.connect(self.UpdateQuestList)
         self.ObjectiveListSignal.connect(self.UpdateObjectiveList)
         
-        self.Widgets.questList.clicked.connect(self.QuestListClicked)
-        self.Widgets.questList.doubleClicked.connect(self.QuestListDoubleClicked)        
-        self.Widgets.objectiveList.clicked.connect(self.ObjectiveListClicked)
+        self.Widgets.questList.setModel(self.QuestListModel) # we need to call setModel() before selectionModel() (and never afterwards)
+        self.Widgets.questList.selectionModel().currentChanged.connect(self.QuestListCurentChanged)
+        self.Widgets.questList.doubleClicked.connect(self.QuestListDoubleClicked)
+        self.Widgets.objectiveList.setModel(self.ObjectiveListModel)
+        self.Widgets.objectiveList.selectionModel().currentChanged.connect(self.ObjectiveListCurrentChanged)
         self.Widgets.objectiveList.doubleClicked.connect(self.ObjectiveListDoubleClicked)
         self.Widgets.showonmapButton.clicked.connect(self.MapButtonClicked)
     
@@ -83,8 +85,8 @@ class QuestsWidget(widgets.WidgetBase):
         self.ObjectiveListSignal.emit()
     
     # QUEST TABLE VIEW - CLICK SIGNAL
-    @QtCore.pyqtSlot(QtCore.QModelIndex)
-    def QuestListClicked(self, index):
+    @QtCore.pyqtSlot(QtCore.QModelIndex, QtCore.QModelIndex)
+    def QuestListCurentChanged(self, index, previous):
         ModelIndex = self.QuestListModel.index(index.row(), 0)
         DataId = self.QuestListModel.data(ModelIndex)
         
@@ -113,8 +115,8 @@ class QuestsWidget(widgets.WidgetBase):
                 self.DataManager.rpcToggleQuestActive(PipboyId)
     
     # OBJECTIVE TABLE VIEW - CLICK SIGNAL
-    @QtCore.pyqtSlot(QtCore.QModelIndex)
-    def ObjectiveListClicked(self, index):
+    @QtCore.pyqtSlot(QtCore.QModelIndex, QtCore.QModelIndex)
+    def ObjectiveListCurrentChanged(self, index, previous):
         if self.SelectedQuestId == self.MiscellaneousId:
             ModelIndex = self.ObjectiveListModel.index(index.row(), 0)
             DataId = self.ObjectiveListModel.data(ModelIndex)
@@ -197,7 +199,6 @@ class QuestsWidget(widgets.WidgetBase):
                     ]
                     self.QuestListModel.appendRow(ListItem)
             
-            self.Widgets.questList.setModel(self.QuestListModel)
             self.Widgets.questList.sortByColumn(1, Qt.AscendingOrder)
             self.Widgets.questList.hideColumn(0)
             
@@ -248,7 +249,6 @@ class QuestsWidget(widgets.WidgetBase):
                 ]
                 self.ObjectiveListModel.appendRow(ListItem)
             
-            self.Widgets.objectiveList.setModel(self.ObjectiveListModel)
             self.Widgets.objectiveList.sortByColumn(2, Qt.AscendingOrder)
             self.Widgets.objectiveList.hideColumn(0)
             self.Widgets.objectiveList.hideColumn(2)

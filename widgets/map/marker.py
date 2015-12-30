@@ -34,6 +34,13 @@ class MarkerBase(QtCore.QObject):
             self.parent._labelContextMenuEvent_(event)
         def mouseDoubleClickEvent(self, event):
             self.parent._labelDoubleClickEvent_(event)
+        def paint(self, painter, option, widget):
+            self.setOpacity(0.6)
+            brush = QtCore.Qt.black
+            painter.setBrush(brush)
+            painter.setPen(brush)
+            painter.drawRect(self.boundingRect().adjusted(-3,-3,6,6))
+            super().paint(painter, option, widget)
         
     signalDoUpdate = QtCore.pyqtSignal()
     signalMarkerDestroyed = QtCore.pyqtSignal(QtCore.QObject)
@@ -61,6 +68,7 @@ class MarkerBase(QtCore.QObject):
         self.markerPixmapDirty = False
         self.labelItem = None
         self.markerHooverActive = False
+        self.note =''
         self.signalDoUpdate.connect(self.doUpdate)
         
         

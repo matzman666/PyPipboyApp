@@ -5,6 +5,9 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from .graphics import ImageFactory
 
+# ImageFactory needs to be global otherwise caching will not work
+GlobalImageLoader = ImageFactory(path.join("widgets", "shared", "res"))
+
 class PipboyIcon:
     ImageLoader = None
     ImageData = None
@@ -18,7 +21,7 @@ class PipboyIcon:
     Enabled = None
     
     def __init__(self, fileName, widget = None, size = 30, toolTip = ""):
-        self.ImageLoader = ImageFactory(path.join("widgets", "shared", "res"))
+        self.ImageLoader = GlobalImageLoader
         self.FileName = fileName
         self.Widget = widget
         self.Text = toolTip

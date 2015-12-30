@@ -185,6 +185,9 @@ class PyPipboyApp(QtWidgets.QApplication):
         stayOnTop = bool(int(self.settings.value('mainwindow/stayOnTop', 0)))
         self.mainWindow.actionStayOnTop.toggled.connect(self.setWindowStayOnTop)
         self.mainWindow.actionStayOnTop.setChecked(stayOnTop)
+        promptBeforeQuit = bool(int(self.settings.value('mainwindow/promptBeforeQuit', 1)))
+        self.mainWindow.actionPromptBeforeQuit.toggled.connect(self.setPromptBeforeQuit)
+        self.mainWindow.actionPromptBeforeQuit.setChecked(promptBeforeQuit)
         self.mainWindow.actionRelayModeSettings.triggered.connect(self._slotRelayModeSettings)
         # Init Relay Mode
         self.relayModeEnabled = bool(int(self.settings.value('mainwindow/relayModeEnabled', 0)))
@@ -537,7 +540,11 @@ class PyPipboyApp(QtWidgets.QApplication):
         else:
             self.mainWindow.setWindowFlags(self.mainWindow.windowFlags() & ~QtCore.Qt.WindowStaysOnTopHint)
         self.mainWindow.show()
-    
+
+    @QtCore.pyqtSlot(bool)
+    def setPromptBeforeQuit(self, value):
+        self.settings.setValue('mainwindow/promptBeforeQuit', int(value))
+        
     def _slotRelayModeSettings(self):
         dialog = RelaySettingsDialog(self.mainWindow)
         dialog.relayGroupBox.setChecked(self.relayModeEnabled)

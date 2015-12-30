@@ -165,13 +165,14 @@ class HotkeyWidget(widgets.WidgetBase):
                     equiped.append(item)
     
         for i in range(0, len(equiped)):
-             self.dataManager.rpcUseItem(equiped[i])
-#            ### This is a vile hack to allow each rpc call to complete
-#            ### before sending the next 
-#            ### It'll do for now, but should really find a better way 
-#            ### of handling this, queue action method on datamanager.py 
-#            ### perhaps?
-             time.sleep(0.1)             
+            if (self._isItemReal(equiped[i])):
+                self.dataManager.rpcUseItem(equiped[i])
+                ### This is a vile hack to allow each rpc call to complete
+                ### before sending the next 
+                ### It'll do for now, but should really find a better way 
+                ### of handling this, queue action method on datamanager.py 
+                ### perhaps?
+                time.sleep(0.1)             
 
         return
         
@@ -187,7 +188,8 @@ class HotkeyWidget(widgets.WidgetBase):
             for i in range(0, inventory.childCount()):
                 item = inventory.child(i)
                 if (item.child('equipState').value() > 0):
-                    selectedSlot.append(item.child('text').value())
+                    if (self._isItemReal(item)):
+                        selectedSlot.append(item.child('text').value())
                     
             self._logger.debug('saveEquippedApparelToSlot: saving: ' + str(selectedSlot))
             settingPath = 'hotkeyswidget/apparelslots/'
@@ -285,8 +287,9 @@ class HotkeyWidget(widgets.WidgetBase):
             for i in range(0, inventory.childCount()):
                 formid = inventory.child(i).child('formID').value()
                 if (formid == itemFormID):
-                    self.dataManager.rpcUseItem(inventory.child(i))
-                    
+                    if (self._isItemReal(inventory.child(i))):
+                        self.dataManager.rpcUseItem(inventory.child(i))
+                        return
         return
 
     def useItemByName(self,inventorySection, itemName):
@@ -296,11 +299,18 @@ class HotkeyWidget(widgets.WidgetBase):
             for i in range(0, inventory.childCount()):
                 name = inventory.child(i).child('text').value()
                 if (name.lower() == itemName):
-                    self.dataManager.rpcUseItem(inventory.child(i))
-                    return
-                    
+                    if (self._isItemReal(inventory.child(i))):
+                        self.dataManager.rpcUseItem(inventory.child(i))
+                        return
         return
 
+    def _isItemReal(self, item):
+        if(self.pipInventoryInfo):
+            for i in range (0, self.pipInventoryInfo.child('sortedIDS').childCount()):
+                if (item and item.pipId == self.pipInventoryInfo.child('sortedIDS').child(i).value()):
+                    return True
+        return False
+        
     def _onPipRootObjectEvent(self, rootObject):
         self.pipInventoryInfo = rootObject.child('Inventory')
         if self.pipInventoryInfo:
@@ -595,17 +605,15 @@ class LLHookey(QtCore.QObject):
         
     @QtCore.pyqtSlot(KeyEvent)
     def _onKeyEvent(self, event):
-        activeWin = GetWindowText(GetForegroundWindow())
-        if (activeWin != "Fallout4"):
-            return
-        
         #print("_onKeyEvent: " + event);
+        self.altdown = event.alt_pressed
+        
         if(event.event_type == 'key up'):
             if(event.key_code == 160 or event.key_code == 161):
                 self.shiftdown = False
             if(event.key_code == 162 or event.key_code == 163):
                 self.ctrldown = False
-            if(event.key_code == 164):
+            if(event.key_code == 164 or event.key_code == 165 or event.key_code == 18):
                 self.altdown = False
             if(event.key_code == 91):
                 self.windown = False
@@ -614,10 +622,14 @@ class LLHookey(QtCore.QObject):
                 self.shiftdown = True
             if(event.key_code == 162 or event.key_code == 163):
                 self.ctrldown = True
-            if(event.key_code == 164):
+            if(event.key_code == 164 or event.key_code == 165 or event.key_code == 18):
                 self.altdown = True
             if(event.key_code == 91):
                 self.windown = True
+
+            activeWin = GetWindowText(GetForegroundWindow())
+            if (activeWin != "Fallout4"):
+                return
                 
             for hk in self.Hotkeys:
                 if (hk.keycode == event.key_code

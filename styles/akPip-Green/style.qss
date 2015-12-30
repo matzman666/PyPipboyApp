@@ -22,14 +22,38 @@
  * THE SOFTWARE.
  */
 
- 
-#lblActiveEffects {
-	font-weight:bold;
+#FormSmallPlayerInfoWidget QLabel{
+	font-family:Consolas;
+}
+
+#FormSmallPlayerInfoWidget #lblActiveEffects {
+	font-weight: bold;
+	font-size:12px;
+}
+
+#akStatusWidget QLabel{
+	font-family:Consolas;
+}
+
+#akStatusWidget QTableView{
+	font-family:Consolas;
+	font-size:11pt;
 }
  
-#label_EquipedWeapon {
+#akStatusWidget #label_EquipedWeapon{
 	font-weight: bold;
 }
+
+#akStatusWidget #lblPdmg, 
+#akStatusWidget #lblEdmg, 
+#akStatusWidget #lblRdmg,
+#akStatusWidget #lblPodmg
+{
+	font-weight: bold;
+	font-size: 16px;
+}
+
+
 
 QProgressBar:horizontal {
     border: 1px solid #14ff17;
@@ -46,9 +70,11 @@ QProgressBar::chunk:horizontal {
 
 QToolTip
 {
-    border: 1px solid #3A3939;
-    background-color: rgb(90, 102, 117);;
-    color: white;
+    font-family: Consolas;
+	border: 1px solid #14ff17;
+	border-radius: 5px;
+    background-color: rgb(0, 0, 0);
+    color: #14ff17;
     padding: 1px;
     opacity: 200;
 }
