@@ -1,6 +1,5 @@
 from widgets import widgets
-
-from .statswidget import StatsWidget
+from .playerstatscontroller import PlayerStatsController
 
 class ModuleInfo(widgets.ModuleInfoBase):
     
@@ -9,4 +8,10 @@ class ModuleInfo(widgets.ModuleInfoBase):
 
     @staticmethod
     def createWidgets(handle, parent):
-        return StatsWidget(handle, parent)
+        Controller = PlayerStatsController(handle)
+        
+        LimbWidget = Controller.CreateLimbWidget(parent)
+        StatsWidget = Controller.CreateStatsWidget(parent)
+        SpecialWidget = Controller.CreateSpecialWidget(parent)
+        
+        return [LimbWidget, StatsWidget, SpecialWidget]

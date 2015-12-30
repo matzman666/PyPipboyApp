@@ -1,11 +1,11 @@
 from widgets import widgets
-from .perkswidget import PerksWidget
+from .quickaidwidget import QuickAidWidget
 
 class ModuleInfo(widgets.ModuleInfoBase):
     
-    LABEL = 'perks'
-    NAME = 'Perks'
+    LABEL = 'quickaid'
+    NAME = 'Quick Aid'
 
     @staticmethod
     def createWidgets(handle, parent):
-        return PerksWidget(handle, parent)
+        return QuickAidWidget(handle, parent)
