@@ -730,7 +730,7 @@ class PyPipboyApp(QtWidgets.QApplication):
             
 # Main entry point
 if __name__ == "__main__":
-    faulthandler.enable()
+    #faulthandler.enable()
     stdlogfile = None
     i = 1
     while i < len(sys.argv):
