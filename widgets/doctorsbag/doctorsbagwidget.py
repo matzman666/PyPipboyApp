@@ -459,7 +459,7 @@ class DoctorsBagWidget(widgets.WidgetBase):
                 return
             for i in aidItems:
                 tooltipstr = 'Left-click to use item\n'
-                if (self.widget.btnCustom.isChecked):
+                if (self.widget.btnCustom.isChecked()):
                     tooltipstr += 'Right-click to remove from custom list\n\n'
                 else:
                     tooltipstr += 'Right-click to add to custom list\n\n'
