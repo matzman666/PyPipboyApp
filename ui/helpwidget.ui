@@ -37,6 +37,9 @@
         <string>file:///home/matzman/Projekte/Privat/PyPipboyApp/workspace/PyPipboyApp/ui/res/helpwidget.html</string>
        </url>
       </property>
+      <property name="openExternalLinks">
+       <bool>true</bool>
+      </property>
      </widget>
     </item>
    </layout>

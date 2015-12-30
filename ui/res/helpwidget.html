@@ -5,8 +5,35 @@
 </head>
 <body>
 
-<h1>Help</h1>
-ToDo
+PyPipboyApp is a platform independent and extensible unofficial Fallout 4 Pipboy Companion App written in Python3 using PyQt5. It can be extendet with additional widgets and styles.
+<br><br>
+For now it only works with the PC and PS4 version of Fallout.
 
+<h1>Usage</h1>
+<ul>
+<li>Ensure that you have the Pipboy-App enabled in the game settings (and restarted the game after changing the settings).</li>
+<li>Connect to the game using "Auto Discovery" or "Connect to Host" from the "Program" sub-menu in the menu bar above.</li>
+<li>Enable/Disable individual widgets using the "Widgets" sub-menu in the menu bar above.</li>
+<li>Drag and drop the widgets around to customize your GUI layout.</li>
+<li>You can also detach widgets from the main-window (e.g. to show them on a different monitor).</li>
+<li>There is also the possibility to select a different visual style using the "Style" sub-menu in the menu bar above.</li>
+<li>The application remembers your GUI layout and your selected style when you close the application.</li>
+</ul>
+
+<h1>Known Issues</h1>
+<ul>
+<li>Fallout 4 does only allow one single connection at a time. This means you cannot connect the official app and this application at the same time.</li>
+<li>When Fallout 4 is in the background (e.g. because you pressed ALT+TAB), then it will accept a new connection, but not send any data until it is in the foreground again.</li>
+<li>Fallout 4 will not execute commands (e.g. fast travel, set/remove custom marker) when you are in the menu or the away-from-keyboard animation is playing.</li>
+<li>The local map looks scrambled? Then you probably need <a href="http://www.nexusmods.com/fallout4/mods/644">this fix</a>.</li>
+</ul>
+
+<h1>Relay Mode</h1>
+The Relay Mode (in the "Settings" sub-menu in the menu bar above) is an experimental feature that allows you to connect more than one instance of this application to a running game. You can e.g. use it to display the map on the same host Fallout 4 is running and to use the inventory browser on a second computer.
+<ol>
+<li>To use it enable it in the settings and connect to a running game. When this instance is running on the same host as Fallout 4 then do not enable auto-discovery support and select a relay port other than 27000.</li>
+<li>Then connect the other instances to the first instance. To do so select "Connect to Host" and enter the IP-address of the host running the relay instance and the relay port.</li>
+</ol>
+The local map is not working on all instances connected to the relay instance because of performance issues.
 </body>
 </html>
