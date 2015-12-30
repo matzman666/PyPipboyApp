@@ -203,7 +203,7 @@ class DoctorsBagWidget(widgets.WidgetBase):
         model = self.widget.drugView.model() 
         modelIndex = model.index(index.row(), 0)
         #print('dvc: ' + str(model.data(modelIndex)))
-        self.useItemByName('48', str(model.data(modelIndex)))
+        self.useItemByName(str(model.data(modelIndex)))
         return
 
     def loadItemLists(self):
@@ -448,31 +448,36 @@ class DoctorsBagWidget(widgets.WidgetBase):
         self.drugmodel.clear()
  
         if (self.pipInventoryInfo):
-            aidItems = self.pipInventoryInfo.child('48')
+            def _filterFunc(item):
+                if (inventoryutils.itemHasAnyFilterCategory(item,inventoryutils.eItemFilterCategory.Aid)
+                        and (itemList == None or item.child('text').value().lower() in itemList)):
+                    return True
+                else:
+                    return False
+            aidItems = inventoryutils.inventoryGetItems(self.pipInventoryInfo, _filterFunc)
             if(not aidItems):
                 return
-            for i in range(0, aidItems.childCount()):
+            for i in aidItems:
                 tooltipstr = 'Left-click to use item\n'
                 if (self.widget.btnCustom.isChecked):
                     tooltipstr += 'Right-click to remove from custom list\n\n'
                 else:
                     tooltipstr += 'Right-click to add to custom list\n\n'
                 
-                name = aidItems.child(i).child('text').value()
-                if itemList == None or name.lower() in itemList:
-                    count = str(aidItems.child(i).child('count').value())
-                    tooltipstr += self.getItemToolTip(aidItems.child(i))
-                    
-                    item = [
-                        QStandardItem(name) , 
-                        QStandardItem(count)
-                    ]
+                name = i.child('text').value()
+                count = str(i.child('count').value())
+                tooltipstr += self.getItemToolTip(i)
+                
+                item = [
+                    QStandardItem(name) , 
+                    QStandardItem(count)
+                ]
 
-                    item[0].setToolTip(tooltipstr)
-                    item[1].setToolTip(tooltipstr)
-                    item[1].setData(QtCore.Qt.AlignCenter, QtCore.Qt.TextAlignmentRole)
-                    
-                    self.drugmodel.appendRow(item)
+                item[0].setToolTip(tooltipstr)
+                item[1].setToolTip(tooltipstr)
+                item[1].setData(QtCore.Qt.AlignCenter, QtCore.Qt.TextAlignmentRole)
+                
+                self.drugmodel.appendRow(item)
                     
             if (self.widget.btnCustom.isChecked() and self.drugmodel.rowCount() == 0 ):
                     self.drugmodel.appendRow([QStandardItem(''), QStandardItem('Right click on items')])
@@ -488,14 +493,14 @@ class DoctorsBagWidget(widgets.WidgetBase):
             
             self.widget.drugView.sortByColumn(0, QtCore.Qt.AscendingOrder)
 
-    def useItemByName(self,inventorySection, itemName):
+    def useItemByName(self, itemName):
         itemName = itemName.lower()
-        if (self.pipInventoryInfo):
-            inventory = self.pipInventoryInfo.child(inventorySection)
-            for i in range(0, inventory.childCount()):
-                name = inventory.child(i).child('text').value()
-                if (name.lower() == itemName):
-                    self.dataManager.rpcUseItem(inventory.child(i))
-                    return
-                    
-        return        
+        def _filterFunc(item):
+            if (inventoryutils.itemHasAnyFilterCategory(item,inventoryutils.eItemFilterCategory.Aid) 
+                    and item.child('text').value().lower() == itemName):
+                return True
+            else:
+                return False
+        item = inventoryutils.inventoryGetItem(self.pipInventoryInfo, _filterFunc)
+        if item:
+            self.dataManager.rpcUseItem(item)
