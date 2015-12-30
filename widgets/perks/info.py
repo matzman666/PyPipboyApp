@@ -1,6 +1,4 @@
-
 from widgets import widgets
-
 from .perkswidget import PerksWidget
 
 class ModuleInfo(widgets.ModuleInfoBase):

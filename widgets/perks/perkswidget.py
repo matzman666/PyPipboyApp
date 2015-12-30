@@ -1,194 +1,188 @@
-# -*- coding: utf-8 -*-
 import os
 import math
 from PyQt5 import QtCore, QtWidgets, QtGui, uic
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
-from widgets.shared.graphics import ImageFactory
 from widgets import widgets
 from widgets.shared.PipboyIcon import PipboyIcon
 
 class PerksWidget(widgets.WidgetBase):
-    _signalInfoUpdated = QtCore.pyqtSignal()
-    PipboyColorUpdatedSignal = QtCore.pyqtSignal(QColor)
+    PerkListSignal = QtCore.pyqtSignal()
+    PerkInfoSignal = QtCore.pyqtSignal()
+    PerkStarsSignal = QtCore.pyqtSignal()
+    ColorUpdateSignal = QtCore.pyqtSignal(QColor)
+    
+    PerkListModel = QStandardItemModel()
+    
+    Widgets = None
+    
+    DataManager = None
+    PerkData = None
+    ColorData = None
+    
+    SelectedPerkId = -1
+    SelectedPerkRMax = -1
+    SelectedPerkRCur = -1
+    StarFilled = None
+    StarEmpty = None
     
     # CLASS INIT
     def __init__(self, mhandle, parent):
-        super().__init__('Perks', parent)
-        self.widget = uic.loadUi(os.path.join(mhandle.basepath, 'ui', 'perkswidget.ui'))
-        self.setWidget(self.widget)
-        self._signalInfoUpdated.connect(self.UpdateUI)
-        self.PipboyColorUpdatedSignal.connect(self.UpdateColorData)
-    
-    # QT INIT
-    def init(self, app, datamanager):
-        super().init(app, datamanager)
-		
-        # Create a class level hook to the datamanager for updates and RPC methods
-        self.dataManager = datamanager
-        self.dataManager.registerRootObjectListener(self.DataManagerUpdated)
+        super().__init__('Perk Browser', parent)
+        self.Widgets = uic.loadUi(os.path.join(mhandle.basepath, 'ui', 'perkswidget.ui'))
+        self.setWidget(self.Widgets)
         
-        # Event hooks
-        self.widget.perkView.clicked.connect(self.PerkViewClicked)
-        self.widget.prevButton.clicked.connect(self.PrevButtonClicked)
-        self.widget.nextButton.clicked.connect(self.NextButtonClicked)
-        
-        # Class properties for tracking purposes
-        self.PerksModel = QStandardItemModel()
-        self.SelectedPerkId = -1
-        self.SelectedPerkRMax = -1
-        self.SelectedPerkRCur = -1
-        
-        # Fancy Graphics Stuff
         self.StarFilled = PipboyIcon("StarFilled.svg")
         self.StarEmpty = PipboyIcon("StarEmpty.svg")
+        
+        self.PerkListSignal.connect(self.UpdatePerkList)
+        self.PerkInfoSignal.connect(self.UpdatePerkInfo)
+        self.PerkStarsSignal.connect(self.UpdatePerkStars)
+        self.ColorUpdateSignal.connect(self.UpdateIconColor)
+        
+        self.Widgets.perkList.clicked.connect(self.PerkListClicked)
+        self.Widgets.prevButton.clicked.connect(self.PrevButtonClicked)
+        self.Widgets.nextButton.clicked.connect(self.NextButtonClicked)
+    
+    # QT INIT
+    def init(self, app, dataManager):
+        super().init(app, dataManager)
+		
+        # Create a class level hook to the datamanager for updates and RPC methods
+        self.DataManager = dataManager
+        self.DataManager.registerRootObjectListener(self.DataManagerUpdated)
     
     # DATA MANAGER OBJECT HAS CHANGED AT SOME LEVEL
     def DataManagerUpdated(self, rootObject):
-        # Create a class level hook to the Perks data
-        self.PerksData = rootObject.child('Perks')
-        
-        # Create a class level hook to the pip boy color data
-        self.PipboyColorData = rootObject.child("Status").child("EffectColor")
+        self.PerkData = rootObject.child('Perks')
+        self.ColorData = rootObject.child("Status").child("EffectColor")
         
         # We want to track Perk data changes down to the Rank level
-        if self.PerksData:
-            self.PerksData.registerValueUpdatedListener(self.PerksDataUpdated, 2)
+        if self.PerkData:
+            self.PerkData.registerValueUpdatedListener(self.PerkDataUpdated, 2)
             
         # We want to track pip boy color changes
-        if self.PipboyColorData:
-            self.PipboyColorData.registerValueUpdatedListener(self.PipboyColorDataUpdated, 2)
+        if self.ColorData:
+            self.ColorData.registerValueUpdatedListener(self.ColorDataUpdated, 2)
             
-            R = self.PipboyColorData.child(0).value() * 255
-            G = self.PipboyColorData.child(1).value() * 255
-            B = self.PipboyColorData.child(2).value() * 255
-            self.PipboyColorUpdatedSignal.emit(QColor.fromRgb(R, G, B))
-        
-        # Update Widget Table Views
-        self._signalInfoUpdated.emit()
+            R = self.ColorData.child(0).value() * 255
+            G = self.ColorData.child(1).value() * 255
+            B = self.ColorData.child(2).value() * 255
+            
+            self.ColorUpdateSignal.emit(QColor.fromRgb(R, G, B))
+
+        self.PerkListSignal.emit()
+        self.PerkInfoSignal.emit()
 
     # PERK DATA IN THE MANAGER HAS CHANGED
-    def PerksDataUpdated(self, caller, value, pathObjs):
-        # Update Widget Table Views
-        self._signalInfoUpdated.emit()
+    def PerkDataUpdated(self, caller, value, pathObjs):
+        self.PerkListSignal.emit()
+        self.PerkInfoSignal.emit()
     
-    def PipboyColorDataUpdated(self, caller, value, pathObjs):
-        R = self.PipboyColorData.child(0).value() * 255
-        G = self.PipboyColorData.child(1).value() * 255
-        B = self.PipboyColorData.child(2).value() * 255
-        self.PipboyColorUpdatedSignal.emit(QColor.fromRgb(R, G, B))
+    def ColorDataUpdated(self, caller, value, pathObjs):
+        R = self.ColorData.child(0).value() * 255
+        G = self.ColorData.child(1).value() * 255
+        B = self.ColorData.child(2).value() * 255
+        
+        self.ColorUpdateSignal.emit(QColor.fromRgb(R, G, B))
     
-    # UPDATE UI ELEMENTS
+    # SET CURRENTLY SELECTED PERK INDEX AND RELATED SETTINGS
+    def SetPerkId(self, perkId):
+        self.SelectedPerkId = perkId
+        self.SelectedPerkRCur = self.PerkData.child(self.SelectedPerkId).child("Rank").value()
+        self.SelectedPerkRMax = self.PerkData.child(self.SelectedPerkId).child("MaxRank").value()
+        
+        self.PerkInfoSignal.emit()
+        self.PerkStarsSignal.emit()
+    
+    # PERK TABLE VIEW - CLICK SIGNAL
+    @QtCore.pyqtSlot(QtCore.QModelIndex)
+    def PerkListClicked(self, index):
+        ModelIndex = self.PerkListModel.index(index.row(), 0)
+        DataId = self.PerkListModel.data(ModelIndex)
+        
+        if DataId:
+            self.SetPerkId(int(DataId))
+    
+    # PREVIEOUS PERK BUTTON - CLICK SIGNAL
     @QtCore.pyqtSlot()
-    def UpdateUI(self):
-        self.UpdatePerks()
-        self.UpdatePerkDescription()
-        self.UpdateStarView()
+    def PrevButtonClicked(self):
+        self.SelectedPerkRCur -= 1
+        
+        self.PerkInfoSignal.emit()
+        self.PerkStarsSignal.emit()
+    
+    # NEXT PERK BUTTON - CLICK SIGNAL
+    @QtCore.pyqtSlot()
+    def NextButtonClicked(self):
+        self.SelectedPerkRCur += 1
+        
+        self.PerkInfoSignal.emit()
+        self.PerkStarsSignal.emit()
     
     # UPDATE STAR COLORS
     @QtCore.pyqtSlot(QColor)
-    def UpdateColorData(self, pipboyColor):
+    def UpdateIconColor(self, pipboyColor):
         self.StarFilled.Color = pipboyColor
         self.StarFilled.Update()
         
         self.StarEmpty.Color = pipboyColor
         self.StarEmpty.Update()
         
-        self.UpdateStarView()
+        self.PerkStarsSignal.emit()
     
-    # PERK TABLE VIEW - CLICK SIGNAL
-    @QtCore.pyqtSlot(QtCore.QModelIndex)
-    def PerkViewClicked(self, index):
-        ModelIndex = self.PerksModel.index(index.row(), 0)
-        DataId = int(self.PerksModel.data(ModelIndex))
-        
-        self.SetPerkViewData(DataId)
-    
-    # PREVIEOUS PERK BUTTON - CLICK SIGNAL
     @QtCore.pyqtSlot()
-    def PrevButtonClicked(self):
-        self.SelectedPerkRCur -= 1
-        self.UpdatePerkDescription()
-        self.UpdateStarView()
-        self.SetPerkButtons()
-    
-    # NEXT PERK BUTTON - CLICK SIGNAL
-    @QtCore.pyqtSlot()
-    def NextButtonClicked(self):
-        self.SelectedPerkRCur += 1
-        self.UpdatePerkDescription()
-        self.UpdateStarView()
-        self.SetPerkButtons()
-    
-    # SET CURRENTLY SELECTED PERK INDEX AND RELATED SETTINGS
-    def SetPerkViewData(self, dataId):
-        self.SelectedPerkId = dataId
-        self.SelectedPerkRCur = self.PerksData.child(dataId).child("Rank").value()
-        self.SelectedPerkRMax = self.PerksData.child(dataId).child("MaxRank").value()
+    def UpdatePerkList(self):
+        self.PerkListModel.clear()
         
-        self.SetPerkButtons()
-        self.UpdatePerkDescription()
-        self.UpdateStarView()
-    
-    # SET PERK RANK BUTTONS TO BE DISABLED OR ENABLED
-    def SetPerkButtons(self):
-        if self.SelectedPerkRCur == 1:
-            self.widget.prevButton.setEnabled(False)
-        else:
-            self.widget.prevButton.setEnabled(True)
-        
-        if self.SelectedPerkRCur == self.SelectedPerkRMax:
-            self.widget.nextButton.setEnabled(False)
-        else:
-            self.widget.nextButton.setEnabled(True)
-    
-    # UPDATE PERK TABLE VIEW
-    def UpdatePerks(self):
-        self.PerksModel.clear()
-        
-        for i in range(0, self.PerksData.childCount()):
-            Visible = self.PerksData.child(i).child("ListVisible").value()
-            PlayerRank = self.PerksData.child(i).child("Rank").value()
-            
-            if Visible and PlayerRank != 0:
-                Name = self.PerksData.child(i).child("Name").value()
+        if self.PerkData.childCount():
+            for i in range(0, self.PerkData.childCount()):
+                Visible = self.PerkData.child(i).child("ListVisible").value()
+                PlayerRank = self.PerkData.child(i).child("Rank").value()
                 
-                TableItem = [
-                    QStandardItem(str(i)),
-                    QStandardItem(str(PlayerRank)),
-                    QStandardItem(Name)
-                ]
-                self.PerksModel.appendRow(TableItem)
+                if Visible and PlayerRank != 0:
+                    Name = self.PerkData.child(i).child("Name").value()
+                    
+                    ListItem = [
+                        QStandardItem(str(i)),
+                        QStandardItem(str(PlayerRank)),
+                        QStandardItem(Name)
+                    ]
+                    self.PerkListModel.appendRow(ListItem)
+
+            self.Widgets.perkList.setModel(self.PerkListModel)
+            self.Widgets.perkList.sortByColumn(2, QtCore.Qt.AscendingOrder)
+            self.Widgets.perkList.hideColumn(0)
+            self.Widgets.perkList.resizeColumnToContents(1)
+
+            if self.SelectedPerkId == -1:
+                ModelIndex = self.PerkListModel.index(0, 0)
+                DataId = self.PerkListModel.data(ModelIndex)
+                
+                if DataId:
+                    self.SetPerkId(int(DataId))
+    
+    @QtCore.pyqtSlot()
+    def UpdatePerkInfo(self):
+        if self.PerkData.childCount():
+            Text = self.PerkData.child(self.SelectedPerkId).child("Perks").child(self.SelectedPerkRCur - 1).child("Description").value()
+            self.Widgets.descriptionLabel.setText(Text)
         
-        self.widget.perkView.horizontalHeader().setStretchLastSection(True)
-        self.widget.perkView.verticalHeader().setStretchLastSection(False)
-        self.widget.perkView.setModel(self.PerksModel)
-        self.widget.perkView.sortByColumn(2, QtCore.Qt.AscendingOrder)
-        self.widget.perkView.hideColumn(0)
-        self.widget.perkView.setColumnWidth(1, 20)
-        
-        # If no perk has been selected yet, select first one in sorted view
-        if self.SelectedPerkId == -1:
-            Index = self.PerksModel.index(0, 0)
-            data = self.PerksModel.data(Index)
-            if data:
-                DataId = int(data)
+            if self.SelectedPerkRCur == 1:
+                self.Widgets.prevButton.setEnabled(False)
+            else:
+                self.Widgets.prevButton.setEnabled(True)
             
-                self.SetPerkViewData(DataId)
+            if self.SelectedPerkRCur == self.SelectedPerkRMax:
+                self.Widgets.nextButton.setEnabled(False)
+            else:
+                self.Widgets.nextButton.setEnabled(True)
     
-    # UPDATE PERK DESCRIPTION BASED ON RANK SELECTED
-    def UpdatePerkDescription(self):
-        perk = self.PerksData.child(self.SelectedPerkId)
-        if perk:
-            Text = self.PerksData.child(self.SelectedPerkId).child("Perks").child(self.SelectedPerkRCur - 1).child("Description").value()
-            self.widget.descriptionLabel.setText(Text)
-    
-    # UPDATE STAR GRAPHIC VIEW BASED ON RANK SELECTED
-    def UpdateStarView(self):
-        perk = self.PerksData.child(self.SelectedPerkId)
-        if perk:
-            AreaWidth = self.widget.rankStars.rect().width()
+    @QtCore.pyqtSlot()
+    def UpdatePerkStars(self):
+        if self.PerkData.childCount():
+            AreaWidth = self.Widgets.rankStars.rect().width()
             MaxStarSize = math.floor(AreaWidth / self.SelectedPerkRMax)
             
             # The stars only get so large
@@ -219,5 +213,5 @@ class PerksWidget(widgets.WidgetBase):
                 Star.setOffset(i * MaxStarSize, 0)
     
             # Set the widget and show its glory
-            self.widget.rankStars.setScene(StarScene)
-            self.widget.rankStars.show()
+            self.Widgets.rankStars.setScene(StarScene)
+            self.Widgets.rankStars.show()

@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import os
 from PyQt5 import QtCore, QtWidgets, QtGui, uic
 from PyQt5.QtCore import *
@@ -8,22 +7,28 @@ from widgets import widgets
 
 # WIDGET CLASS
 class SpecialWidget(widgets.WidgetBase):
-    _signalInfoUpdated = QtCore.pyqtSignal()
+    UIUpdateSignal = QtCore.pyqtSignal()
+    
+    Widgets = None
+    
+    DataManager = None
+    SpecialData = None
     
     # CLASS INIT
     def __init__(self, mhandle, parent):
         super().__init__('S P E C I A L', parent)
-        self.widget = uic.loadUi(os.path.join(mhandle.basepath, 'ui', 'specialwidget.ui'))
-        self.setWidget(self.widget)
-        self._signalInfoUpdated.connect(self.UpdateUI)
+        self.Widgets = uic.loadUi(os.path.join(mhandle.basepath, 'ui', 'specialwidget.ui'))
+        self.setWidget(self.Widgets)
+        
+        self.UIUpdateSignal.connect(self.UpdateUI)
     
     # QT INIT
-    def init(self, app, datamanager):
-        super().init(app, datamanager)
+    def init(self, app, dataManager):
+        super().init(app, dataManager)
         
         # Create a class level hook to the datamanager for updates and RPC methods
-        self.dataManager = datamanager
-        self.dataManager.registerRootObjectListener(self.DataManagerUpdated)
+        self.DataManager = dataManager
+        self.DataManager.registerRootObjectListener(self.DataManagerUpdated)
     
     # DATA MANAGER OBJECT HAS CHANGED AT SOME LEVEL
     def DataManagerUpdated(self, rootObject):
@@ -32,15 +37,14 @@ class SpecialWidget(widgets.WidgetBase):
         
         # We want to track Special data down to its base level
         if self.SpecialData:
-            self.SpecialData.registerValueUpdatedListener(self.DataUpdated, 2)
+            self.SpecialData.registerValueUpdatedListener(self.SpecialDataUpdated, 2)
         
         # Update Widget information
-        self._signalInfoUpdated.emit()
+        self.UIUpdateSignal.emit()
 
     # DATA IN THE MANAGER HAS CHANGED
-    def DataUpdated(self, caller, value, pathObjs):
-        # Update UI
-        self._signalInfoUpdated.emit()
+    def SpecialDataUpdated(self, caller, value, pathObjs):
+        self.UIUpdateSignal.emit()
     
     # UPDATE UI ELEMENTS
     @QtCore.pyqtSlot()

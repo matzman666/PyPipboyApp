@@ -7,54 +7,60 @@ from widgets import widgets
 from widgets.shared.PipboyIcon import PipboyIcon
 
 class WorkshopsWidget(widgets.WidgetBase):
-    UIUpdateSignal = QtCore.pyqtSignal()
+    WorkshopListSignal = QtCore.pyqtSignal()
+    WorkshopInfoSignal = QtCore.pyqtSignal()
     ColorUpdateSignal = QtCore.pyqtSignal(QColor)
+    
     WorkshopListModel = QStandardItemModel()
     
-    Icons = None
+    Widgets = None
     
-    SelectedWorkshopId = -1
     DataManager = None
     WorkshopData = None
-    WorkshopSubData = None
+    WorkshopInfoData = None
     ColorData = None
     
+    Icons = None
+    SelectedWorkshopId = -1
+        
     def __init__(self, mhandle, parent):
         super().__init__("Workshops Browser", parent)
         
-        self.widget = uic.loadUi(os.path.join(mhandle.basepath, "ui", "workshopswidget.ui"))
-        self.setWidget(self.widget)
+        self.Widgets = uic.loadUi(os.path.join(mhandle.basepath, "ui", "workshopswidget.ui"))
+        self.setWidget(self.Widgets)
         
-        self.UIUpdateSignal.connect(self.UpdateUI)
-        self.ColorUpdateSignal.connect(self.UpdateIconColor)
-        self.widget.workshopList.clicked.connect(self.WorkshopListClicked)
-
         self.Icons = [
-            PipboyIcon("People.svg", self.widget.iconPeople)
-            , PipboyIcon("Food.svg", self.widget.iconFood)
-            , PipboyIcon("Drop.svg", self.widget.iconWater)
-            , PipboyIcon("Energy.svg", self.widget.iconPower)
-            , PipboyIcon("Shield.svg", self.widget.iconDefense)
-            , PipboyIcon("Bed.svg", self.widget.iconBeds)
-            , PipboyIcon("Smile.svg", self.widget.iconHappiness)
-            , PipboyIcon("Warning.svg", self.widget.warningPeople)
-            , PipboyIcon("Warning.svg", self.widget.warningFood)
-            , PipboyIcon("Warning.svg", self.widget.warningWater)
-            , PipboyIcon("Warning.svg", self.widget.warningPower)
-            , PipboyIcon("Warning.svg", self.widget.warningDefense)
-            , PipboyIcon("Warning.svg", self.widget.warningBeds)
-            , PipboyIcon("Warning.svg", self.widget.warningHappiness)
+            PipboyIcon("People.svg", self.Widgets.iconPeople)
+            , PipboyIcon("Food.svg", self.Widgets.iconFood)
+            , PipboyIcon("Drop.svg", self.Widgets.iconWater)
+            , PipboyIcon("Energy.svg", self.Widgets.iconPower)
+            , PipboyIcon("Shield.svg", self.Widgets.iconDefense)
+            , PipboyIcon("Bed.svg", self.Widgets.iconBeds)
+            , PipboyIcon("Smile.svg", self.Widgets.iconHappiness)
+            , PipboyIcon("Warning.svg", self.Widgets.warningPeople)
+            , PipboyIcon("Warning.svg", self.Widgets.warningFood)
+            , PipboyIcon("Warning.svg", self.Widgets.warningWater)
+            , PipboyIcon("Warning.svg", self.Widgets.warningPower)
+            , PipboyIcon("Warning.svg", self.Widgets.warningDefense)
+            , PipboyIcon("Warning.svg", self.Widgets.warningBeds)
+            , PipboyIcon("Warning.svg", self.Widgets.warningHappiness)
         ]
         
         for i in self.Icons:
             if i.FileName == "Warning.svg":
                 i.Enabled = False
             i.Update()
-    
-    def init(self, app, datamanager):
-        super().init(app, datamanager)
         
-        self.DataManager = datamanager
+        self.WorkshopListSignal.connect(self.UpdateWorkshopList)
+        self.WorkshopInfoSignal.connect(self.UpdateWorkshopInfo)
+        self.ColorUpdateSignal.connect(self.UpdateIconColor)
+        
+        self.Widgets.workshopList.clicked.connect(self.WorkshopListClicked)
+    
+    def init(self, app, dataManager):
+        super().init(app, dataManager)
+        
+        self.DataManager = dataManager
         self.DataManager.registerRootObjectListener(self.DataManagerUpdated)
         
     def DataManagerUpdated(self, rootObject):
@@ -70,37 +76,60 @@ class WorkshopsWidget(widgets.WidgetBase):
             R = self.ColorData.child(0).value() * 255
             G = self.ColorData.child(1).value() * 255
             B = self.ColorData.child(2).value() * 255
+            
             self.ColorUpdateSignal.emit(QColor.fromRgb(R, G, B))
 
-        self.UIUpdateSignal.emit()
+        self.WorkshopListSignal.emit()
+        self.WorkshopInfoSignal.emit()
     
     def WorkshopDataUpdated(self, caller, value, pathObjs):
-        self.UIUpdateSignal.emit()
+        self.WorkshopListSignal.emit()
     
-    def WorkshopSubDataUpdated(self, caller, value, pathObjs):
-        self.UpdateWorkshopInfo()
+    def WorkshopInfoDataUpdated(self, caller, value, pathObjs):
+        self.WorkshopInfoSignal.emit()
     
     def ColorDataUpdated(self, caller, value, pathObjs):
         if self.ColorData:
             R = self.ColorData.child(0).value() * 255
             G = self.ColorData.child(1).value() * 255
             B = self.ColorData.child(2).value() * 255
+            
             self.ColorUpdateSignal.emit(QColor.fromRgb(R, G, B))
     
     def SetWorkshopId(self, workshopId):
         self.SelectedWorkshopId = workshopId
         
         if self.WorkshopData:            
-            if self.WorkshopSubData:
-                self.WorkshopSubData.unregisterValueUpdatedListener(self.WorkshopSubDataUpdated)
+            if self.WorkshopInfoData:
+                self.WorkshopInfoData.unregisterValueUpdatedListener(self.WorkshopInfoDataUpdated)
             
-            self.WorkshopSubData = self.WorkshopData.child(self.SelectedWorkshopId)
-            self.WorkshopSubData.registerValueUpdatedListener(self.WorkshopSubDataUpdated, 3)
+            self.WorkshopInfoData = self.WorkshopData.child(self.SelectedWorkshopId)
+            self.WorkshopInfoData.registerValueUpdatedListener(self.WorkshopInfoDataUpdated, 3)
         
-        self.UpdateWorkshopInfo()
+        self.WorkshopInfoSignal.emit()
+    
+    def SetWarningWidget(self, widget, state):
+        for i in self.Icons:
+            if i.Widget == widget:
+                i.Enabled = state
+                i.Update()
+    
+    @QtCore.pyqtSlot(QModelIndex)
+    def WorkshopListClicked(self, index):
+        NewIndex = self.WorkshopListModel.index(index.row(), 0)
+        DataId = self.WorkshopListModel.data(NewIndex)
+        
+        if DataId:
+            self.SetWorkshopId(int(DataId))
+    
+    @QtCore.pyqtSlot(QColor)
+    def UpdateIconColor(self, iconColor):
+        for i in self.Icons:
+            i.Color = iconColor
+            i.Update()
     
     @QtCore.pyqtSlot()
-    def UpdateUI(self):
+    def UpdateWorkshopList(self):
         self.WorkshopListModel.clear()
         
         HighlightFont = QFont()
@@ -127,94 +156,76 @@ class WorkshopsWidget(widgets.WidgetBase):
                     ]
                     self.WorkshopListModel.appendRow(ListItem)
                     
-            self.widget.workshopList.setModel(self.WorkshopListModel)
-            self.widget.workshopList.sortByColumn(1, Qt.AscendingOrder)
-            self.widget.workshopList.hideColumn(0)
+            self.Widgets.workshopList.setModel(self.WorkshopListModel)
+            self.Widgets.workshopList.sortByColumn(1, Qt.AscendingOrder)
+            self.Widgets.workshopList.hideColumn(0)
             
             if self.SelectedWorkshopId == -1:
-                Index = self.WorkshopListModel.index(0, 0)
-                Data = self.WorkshopListModel.data(Index)
+                ModelIndex = self.WorkshopListModel.index(0, 0)
+                DataId = self.WorkshopListModel.data(ModelIndex)
                 
-                if Data:
-                    self.SetWorkshopId(int(Data))
+                if DataId:
+                    self.SetWorkshopId(int(DataId))
     
-    @QtCore.pyqtSlot(QColor)
-    def UpdateIconColor(self, iconColor):
-        for i in self.Icons:
-            i.Color = iconColor
-            i.Update()
-    
-    @QtCore.pyqtSlot(QModelIndex)
-    def WorkshopListClicked(self, index):
-        NewIndex = self.WorkshopListModel.index(index.row(), 0)
-        DataId = int(self.WorkshopListModel.data(NewIndex))
-        
-        self.SetWorkshopId(DataId)
-    
-    def SetWarningWidget(self, widget, state):
-        for i in self.Icons:
-            if i.Widget == widget:
-                i.Enabled = state
-                i.Update()
-    
+    @QtCore.pyqtSlot()
     def UpdateWorkshopInfo(self):
-        if self.WorkshopData.childCount() and self.WorkshopSubData:
+        if self.WorkshopData.childCount() and self.WorkshopInfoData:
             Name = self.WorkshopData.child(self.SelectedWorkshopId).child("text").value()
-            PopulationValue = self.WorkshopSubData.child("workshopData").child(0).child("Value").value()
-            PopulationRating = self.WorkshopSubData.child("workshopData").child(0).child("rating").value()
-            FoodValue = self.WorkshopSubData.child("workshopData").child(1).child("Value").value()
-            FoodRating = self.WorkshopSubData.child("workshopData").child(1).child("rating").value()
-            WaterValue = self.WorkshopSubData.child("workshopData").child(2).child("Value").value()
-            WaterRating = self.WorkshopSubData.child("workshopData").child(2).child("rating").value()
-            PowerValue = self.WorkshopSubData.child("workshopData").child(3).child("Value").value()
-            PowerRating = self.WorkshopSubData.child("workshopData").child(3).child("rating").value()
-            DefenseValue = self.WorkshopSubData.child("workshopData").child(4).child("Value").value()
-            DefenseRating = self.WorkshopSubData.child("workshopData").child(4).child("rating").value()
-            BedsValue = self.WorkshopSubData.child("workshopData").child(5).child("Value").value()
-            BedsRating = self.WorkshopSubData.child("workshopData").child(5).child("rating").value()
-            HappinessValue = self.WorkshopSubData.child("workshopData").child(6).child("Value").value()
-            HappinessRating = self.WorkshopSubData.child("workshopData").child(6).child("rating").value()
+            PopulationValue = self.WorkshopInfoData.child("workshopData").child(0).child("Value").value()
+            PopulationRating = self.WorkshopInfoData.child("workshopData").child(0).child("rating").value()
+            FoodValue = self.WorkshopInfoData.child("workshopData").child(1).child("Value").value()
+            FoodRating = self.WorkshopInfoData.child("workshopData").child(1).child("rating").value()
+            WaterValue = self.WorkshopInfoData.child("workshopData").child(2).child("Value").value()
+            WaterRating = self.WorkshopInfoData.child("workshopData").child(2).child("rating").value()
+            PowerValue = self.WorkshopInfoData.child("workshopData").child(3).child("Value").value()
+            PowerRating = self.WorkshopInfoData.child("workshopData").child(3).child("rating").value()
+            DefenseValue = self.WorkshopInfoData.child("workshopData").child(4).child("Value").value()
+            DefenseRating = self.WorkshopInfoData.child("workshopData").child(4).child("rating").value()
+            BedsValue = self.WorkshopInfoData.child("workshopData").child(5).child("Value").value()
+            BedsRating = self.WorkshopInfoData.child("workshopData").child(5).child("rating").value()
+            HappinessValue = self.WorkshopInfoData.child("workshopData").child(6).child("Value").value()
+            HappinessRating = self.WorkshopInfoData.child("workshopData").child(6).child("rating").value()
             
-            self.widget.labelLocation.setText(Name)
-            self.widget.numberPeople.setText(str(PopulationValue))
-            self.widget.numberFood.setText(str(FoodValue))
-            self.widget.numberWater.setText(str(WaterValue))
-            self.widget.numberPower.setText(str(PowerValue))
-            self.widget.numberDefense.setText(str(DefenseValue))
-            self.widget.numberBeds.setText(str(BedsValue))
-            self.widget.numberHappiness.setText(str(HappinessValue))
+            self.Widgets.labelLocation.setText(Name)
+            self.Widgets.numberPeople.setText(str(PopulationValue))
+            self.Widgets.numberFood.setText(str(FoodValue))
+            self.Widgets.numberWater.setText(str(WaterValue))
+            self.Widgets.numberPower.setText(str(PowerValue))
+            self.Widgets.numberDefense.setText(str(DefenseValue))
+            self.Widgets.numberBeds.setText(str(BedsValue))
+            self.Widgets.numberHappiness.setText(str(HappinessValue))
             
             if PopulationRating < 0:
-                self.SetWarningWidget(self.widget.warningPeople, True)
+                self.SetWarningWidget(self.Widgets.warningPeople, True)
             else:
-                self.SetWarningWidget(self.widget.warningPeople, False)
+                self.SetWarningWidget(self.Widgets.warningPeople, False)
             
             if FoodRating < 0:
-                self.SetWarningWidget(self.widget.warningFood, True)
+                self.SetWarningWidget(self.Widgets.warningFood, True)
             else:
-                self.SetWarningWidget(self.widget.warningFood, False)
+                self.SetWarningWidget(self.Widgets.warningFood, False)
             
             if WaterRating < 0:
-                self.SetWarningWidget(self.widget.warningWater, True)
+                self.SetWarningWidget(self.Widgets.warningWater, True)
             else:
-                self.SetWarningWidget(self.widget.warningWater, False)
+                self.SetWarningWidget(self.Widgets.warningWater, False)
             
             if PowerRating < 0:
-                self.SetWarningWidget(self.widget.warningPower, True)
+                self.SetWarningWidget(self.Widgets.warningPower, True)
             else:
-                self.SetWarningWidget(self.widget.warningPower, False)
+                self.SetWarningWidget(self.Widgets.warningPower, False)
             
             if DefenseRating < 0:
-                self.SetWarningWidget(self.widget.warningDefense, True)
+                self.SetWarningWidget(self.Widgets.warningDefense, True)
             else:
-                self.SetWarningWidget(self.widget.warningDefense, False)
+                self.SetWarningWidget(self.Widgets.warningDefense, False)
             
             if BedsRating < 0:
-                self.SetWarningWidget(self.widget.warningBeds, True)
+                self.SetWarningWidget(self.Widgets.warningBeds, True)
             else:
-                self.SetWarningWidget(self.widget.warningBeds, False)
+                self.SetWarningWidget(self.Widgets.warningBeds, False)
             
             if HappinessRating < 0 and HappinessValue > 20:
-                self.SetWarningWidget(self.widget.warningHappiness, True)
+                self.SetWarningWidget(self.Widgets.warningHappiness, True)
             else:
-                self.SetWarningWidget(self.widget.warningHappiness, False)
+                self.SetWarningWidget(self.Widgets.warningHappiness, False)

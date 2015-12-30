@@ -1,14 +1,18 @@
 import os
-from PyQt5 import QtCore, QtGui, uic
+from PyQt5 import QtCore, QtGui, QtWidgets, uic
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
 from widgets import widgets
 
 class GameStatsWidget(widgets.WidgetBase):
     SectionsListSignal = QtCore.pyqtSignal()
     StatsListSignal = QtCore.pyqtSignal()
+    
     SectionsListModel = QStandardItemModel()
     StatsListModel = QStandardItemModel()
+    
+    Widgets = None
     
     DataManager = None
     SectionsData = None
@@ -19,19 +23,19 @@ class GameStatsWidget(widgets.WidgetBase):
     def __init__(self, mhandle, parent):
         super().__init__("Game Statistics", parent)
         
-        self.widget = uic.loadUi(os.path.join(mhandle.basepath, "ui", "gamestatswidget.ui"))
-        self.setWidget(self.widget)
+        self.Widgets = uic.loadUi(os.path.join(mhandle.basepath, "ui", "gamestatswidget.ui"))
+        self.setWidget(self.Widgets)
         
         self.SectionsListSignal.connect(self.UpdateSectionsList)
         self.StatsListSignal.connect(self.UpdateStatsList)
+        
+        self.Widgets.sectionsList.clicked.connect(self.SectionsListClicked)
     
     def init(self, app, dataManager):
         super().init(app, dataManager)
         
         self.DataManager = dataManager
         self.DataManager.registerRootObjectListener(self.DataManagerUpdated)
-        
-        self.widget.sectionsList.clicked.connect(self.SectionsListClicked)
     
     def DataManagerUpdated(self, rootObject):
         self.SectionsData = rootObject.child("Log")
@@ -65,10 +69,11 @@ class GameStatsWidget(widgets.WidgetBase):
 
     @QtCore.pyqtSlot(QtCore.QModelIndex)
     def SectionsListClicked(self, index):
-        ClickedIndex = self.SectionsListModel.index(index.row(), 0)
-        DataId = int(self.SectionsListModel.data(ClickedIndex))
+        ModelIndex = self.SectionsListModel.index(index.row(), 0)
+        DataId = self.SectionsListModel.data(ModelIndex)
         
-        self.SetSectionId(DataId)
+        if DataId:
+            self.SetSectionId(int(DataId))
     
     @QtCore.pyqtSlot()
     def UpdateSectionsList(self):
@@ -85,8 +90,8 @@ class GameStatsWidget(widgets.WidgetBase):
                 ]
                 self.SectionsListModel.appendRow(ListItem)
             
-            self.widget.sectionsList.setModel(self.SectionsListModel)
-            self.widget.sectionsList.hideColumn(0)
+            self.Widgets.sectionsList.setModel(self.SectionsListModel)
+            self.Widgets.sectionsList.hideColumn(0)
     
     @QtCore.pyqtSlot()
     def UpdateStatsList(self):
@@ -113,5 +118,5 @@ class GameStatsWidget(widgets.WidgetBase):
                     ]
                     self.StatsListModel.appendRow(ListItem)
             
-            self.widget.statsList.setModel(self.StatsListModel)
-            self.widget.statsList.resizeColumnToContents(0)
+            self.Widgets.statsList.setModel(self.StatsListModel)
+            self.Widgets.statsList.resizeColumnToContents(0)

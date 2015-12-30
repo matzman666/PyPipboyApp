@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from .limbwidget import LimbWidget
 from .statswidget import StatsWidget
 from .specialwidget import SpecialWidget

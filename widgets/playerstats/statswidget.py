@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import os
 from PyQt5 import QtCore, QtWidgets, QtGui, uic
 from PyQt5.QtCore import *
@@ -17,77 +16,83 @@ class eEffectType:
 
 # WIDGET CLASS
 class StatsWidget(widgets.WidgetBase):
-    _signalInfoUpdated = QtCore.pyqtSignal()
-    PipColorUpdatedSignal = QtCore.pyqtSignal(QColor)
+    UIUpdateSignal = QtCore.pyqtSignal()
+    ColorUpdateSignal = QtCore.pyqtSignal(QColor)
+    
+    Widgets = None
+    
+    DataManager = None
+    PlayerInfoData = None
+    ColorData = None
+    
+    Icons = None
     
     # CLASS INIT
     def __init__(self, mhandle, parent):
         super().__init__('Player Statistics', parent)
-        self.BasePath = mhandle.basepath
-        self.widget = uic.loadUi(os.path.join(self.BasePath, 'ui', 'statswidget.ui'))
-        self.setWidget(self.widget)
-        self._signalInfoUpdated.connect(self.UpdateUI)
-        self.PipColorUpdatedSignal.connect(self.UpdateIconColors)
-    
-    # QT INIT
-    def init(self, app, datamanager):
-        super().init(app, datamanager)
-        
-        # Create a class level hook to the datamanager for updates and RPC methods
-        self.dataManager = datamanager
-        self.dataManager.registerRootObjectListener(self.DataManagerUpdated)
+        self.Widgets = uic.loadUi(os.path.join(mhandle.basepath, 'ui', 'statswidget.ui'))
+        self.setWidget(self.Widgets)
         
         self.Icons = [
-            PipboyIcon("Target.svg", self.widget.damageView, 40, "Damage"),
-            PipboyIcon("Shield.svg", self.widget.resistView, 40, "Resists"),
-            PipboyIcon("Pow.svg", self.widget.typeNormalView, 40, "Normal Typed"),
-            PipboyIcon("Energy.svg", self.widget.typeEnergyView, 40, "Energy Typed"),
-            PipboyIcon("Drop.svg", self.widget.typePoisonView, 40, "Poison Typed"),
-            PipboyIcon("Radiation.svg", self.widget.typeRadiationView, 40, "Radiation Typed")
+            PipboyIcon("Target.svg", self.Widgets.damageView, 40, "Damage"),
+            PipboyIcon("Shield.svg", self.Widgets.resistView, 40, "Resists"),
+            PipboyIcon("Pow.svg", self.Widgets.typeNormalView, 40, "Normal Typed"),
+            PipboyIcon("Energy.svg", self.Widgets.typeEnergyView, 40, "Energy Typed"),
+            PipboyIcon("Drop.svg", self.Widgets.typePoisonView, 40, "Poison Typed"),
+            PipboyIcon("Radiation.svg", self.Widgets.typeRadiationView, 40, "Radiation Typed")
         ]
+        
         for i in self.Icons:
             i.Update()
+        
+        self.UIUpdateSignal.connect(self.UpdateUI)
+        self.ColorUpdateSignal.connect(self.UpdateIconColor)
+    
+    # QT INIT
+    def init(self, app, dataManager):
+        super().init(app, dataManager)
+        
+        # Create a class level hook to the datamanager for updates and RPC methods
+        self.DataManager = dataManager
+        self.DataManager.registerRootObjectListener(self.DataManagerUpdated)
     
     # DATA MANAGER OBJECT HAS CHANGED AT SOME LEVEL
     def DataManagerUpdated(self, rootObject):
         # Create a class level hook to the data we are using
-        self.TotalDamageData = rootObject.child("PlayerInfo").child("TotalDamages")
-        self.TotalResistsData = rootObject.child("PlayerInfo").child("TotalResists")
-        self.StatusData = rootObject.child("Status").child("EffectColor")
+        self.PlayerInfoData = rootObject.child("PlayerInfo")
+        self.ColorData = rootObject.child("Status").child("EffectColor")
         
-        if self.TotalDamageData:
-            self.TotalDamageData.registerValueUpdatedListener(self.DataUpdated, 2)
-        
-        if self.TotalResistsData:
-            self.TotalResistsData.registerValueUpdatedListener(self.DataUpdated, 2)
-
-        # We want to track Status data down to its color information
-        if self.StatusData:
-            self.StatusData.registerValueUpdatedListener(self.ColorDataUpdated, 1)
+        if self.PlayerInfoData:
+            self.PlayerInfoData.registerValueUpdatedListener(self.DataUpdated, 4)
             
-            R = self.StatusData.child(0).value() * 255
-            G = self.StatusData.child(1).value() * 255
-            B = self.StatusData.child(2).value() * 255
-            self.PipColorUpdatedSignal.emit(QColor.fromRgb(R, G, B))
+        # We want to track Status data down to its color information
+        if self.ColorData:
+            self.ColorData.registerValueUpdatedListener(self.ColorDataUpdated, 1)
+            
+            R = self.ColorData.child(0).value() * 255
+            G = self.ColorData.child(1).value() * 255
+            B = self.ColorData.child(2).value() * 255
+            
+            self.ColorUpdateSignal.emit(QColor.fromRgb(R, G, B))
 
         # Update Widget information
-        self._signalInfoUpdated.emit()
+        self.UIUpdateSignal.emit()
 
     # DATA IN THE MANAGER HAS CHANGED
     def DataUpdated(self, caller, value, pathObjs):
-        # Update UI
-        self._signalInfoUpdated.emit()
+        self.UIUpdateSignal.emit()
     
     # PIPBOY COLOR IN THE MANAGER HAS CHANGED
     def ColorDataUpdated(self, caller, value, pathObjs):
-        R = self.StatusData.child(0).value() * 255
-        G = self.StatusData.child(1).value() * 255
-        B = self.StatusData.child(2).value() * 255
-        self.PipColorUpdatedSignal.emit(QColor.fromRgb(R, G, B))
+        R = self.ColorData.child(0).value() * 255
+        G = self.ColorData.child(1).value() * 255
+        B = self.ColorData.child(2).value() * 255
+        
+        self.ColorUpdateSignal.emit(QColor.fromRgb(R, G, B))
 
     # UPDATE ICONS
     @QtCore.pyqtSlot(QColor)
-    def UpdateIconColors(self, iconColor):
+    def UpdateIconColor(self, iconColor):
         for i in self.Icons:
             i.Color = iconColor
             i.Update()      
@@ -95,39 +100,43 @@ class StatsWidget(widgets.WidgetBase):
     # UPDATE UI ELEMENTS
     @QtCore.pyqtSlot()
     def UpdateUI(self):
-        self.widget.damageNormalLabel.setText("0")
-        self.widget.damageEnergyLabel.setText("0")
-        self.widget.damagePoisonLabel.setText("0")
-        self.widget.damageRadiationLabel.setText("0")
-        self.widget.resistNormalLabel.setText("0")
-        self.widget.resistEnergyLabel.setText("0")
-        self.widget.resistPoisonLabel.setText("0")
-        self.widget.resistRadiationLabel.setText("0")
+        self.Widgets.damageNormalLabel.setText("0")
+        self.Widgets.damageEnergyLabel.setText("0")
+        self.Widgets.damagePoisonLabel.setText("0")
+        self.Widgets.damageRadiationLabel.setText("0")
+        self.Widgets.resistNormalLabel.setText("0")
+        self.Widgets.resistEnergyLabel.setText("0")
+        self.Widgets.resistPoisonLabel.setText("0")
+        self.Widgets.resistRadiationLabel.setText("0")
         
-        if self.TotalDamageData:
-            for i in range(0, self.TotalDamageData.childCount()):
-                DamageValue = int(self.TotalDamageData.child(i).child("Value").value())
-                DamageType = self.TotalDamageData.child(i).child("type").value()
-                
-                if DamageType == eEffectType.NORMAL:
-                    self.widget.damageNormalLabel.setText(str(DamageValue))
-                elif DamageType == eEffectType.ENERGY:
-                    self.widget.damageEnergyLabel.setText(str(DamageValue))
-                elif DamageType == eEffectType.POISON:
-                    self.widget.damagePoisonLabel.setText(str(DamageValue))
-                elif DamageType == eEffectType.RADIATION:
-                    self.widget.damageRadiationLabel.setText(str(DamageValue))
+        if self.PlayerInfoData.childCount():
+            DamageData = self.PlayerInfoData.child("TotalDamages")
+            ResistsData = self.PlayerInfoData.child("TotalResists")
             
-        if self.TotalResistsData:
-            for i in range(0, self.TotalResistsData.childCount()):
-                ResistValue = int(self.TotalResistsData.child(i).child("Value").value())
-                ResistType = self.TotalResistsData.child(i).child("type").value()
-                
-                if ResistType == eEffectType.NORMAL:
-                    self.widget.resistNormalLabel.setText(str(ResistValue))
-                elif ResistType == eEffectType.ENERGY:
-                    self.widget.resistEnergyLabel.setText(str(ResistValue))
-                elif ResistType == eEffectType.POISON:
-                    self.widget.resistPoisonLabel.setText(str(ResistValue))
-                elif ResistType == eEffectType.RADIATION:
-                    self.widget.resistRadiationLabel.setText(str(ResistValue))
+            if DamageData.childCount():
+                for i in range(0, DamageData.childCount()):
+                    DamageValue = int(DamageData.child(i).child("Value").value())
+                    DamageType = DamageData.child(i).child("type").value()
+                    
+                    if DamageType == eEffectType.NORMAL:
+                        self.Widgets.damageNormalLabel.setText(str(DamageValue))
+                    elif DamageType == eEffectType.ENERGY:
+                        self.Widgets.damageEnergyLabel.setText(str(DamageValue))
+                    elif DamageType == eEffectType.POISON:
+                        self.Widgets.damagePoisonLabel.setText(str(DamageValue))
+                    elif DamageType == eEffectType.RADIATION:
+                        self.Widgets.damageRadiationLabel.setText(str(DamageValue))
+            
+            if ResistsData.childCount():
+                for i in range(0, ResistsData.childCount()):
+                    ResistValue = int(ResistsData.child(i).child("Value").value())
+                    ResistType = ResistsData.child(i).child("type").value()
+                    
+                    if ResistType == eEffectType.NORMAL:
+                        self.Widgets.resistNormalLabel.setText(str(ResistValue))
+                    elif ResistType == eEffectType.ENERGY:
+                        self.Widgets.resistEnergyLabel.setText(str(ResistValue))
+                    elif ResistType == eEffectType.POISON:
+                        self.Widgets.resistPoisonLabel.setText(str(ResistValue))
+                    elif ResistType == eEffectType.RADIATION:
+                        self.Widgets.resistRadiationLabel.setText(str(ResistValue))
