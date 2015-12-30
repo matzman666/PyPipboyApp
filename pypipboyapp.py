@@ -159,6 +159,7 @@ class PyPipboyApp(QtWidgets.QApplication):
         self._loadStyles()
         # Load widgets
         self.helpWidget = uic.loadUi(os.path.join('ui', 'helpwidget.ui'))
+        self.helpWidget.textBrowser.setSource(QtCore.QUrl.fromLocalFile(os.path.join('ui', 'res', 'helpwidget.html')))
         self.mainWindow.addDockWidget(QtCore.Qt.TopDockWidgetArea, self.helpWidget)
         self._loadWidgets()
         # Restore saved window state
