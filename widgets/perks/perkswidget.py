@@ -41,7 +41,8 @@ class PerksWidget(widgets.WidgetBase):
         self.PerkStarsSignal.connect(self.UpdatePerkStars)
         self.ColorUpdateSignal.connect(self.UpdateIconColor)
         
-        self.Widgets.perkList.clicked.connect(self.PerkListClicked)
+        self.Widgets.perkList.setModel(self.PerkListModel) # we need to call setModel() before selectionModel() (and never afterwards)
+        self.Widgets.perkList.selectionModel().currentChanged.connect(self.PerkListCurrentChanged)
         self.Widgets.prevButton.clicked.connect(self.PrevButtonClicked)
         self.Widgets.nextButton.clicked.connect(self.NextButtonClicked)
     
@@ -97,8 +98,8 @@ class PerksWidget(widgets.WidgetBase):
         self.PerkStarsSignal.emit()
     
     # PERK TABLE VIEW - CLICK SIGNAL
-    @QtCore.pyqtSlot(QtCore.QModelIndex)
-    def PerkListClicked(self, index):
+    @QtCore.pyqtSlot(QtCore.QModelIndex, QtCore.QModelIndex)
+    def PerkListCurrentChanged(self, index, previous):
         ModelIndex = self.PerkListModel.index(index.row(), 0)
         DataId = self.PerkListModel.data(ModelIndex)
         
@@ -151,7 +152,6 @@ class PerksWidget(widgets.WidgetBase):
                     ]
                     self.PerkListModel.appendRow(ListItem)
 
-            self.Widgets.perkList.setModel(self.PerkListModel)
             self.Widgets.perkList.sortByColumn(2, QtCore.Qt.AscendingOrder)
             self.Widgets.perkList.hideColumn(0)
             self.Widgets.perkList.resizeColumnToContents(1)
