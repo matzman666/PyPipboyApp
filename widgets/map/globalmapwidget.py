@@ -4,6 +4,7 @@
 import os
 import json
 import logging
+import textwrap
 from PyQt5 import QtWidgets, QtCore, QtGui, uic, QtSvg
 from widgets import widgets
 from widgets.shared import settings
@@ -236,8 +237,39 @@ class LocationMarker(PipValueMarkerBase):
             if not p:
                 self.noTypePixmapFound = True
                 p = _getDefaultPixmap()
-            return p
-    
+            
+
+            px = QtGui.QPixmap(40,28)
+            px.fill(QtCore.Qt.transparent)
+            pn = QtGui.QPainter(px)
+            pn.drawPixmap(QtCore.QRect(0,0,28,28), p)
+            overlayYOffset = 0
+            if (len(self.note) > 0):
+                note = self.colouriseIcon(QtGui.QImage(os.path.join("ui", "res", "note8.png")), self.color)
+                pn.drawPixmap(QtCore.QRect(30,overlayYOffset,8,8), note)
+                overlayYOffset += 8+2
+
+            if (self.cleared):
+                tick = self.colouriseIcon(QtGui.QImage(os.path.join("ui", "res", "tick8.png")), self.color)
+                pn.drawPixmap(QtCore.QRect(30,overlayYOffset,8,8), tick)
+                overlayYOffset += 8+2
+
+            pn.end()
+            return px
+
+    def colouriseIcon(self, img, colour):
+        size = img.size()
+        image = QtGui.QImage(QtCore.QSize(size.width()+1,size.height()+1), QtGui.QImage.Format_ARGB32_Premultiplied)
+        image.fill(QtCore.Qt.transparent)
+        p = QtGui.QPainter(image)
+        p.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver)
+        p.drawImage(QtCore.QRect(1,1,size.width(), size.height()), img)
+        p.setCompositionMode(QtGui.QPainter.CompositionMode_SourceAtop)
+        p.setBrush(colour)
+        p.drawRect(QtCore.QRect(0,0,size.width()+1,size.height()+1))
+        p.end()
+        return QtGui.QPixmap.fromImage(image)   
+        
     @QtCore.pyqtSlot(bool)
     def filterSetVisible(self, value, update = True):
         self.filterVisibleFlag = value
@@ -305,12 +337,15 @@ class LocationMarker(PipValueMarkerBase):
     def _labelStr_(self):
         tmp = self.label
         if self.cleared:
-            tmp += '\n[CLEARED]'
+            tmp += ' [CLEARED]'
+        tmp = textwrap.fill(tmp, 25)
+        if self.pipValue:
+            if len(self.note) > 0:
+                tmp +='\n' + textwrap.fill(self.note, 25)
+                
         if self.noTypePixmapFound:
             tmp += '\n(LocType: ' + str(self.locType) + ')'
         return tmp
-        
-        return self.label
         
     def _fillMarkerContextMenu_(self, event, menu):
         if self.pipValue:
@@ -321,15 +356,65 @@ class LocationMarker(PipValueMarkerBase):
                     self.datamanager.rpcFastTravel(self.pipValue)
             menu.addAction('Fast Travel', _fastTravel)
             
+            def _addMarkerNote():
+                rx = self.pipValue.child('X').value()
+                ry = self.pipValue.child('Y').value()
+                settingPath = 'globalmapwidget/locationnotes/'
+                notestr = self.widget._app.settings.value(settingPath+str(rx)+','+str(ry), '')
+
+                noteDlg = QtWidgets.QInputDialog()
+                noteDlg.setInputMode(QtWidgets.QInputDialog.TextInput)
+                noteDlg.setLabelText(self.pipValue.child('Name').value())
+                noteDlg.setTextValue(notestr)
+                ok = noteDlg.exec_()
+                notestr = noteDlg.textValue()
+                noteDlg.show()
+            
+                if (ok != 0):
+                    settingPath = 'globalmapwidget/locationnotes/'
+                    rx = self.pipValue.child('X').value()
+                    ry = self.pipValue.child('Y').value()
+                    if (len(notestr) > 0):
+                        self.widget._app.settings.setValue(settingPath+str(rx)+','+str(ry), notestr)
+                        self.setStickyLabel(True, True)
+                        self.setNote(notestr, True)
+                    else: 
+                        self.widget._app.settings.beginGroup("globalmapwidget/locationnotes/");
+                        self.widget._app.settings.remove(str(rx)+','+str(ry)); 
+                        self.widget._app.settings.endGroup();
+                        self.setStickyLabel(False, True)
+                        self.setNote(notestr, True)
+
+            menu.addAction('Add\Edit Note', _addMarkerNote)
+            
     def _markerDoubleClickEvent_(self, event):
         if self.pipValue:
             if QtWidgets.QMessageBox.question(self.view, 'Fast Travel', 
                     'Do you want to travel to ' + self.label + '?') == QtWidgets.QMessageBox.Yes:
                 self.datamanager.rpcFastTravel(self.pipValue)
-        
 
+    @QtCore.pyqtSlot(str)
+    def setNote(self, note, update = True):
+        self.note = note
+        self.labelDirty = True
+        self.markerPixmapDirty = True
+        self.doUpdate()
 
+    @QtCore.pyqtSlot(bool)
+    def setStickyLabel(self, sticky, update = True):
+        if self.pipValue:
+            settingPath = 'globalmapwidget/stickylabels/'
+            rx = self.pipValue.child('X').value()
+            ry = self.pipValue.child('Y').value()
 
+            if (sticky):
+                self.widget._app.settings.setValue(settingPath+str(rx)+','+str(ry), int(sticky))
+            else:
+                self.widget._app.settings.beginGroup("globalmapwidget/stickylabels/");
+                self.widget._app.settings.remove(str(rx)+','+str(ry)); 
+                self.widget._app.settings.endGroup();
+
+        super().setStickyLabel(sticky, update)
 
 class MapGraphicsItem(QtCore.QObject):
     
@@ -653,7 +738,16 @@ class GlobalMapWidget(widgets.WidgetBase):
             else:
                 marker = LocationMarker(self,self.controller.imageFactory, self.mapColor)
                 self._connectMarker(marker)
+
+                rx = l.child('X').value()
+                ry = l.child('Y').value()
+                settingPath = 'globalmapwidget/locationnotes/'
+                marker.setNote (self._app.settings.value(settingPath+str(rx)+','+str(ry), ''))
+
                 marker.setStickyLabel(self.stickyLabelsEnabled, False)
+                settingPath = 'globalmapwidget/stickylabels/'
+                marker.setStickyLabel(  bool(int(self._app.settings.value(settingPath+str(rx)+','+str(ry), 0))), False)
+
                 marker.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, False)
                 marker.filterSetVisible(self.locationFilterEnableFlag, False)
                 marker.filterVisibilityCheat(self.locationVisibilityCheatFlag, False)
