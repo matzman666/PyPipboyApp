@@ -7,6 +7,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from widgets.shared.graphics import ImageFactory
 from widgets import widgets
+from widgets.shared.PipboyIcon import PipboyIcon
 
 class PerksWidget(widgets.WidgetBase):
     _signalInfoUpdated = QtCore.pyqtSignal()
@@ -40,11 +41,8 @@ class PerksWidget(widgets.WidgetBase):
         self.SelectedPerkRCur = -1
         
         # Fancy Graphics Stuff
-        self.ImageLoader = ImageFactory(os.path.join("ui", "res"))
-        self.StarColor = QColor.fromRgb(255, 255, 255)
-        self.StarSize = 29
-        self.StarFilled = None
-        self.StarEmpty = None
+        self.StarFilled = PipboyIcon("StarFilled.svg")
+        self.StarEmpty = PipboyIcon("StarEmpty.svg")
     
     # DATA MANAGER OBJECT HAS CHANGED AT SOME LEVEL
     def DataManagerUpdated(self, rootObject):
@@ -91,7 +89,12 @@ class PerksWidget(widgets.WidgetBase):
     # UPDATE STAR COLORS
     @QtCore.pyqtSlot(QColor)
     def UpdateColorData(self, pipboyColor):
-        self.StarColor = pipboyColor
+        self.StarFilled.Color = pipboyColor
+        self.StarFilled.Update()
+        
+        self.StarEmpty.Color = pipboyColor
+        self.StarEmpty.Update()
+        
         self.UpdateStarView()
     
     # PERK TABLE VIEW - CLICK SIGNAL
@@ -189,29 +192,31 @@ class PerksWidget(widgets.WidgetBase):
             MaxStarSize = math.floor(AreaWidth / self.SelectedPerkRMax)
             
             # The stars only get so large
-            if MaxStarSize > 29:
-                MaxStarSize = 29
+            if MaxStarSize > 30:
+                MaxStarSize = 30
             
             # Update Star Size and Images
-            self.StarSize = MaxStarSize
-            self.StarFilled = self.ImageLoader.getPixmap("star-filled.svg", self.StarSize, self.StarSize, self.StarColor)
-            self.StarEmpty = self.ImageLoader.getPixmap("star-empty.svg", self.StarSize, self.StarSize, self.StarColor)
+            self.StarFilled.Size = MaxStarSize
+            self.StarFilled.Update()
             
-            MaxStarArea = self.SelectedPerkRMax * self.StarSize
+            self.StarEmpty.Size = MaxStarSize
+            self.StarEmpty.Update()
+            
+            MaxStarArea = self.SelectedPerkRMax * MaxStarSize
             
             # Create scene and set its area
             StarScene = QGraphicsScene()
-            StarScene.setSceneRect(0, 0, MaxStarArea, self.StarSize)
+            StarScene.setSceneRect(0, 0, MaxStarArea, MaxStarSize)
 
             # Filled Stars
             for i in range(0, self.SelectedPerkRCur):
-                Star = StarScene.addPixmap(self.StarFilled)
-                Star.setOffset(i * self.StarSize, 0)
+                Star = StarScene.addPixmap(self.StarFilled.ImageData)
+                Star.setOffset(i * MaxStarSize, 0)
             
             # Empty Stars
             for i in range(self.SelectedPerkRCur, self.SelectedPerkRMax):
-                Star = StarScene.addPixmap(self.StarEmpty)  
-                Star.setOffset(i * self.StarSize, 0)
+                Star = StarScene.addPixmap(self.StarEmpty.ImageData)  
+                Star.setOffset(i * MaxStarSize, 0)
     
             # Set the widget and show its glory
             self.widget.rankStars.setScene(StarScene)

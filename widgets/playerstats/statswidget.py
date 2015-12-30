@@ -6,6 +6,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from widgets.shared.graphics import ImageFactory
 from widgets import widgets
+from widgets.shared.PipboyIcon import PipboyIcon
 
 # EFFECT ENUMERATION - Represents a damage/resist type
 class eEffectType:
@@ -13,33 +14,6 @@ class eEffectType:
     POISON = 2
     ENERGY = 4
     RADIATION = 6
-
-# DAMAGE RESIST ICON CLASS
-class DamageResistIcon:
-    def __init__(self, imageFactory, imageFileName, widget, toolTip = ""):
-        self.ImageFactory = imageFactory
-        self.ImageName = imageFileName
-        self.Widget = widget
-        self.Text = str(toolTip)
-        self.Color = QColor.fromRgb(255, 255, 255)
-        self.Size = 39
-        
-        self.ImageData = None
-        self.Scene = None
-    
-    def Update(self):
-        self.ImageData = self.ImageFactory.getPixmap(self.ImageName, self.Size, self.Size, self.Color)
-        
-        self.Scene = QGraphicsScene()
-        self.Scene.setSceneRect(0, 0, 40, 40)
-        self.Scene.setBackgroundBrush(QBrush(QColor.fromRgb(0,0,0)))
-        self.Scene.addPixmap(self.ImageData)
-        
-        if self.Text:
-            self.Widget.setToolTip(self.Text)
-            
-        self.Widget.setScene(self.Scene)
-        self.Widget.show()
 
 # WIDGET CLASS
 class StatsWidget(widgets.WidgetBase):
@@ -63,15 +37,14 @@ class StatsWidget(widgets.WidgetBase):
         self.dataManager = datamanager
         self.dataManager.registerRootObjectListener(self.DataManagerUpdated)
         
-        ImageLoader = ImageFactory(os.path.join(self.BasePath, "res"))
         self.Icons = [
-            DamageResistIcon(ImageLoader, "damageicon.svg", self.widget.damageView, "Damage"),
-            DamageResistIcon(ImageLoader, "resisticon.svg", self.widget.resistView, "Resists"),
-            DamageResistIcon(ImageLoader, "effecttype-normal.svg", self.widget.typeNormalView, "Normal Typed"),
-            DamageResistIcon(ImageLoader, "effecttype-energy.svg", self.widget.typeEnergyView, "Energy Typed"),
-            DamageResistIcon(ImageLoader, "effecttype-poison.svg", self.widget.typePoisonView, "Poison Typed"),
-            DamageResistIcon(ImageLoader, "effecttype-radiation.svg", self.widget.typeRadiationView, "Radiation Typed")
-            ]
+            PipboyIcon("Target.svg", self.widget.damageView, 40, "Damage"),
+            PipboyIcon("Shield.svg", self.widget.resistView, 40, "Resists"),
+            PipboyIcon("Pow.svg", self.widget.typeNormalView, 40, "Normal Typed"),
+            PipboyIcon("Energy.svg", self.widget.typeEnergyView, 40, "Energy Typed"),
+            PipboyIcon("Drop.svg", self.widget.typePoisonView, 40, "Poison Typed"),
+            PipboyIcon("Radiation.svg", self.widget.typeRadiationView, 40, "Radiation Typed")
+        ]
         for i in self.Icons:
             i.Update()
     
