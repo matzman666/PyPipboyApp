@@ -158,6 +158,8 @@ class PyPipboyApp(QtWidgets.QApplication):
         # Load Styles
         self._loadStyles()
         # Load widgets
+        self.helpWidget = uic.loadUi(os.path.join('ui', 'helpwidget.ui'))
+        self.mainWindow.addDockWidget(QtCore.Qt.TopDockWidgetArea, self.helpWidget)
         self._loadWidgets()
         # Restore saved window state
         savedGeometry = self.settings.value('mainwindow/geometry')
@@ -581,7 +583,7 @@ class PyPipboyApp(QtWidgets.QApplication):
     def _loadWidgets(self):
         self.widgets = list()
         self.modulehandles = dict()        
-        lastWidget = None
+        lastWidget = self.helpWidget
         for dir in os.listdir(self.PROGRAM_WIDGETS_DIR):
             dirpath = os.path.join(self.PROGRAM_WIDGETS_DIR, dir)
             if dir != 'shared' and not dir.startswith('__') and os.path.isdir(dirpath):
@@ -607,6 +609,7 @@ class PyPipboyApp(QtWidgets.QApplication):
                                 w.setObjectName(info.LABEL + '_' + str(i))
                                 self.mainWindow.addDockWidget(QtCore.Qt.TopDockWidgetArea, w)
                                 self.widgets.append(w)
+                                w.setVisible(False)
                                 if lastWidget:
                                     self.mainWindow.tabifyDockWidget(lastWidget, w)
                                 lastWidget = w
