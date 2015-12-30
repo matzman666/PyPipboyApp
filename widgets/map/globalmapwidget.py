@@ -433,12 +433,15 @@ class GlobalMapWidget(widgets.WidgetBase):
         if self._app.settings.value('globalmapwidget/colour'):
             self.mapColor = self._app.settings.value('globalmapwidget/colour')
         self.mapItem = MapGraphicsItem(self, self.controller.imageFactory, self.mapColor)
-        mapfile = self.mapFiles[self.selectedMapFile]
-        if not mapfile:
-            self._logger.error('Could not find map "' + self.selectedMapFile + '".')
-        else:
-            file = os.path.join('res', mapfile['file'])
-            self.mapItem.setMapFile(file, mapfile['colorable'], mapfile['nw'], mapfile['ne'], mapfile['sw'])
+        try:
+            mapfile = self.mapFiles[self.selectedMapFile]
+        except Exception as e:
+            self._logger.error('Could not find map "' + self.selectedMapFile + '": ' + str(e))
+            self.selectedMapFile = 'default'
+            self._app.settings.setValue('globalmapwidget/selectedMapFile', self.selectedMapFile)
+            mapfile = self.mapFiles[self.selectedMapFile]
+        file = os.path.join('res', mapfile['file'])
+        self.mapItem.setMapFile(file, mapfile['colorable'], mapfile['nw'], mapfile['ne'], mapfile['sw'])
         self.signalSetZoomLevel.connect(self.mapItem.setZoomLevel)
         self.signalSetColor.connect(self.mapItem.setColor)
         # Add player marker
