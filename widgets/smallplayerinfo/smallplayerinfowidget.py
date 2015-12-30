@@ -18,6 +18,7 @@ class SmallPlayerInfoWidget(widgets.WidgetBase):
         self.setWidget(self.widget)
         self.pipPlayerInfo = None
         self.pipCurrWorldspace = None
+        self.pipCurrCell = None
         self.pipStats = None
         self.pipRadioInfo = None
         self.maxHP = 0
@@ -40,7 +41,11 @@ class SmallPlayerInfoWidget(widgets.WidgetBase):
         self.pipPlayerInfo = rootObject.child('PlayerInfo')
         if self.pipPlayerInfo:
             self.pipPlayerInfo.registerValueUpdatedListener(self._onPipPlayerInfoUpdate, 1)
-        
+
+        self.pipCurrCell = rootObject.child('Map').child('CurrCell')
+        if (self.pipCurrCell):
+            self.pipCurrCell.registerValueUpdatedListener(self._onPipPlayerInfoUpdate, 1)
+            
         self.pipCurrWorldspace = rootObject.child('Map').child('CurrWorldspace')
         if (self.pipCurrWorldspace):
             self.pipCurrWorldspace.registerValueUpdatedListener(self._onPipPlayerInfoUpdate, 1)
@@ -75,11 +80,13 @@ class SmallPlayerInfoWidget(widgets.WidgetBase):
             self.widget.lblTime.setText(timeStr)
             self.widget.lblDate.setText(dateStr)
             
-        location = self.pipCurrWorldspace
         locationStr = ""
-        if(location):
-            locationStr = location.value()
-            self.widget.lblLocation.setText(location.value())
+        if(self.pipCurrCell and self.pipCurrCell.value() != ''):
+            locationStr = "[" + self.pipCurrCell.value() + "]"
+        elif(self.pipCurrWorldspace):
+            locationStr = self.pipCurrWorldspace.value()
+            
+        self.widget.lblLocation.setText(locationStr)
 
         activeEffects = self.pipStats.child('ActiveEffects')
         radChange = 0
