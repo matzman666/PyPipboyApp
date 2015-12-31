@@ -166,18 +166,19 @@ class PerksWidget(widgets.WidgetBase):
     @QtCore.pyqtSlot()
     def UpdatePerkInfo(self):
         if self.PerkData.childCount():
-            Text = self.PerkData.child(self.SelectedPerkId).child("Perks").child(self.SelectedPerkRCur - 1).child("Description").value()
-            self.Widgets.descriptionLabel.setText(Text)
-        
-            if self.SelectedPerkRCur == 1:
-                self.Widgets.prevButton.setEnabled(False)
-            else:
-                self.Widgets.prevButton.setEnabled(True)
+            if self.PerkData.child(self.SelectedPerkId):
+                Text = self.PerkData.child(self.SelectedPerkId).child("Perks").child(self.SelectedPerkRCur - 1).child("Description").value()
+                self.Widgets.descriptionLabel.setText(Text)
             
-            if self.SelectedPerkRCur == self.SelectedPerkRMax:
-                self.Widgets.nextButton.setEnabled(False)
-            else:
-                self.Widgets.nextButton.setEnabled(True)
+                if self.SelectedPerkRCur == 1:
+                    self.Widgets.prevButton.setEnabled(False)
+                else:
+                    self.Widgets.prevButton.setEnabled(True)
+                
+                if self.SelectedPerkRCur == self.SelectedPerkRMax:
+                    self.Widgets.nextButton.setEnabled(False)
+                else:
+                    self.Widgets.nextButton.setEnabled(True)
     
     @QtCore.pyqtSlot()
     def UpdatePerkStars(self):
