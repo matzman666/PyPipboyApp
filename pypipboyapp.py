@@ -6,6 +6,7 @@ import sys
 import json
 import importlib
 import traceback
+import faulthandler
 import logging.config
 import threading
 import urllib.request
@@ -157,6 +158,9 @@ class PyPipboyApp(QtWidgets.QApplication):
         # Load Styles
         self._loadStyles()
         # Load widgets
+        self.helpWidget = uic.loadUi(os.path.join('ui', 'helpwidget.ui'))
+        self.helpWidget.textBrowser.setSource(QtCore.QUrl.fromLocalFile(os.path.join('ui', 'res', 'helpwidget.html')))
+        self.mainWindow.addDockWidget(QtCore.Qt.TopDockWidgetArea, self.helpWidget)
         self._loadWidgets()
         # Restore saved window state
         savedGeometry = self.settings.value('mainwindow/geometry')
@@ -580,7 +584,7 @@ class PyPipboyApp(QtWidgets.QApplication):
     def _loadWidgets(self):
         self.widgets = list()
         self.modulehandles = dict()        
-        lastWidget = None
+        lastWidget = self.helpWidget
         for dir in os.listdir(self.PROGRAM_WIDGETS_DIR):
             dirpath = os.path.join(self.PROGRAM_WIDGETS_DIR, dir)
             if dir != 'shared' and not dir.startswith('__') and os.path.isdir(dirpath):
@@ -606,6 +610,7 @@ class PyPipboyApp(QtWidgets.QApplication):
                                 w.setObjectName(info.LABEL + '_' + str(i))
                                 self.mainWindow.addDockWidget(QtCore.Qt.TopDockWidgetArea, w)
                                 self.widgets.append(w)
+                                w.setVisible(False)
                                 if lastWidget:
                                     self.mainWindow.tabifyDockWidget(lastWidget, w)
                                 lastWidget = w
@@ -744,6 +749,18 @@ if __name__ == "__main__":
     except Exception as e:
         logging.basicConfig(level=logging.WARN)
         logging.error('Error while reading logging config: ' + str(e))
+
+    try:
+        faulthandler.enable()
+    except Exception as e:
+        logging.error('Error calling Faulthandle.enable(): ' + str(e))
+        
+    if (faulthandler.is_enabled()):
+        logging.warn('Faulthandler is enabled')
+        #faulthandler.dump_traceback_later(5)
+    else:
+        logging.error('Faulthandler is NOT enabled')
+
     if 'nt' in os.name:
         from ctypes import windll
         windll.shell32.SetCurrentProcessExplicitAppUserModelID(u'matzman666.pypipboyapp')

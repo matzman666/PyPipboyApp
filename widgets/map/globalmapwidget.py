@@ -6,6 +6,7 @@ import json
 import logging
 import textwrap
 from PyQt5 import QtWidgets, QtCore, QtGui, uic, QtSvg
+from widgets.shared.graphics import ImageFactory
 from widgets import widgets
 from widgets.shared import settings
 from .marker import PipValueMarkerBase
@@ -198,11 +199,14 @@ class QuestMarker(PipValueMarkerBase):
         
     
 class LocationMarker(PipValueMarkerBase):
-    def __init__(self, widget, imageFactory, color, parent = None):
+    artilleryRange = 97000
+    
+    def __init__(self, widget, imageFactory, imageFactory2, color, parent = None):
         super().__init__(widget.mapScene, widget.mapView, parent)
         self.markerType = 4
         self.widget = widget
         self.imageFactory = imageFactory
+        self.imageFactory2 = imageFactory2
         self.pipValueListenerDepth = 1
         self.markerItem.setZValue(0)
         self.setColor(color,False)
@@ -216,7 +220,52 @@ class LocationMarker(PipValueMarkerBase):
         self.cleared = False
         self.filterVisibleFlag = True
         self.filterVisibilityCheatFlag = False
+        self.artilleryRangeCircle = None
         self.doUpdate()
+    
+    def showArtilleryRange(self, value, updateSignal = True):
+        idList = self.widget._app.settings.value('globalmapwidget/showArtilleryFormIDs', [])
+        if idList == None: # Yes, this happens (because of buggy Linux QSettings implementation)
+            idList = []
+        if value:
+            if self.pipValue and self.pipValue.child('LocationMarkerFormId'):
+                id = hex(self.pipValue.child('LocationMarkerFormId').value()).lower()
+                if not id in idList:
+                    idList.append(id)
+            self.artilleryRangeCircle = self.scene.addEllipse(0, 0, 0, 0)
+            self.artilleryRangeCircle.setPen(QtGui.QPen(self.color, 2))
+            self.positionDirty = True
+        else:
+            if self.pipValue and self.pipValue.child('LocationMarkerFormId'):
+                id = hex(self.pipValue.child('LocationMarkerFormId').value()).lower()
+                if id in idList:
+                    idList.remove(id)
+            if self.artilleryRangeCircle:
+                self.scene.removeItem(self.artilleryRangeCircle)
+            self.artilleryRangeCircle = None
+            self.positionDirty = True
+        self.widget._app.settings.setValue('globalmapwidget/showArtilleryFormIDs', idList)
+        if updateSignal:
+            self.doUpdate()
+        
+    @QtCore.pyqtSlot()
+    def doUpdate(self):
+        if self.artilleryRangeCircle:
+            if self.isVisible:
+                self.artilleryRangeCircle.setVisible(True)
+                if self.markerPixmapDirty:
+                    self.artilleryRangeCircle.setPen(QtGui.QPen(self.color, 2))
+                if self.positionDirty and self.mapCoords:
+                    rangeX = self.artilleryRange * self.mapCoords._ax * self.zoomLevel
+                    rangeY = self.artilleryRange * self.mapCoords._ay * self.zoomLevel
+                    self.artilleryRangeCircle.setRect(self.mapPosX * self.zoomLevel - rangeX/2,
+                                                         self.mapPosY * self.zoomLevel - rangeY/2,
+                                                         rangeX, rangeY)
+            else:
+                self.artilleryRangeCircle.setVisible(False)
+        super().doUpdate()
+            
+        
         
     def _getPixmap_(self):
         def _getDefaultPixmap():
@@ -238,19 +287,19 @@ class LocationMarker(PipValueMarkerBase):
                 self.noTypePixmapFound = True
                 p = _getDefaultPixmap()
             
-
             px = QtGui.QPixmap(40,28)
             px.fill(QtCore.Qt.transparent)
             pn = QtGui.QPainter(px)
             pn.drawPixmap(QtCore.QRect(0,0,28,28), p)
             overlayYOffset = 0
+            
             if (len(self.note) > 0):
-                note = self.colouriseIcon(QtGui.QImage(os.path.join("ui", "res", "note8.png")), self.color)
+                note = self.colouriseIcon(self.imageFactory2.getImage('note8.png'), self.color)
                 pn.drawPixmap(QtCore.QRect(30,overlayYOffset,8,8), note)
                 overlayYOffset += 8+2
-
+                
             if (self.cleared):
-                tick = self.colouriseIcon(QtGui.QImage(os.path.join("ui", "res", "tick8.png")), self.color)
+                tick = self.colouriseIcon(self.imageFactory2.getImage('tick8.png'), self.color)
                 pn.drawPixmap(QtCore.QRect(30,overlayYOffset,8,8), tick)
                 overlayYOffset += 8+2
 
@@ -293,6 +342,11 @@ class LocationMarker(PipValueMarkerBase):
     
     def setPipValue(self, value, datamanager, mapCoords = None, signal = True):
         super().setPipValue(value, datamanager, mapCoords, signal)
+        if self.pipValue and self.pipValue.child('LocationMarkerFormId'):
+            idList = self.widget._app.settings.value('globalmapwidget/showArtilleryFormIDs', [])
+            if idList:
+                if hex(self.pipValue.child('LocationMarkerFormId').value()).lower() in idList:
+                    self.showArtilleryRange(True, False)
         self.invalidateMarkerPixmap(signal)
         
     @QtCore.pyqtSlot()        
@@ -356,6 +410,7 @@ class LocationMarker(PipValueMarkerBase):
                     self.datamanager.rpcFastTravel(self.pipValue)
             menu.addAction('Fast Travel', _fastTravel)
             
+            @QtCore.pyqtSlot()
             def _addMarkerNote():
                 rx = self.pipValue.child('X').value()
                 ry = self.pipValue.child('Y').value()
@@ -387,6 +442,14 @@ class LocationMarker(PipValueMarkerBase):
 
             menu.addAction('Add\Edit Note', _addMarkerNote)
             
+            if self.pipValue.child('WorkshopOwned'):
+                @QtCore.pyqtSlot()
+                def _showArtilleryRange():
+                    self.showArtilleryRange(self.artilleryRangeCircle == None)
+                action = menu.addAction('Artillery Range', _showArtilleryRange)
+                action.setCheckable(True)
+                action.setChecked(self.artilleryRangeCircle != None)
+            
     def _markerDoubleClickEvent_(self, event):
         if self.pipValue:
             if QtWidgets.QMessageBox.question(self.view, 'Fast Travel', 
@@ -415,6 +478,8 @@ class LocationMarker(PipValueMarkerBase):
                 self.widget._app.settings.endGroup();
 
         super().setStickyLabel(sticky, update)
+
+
 
 class MapGraphicsItem(QtCore.QObject):
     
@@ -739,7 +804,7 @@ class GlobalMapWidget(widgets.WidgetBase):
                 newDict[l.pipId] = marker
                 del self.pipMapLocationItems[l.pipId]
             else:
-                marker = LocationMarker(self,self.controller.imageFactory, self.mapColor)
+                marker = LocationMarker(self, self.controller.imageFactory, self.controller.globalResImageFactory, self.mapColor)
                 self._connectMarker(marker)
 
                 rx = l.child('X').value()

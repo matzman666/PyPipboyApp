@@ -249,6 +249,7 @@ class PipValueMarkerBase(MarkerBase):
         super().__init__(scene, view, parent)
         self.pipValue = None
         self.pipValueListenerDepth = 1
+        self.mapCoords = None
         self._signalPipValueUpdated.connect(self._slotPipValueUpdated)
         
     def setPipValue(self, value, datamanager, mapCoords = None, signal = True):
