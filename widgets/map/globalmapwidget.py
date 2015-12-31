@@ -384,21 +384,25 @@ class LocationMarker(PipValueMarkerBase):
             self.markerItem.setToolTip( tttext )
             if (self.visible or self.filterVisibilityCheatFlag) and self.filterVisibleFlag:
                 self.setVisible(True)
+                self.markerPixmapDirty = True
                 self.setMapPos(px, py)
             else:
                 self.setMapPos(px, py, False)
             
     def _labelStr_(self):
         tmp = self.label
-        if self.cleared:
-            tmp += ' [CLEARED]'
-        tmp = textwrap.fill(tmp, 25)
+        if self.pipValue:
+            workshopOwned = self.pipValue.child('WorkshopOwned')
+            if  workshopOwned and workshopOwned.value():
+                tmp = textwrap.fill(tmp, 25)
+                tmp += '\nPop: ' + str(self.pipValue.child('WorkshopPopulation').value())
+                tmp += '   Happ: ' + str(int(self.pipValue.child('WorkshopHappinessPct').value())) + '%'
+            elif self.cleared:
+                tmp += ' [CLEARED]'
+                tmp = textwrap.fill(tmp, 25)
         if self.pipValue:
             if len(self.note) > 0:
                 tmp +='\n' + textwrap.fill(self.note, 25)
-                
-        if self.noTypePixmapFound:
-            tmp += '\n(LocType: ' + str(self.locType) + ')'
         return tmp
         
     def _fillMarkerContextMenu_(self, event, menu):
