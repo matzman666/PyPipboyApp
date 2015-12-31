@@ -123,7 +123,8 @@ class QuestsWidget(widgets.WidgetBase):
             
             if DataId:
                 if self.ObjectiveData:
-                    self.SelectedFormId = self.ObjectiveData.child(int(DataId)).child("formID").value()
+                    if self.ObjectiveData.child(int(DataId)).child("formID"):
+                        self.SelectedFormId = self.ObjectiveData.child(int(DataId)).child("formID").value()
                     
             self.Widgets.showonmapButton.setEnabled(True)
     
