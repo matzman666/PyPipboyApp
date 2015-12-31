@@ -108,8 +108,10 @@ class EquippedAndGrenadesWidget(widgets.WidgetBase):
 
     def _isItemReal(self, item):
         if(self.pipInventoryInfo):
-            for i in range (0, self.pipInventoryInfo.child('sortedIDS').childCount()):
-                if (item and item.pipId == self.pipInventoryInfo.child('sortedIDS').child(i).value()):
+            # Better to iterate over value(), range() causes race conditions
+            for i in self.pipInventoryInfo.child('sortedIDS').value():
+                
+                if (item and item.pipId == tmp.value()):
                     return True
         return False
         
@@ -128,22 +130,18 @@ class EquippedAndGrenadesWidget(widgets.WidgetBase):
         self.widget.lblRdmg.setVisible(False)
         self.widget.lblPodmgIcon.setVisible(False)
         self.widget.lblPodmg.setVisible(False)
-
-        weapons = self.pipInventoryInfo.child('43')
+        def _filterFunc(item):
+            return inventoryutils.itemHasAnyFilterCategory(item, inventoryutils.eItemFilterCategory.Weapon)
+        weapons = inventoryutils.inventoryGetItems(self.pipInventoryInfo, _filterFunc)
         if(not weapons):
             return
-        for i in range(0, weapons.childCount()):
-            if not self._isItemReal(weapons.child(i)):
-                continue
-        
-            name = weapons.child(i).child('text').value()
-            if (name.lower().find('mine') > -1 
-            or name.lower().find('grenade') > -1 
-            or name.lower().find('molotov') > -1 ):
+        for weapon in weapons:
+            name = weapon.child('text').value()
+            if inventoryutils.itemIsWeaponThrowable(weapon):
                 grenadecounter += 1
                 
-                count = str(weapons.child(i).child('count').value())
-                if (weapons.child(i).child('equipState').value() == 3):
+                count = str(weapon.child('count').value())
+                if (weapon.child('equipState').value() == 3):
                     equipState = "+"
                 else:
                     equipState = ""
@@ -162,16 +160,16 @@ class EquippedAndGrenadesWidget(widgets.WidgetBase):
                 self.grenademodel.appendRow(item)
      
             else:
-                if ( weapons.child(i).child('equipState').value() > 0):
-                    strEquipedWeapon = weapons.child(i).child('text').value()
+                if ( weapon.child('equipState').value() > 0):
+                    strEquipedWeapon = weapon.child('text').value()
                     strAmmo = ''
-                    valueAmmo = inventoryutils.itemFindItemCardInfoValue(weapons.child(i), 10, 'damageType')
+                    valueAmmo = inventoryutils.itemFindItemCardInfoValue(weapon, 10, 'damageType')
                     if valueAmmo != None:
                         strAmmo += ' (' + str(valueAmmo) + ')'
 
                     self.widget.label_EquipedWeapon.setText(strEquipedWeapon +  strAmmo)
                     
-                    damageInfos = inventoryutils.itemFindItemCardInfos(weapons.child(i), inventoryutils.eItemCardInfoValueText.Damage)                 
+                    damageInfos = inventoryutils.itemFindItemCardInfos(weapon, inventoryutils.eItemCardInfoValueText.Damage)                 
                     for info in damageInfos:
                         damageType = info.child('damageType').value()
                         value = info.child('Value').value()
@@ -195,19 +193,19 @@ class EquippedAndGrenadesWidget(widgets.WidgetBase):
 
                     RofAccRngStr = ''
                             
-                    rof = inventoryutils.itemFindItemCardInfoValue(weapons.child(i), inventoryutils.eItemCardInfoValueText.RateOfFire)
+                    rof = inventoryutils.itemFindItemCardInfoValue(weapon, inventoryutils.eItemCardInfoValueText.RateOfFire)
                     if rof == None:
-                        speed = inventoryutils.itemFindItemCardInfoValue(weapons.child(i), inventoryutils.eItemCardInfoValueText.Speed)
+                        speed = inventoryutils.itemFindItemCardInfoValue(weapon, inventoryutils.eItemCardInfoValueText.Speed)
                         if speed:
                             RofAccRngStr = 'Speed: ' + speed[1:].lower()
                     else:
                         RofAccRngStr = 'RoF: ' + str(round(rof, 2))
 
-                    acc = inventoryutils.itemFindItemCardInfoValue(weapons.child(i), inventoryutils.eItemCardInfoValueText.Accuracy)
+                    acc = inventoryutils.itemFindItemCardInfoValue(weapon, inventoryutils.eItemCardInfoValueText.Accuracy)
                     if acc != None:
                         RofAccRngStr += '  Acc: ' + str(round(acc, 2))
 
-                    rng = inventoryutils.itemFindItemCardInfoValue(weapons.child(i), inventoryutils.eItemCardInfoValueText.Range)
+                    rng = inventoryutils.itemFindItemCardInfoValue(weapon, inventoryutils.eItemCardInfoValueText.Range)
                     if rng != None:
                         RofAccRngStr += '  Rng: ' + str(round(rng, 2))
                         
