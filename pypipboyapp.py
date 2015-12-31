@@ -730,7 +730,6 @@ class PyPipboyApp(QtWidgets.QApplication):
             
 # Main entry point
 if __name__ == "__main__":
-    #faulthandler.enable()
     stdlogfile = None
     i = 1
     while i < len(sys.argv):
@@ -750,6 +749,18 @@ if __name__ == "__main__":
     except Exception as e:
         logging.basicConfig(level=logging.WARN)
         logging.error('Error while reading logging config: ' + str(e))
+
+    try:
+        faulthandler.enable()
+    except Exception as e:
+        logging.error('Error calling Faulthandle.enable(): ' + str(e))
+        
+    if (faulthandler.is_enabled()):
+        logging.warn('Faulthandler is enabled')
+        #faulthandler.dump_traceback_later(5)
+    else:
+        logging.error('Faulthandler is NOT enabled')
+
     if 'nt' in os.name:
         from ctypes import windll
         windll.shell32.SetCurrentProcessExplicitAppUserModelID(u'matzman666.pypipboyapp')
