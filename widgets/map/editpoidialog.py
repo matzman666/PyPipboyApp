@@ -11,7 +11,7 @@ class EditPOIDialog(QtWidgets.QDialog):
     def __init__(self, parent=None, color=None):
         super().__init__(parent)
         self.basepath = os.path.join("widgets", "map")
-        uic.loadUi(os.path.join(self.basepath, 'ui', 'editpoimarker.ui'), self)
+        uic.loadUi(os.path.join(self.basepath, 'ui', 'editpoidialog.ui'), self)
         if (color == None):
             self.selectedColor = QtCore.Qt.black
         else:
@@ -44,9 +44,7 @@ class EditPOIDialog(QtWidgets.QDialog):
     def setSelectedIcon(self, iconname):
         count = 1
         for i in self.Icons:
-            #print ('rdoIcon_'+str(count))
             if i.FileName == iconname:
-                print ('matched')
                 rdo = getattr(self, 'rdoIcon_'+str(count))
                 rdo.setChecked(True)
                 return
@@ -71,7 +69,6 @@ class EditPOIDialog(QtWidgets.QDialog):
         
     @QtCore.pyqtSlot()        
     def _slotPOIColorSelectionTriggered(self):
-        print ('in btn handler')
         color = QtWidgets.QColorDialog.getColor(self.selectedColor, self)
         if color.isValid:
             self.selectedColor = color
@@ -79,7 +76,6 @@ class EditPOIDialog(QtWidgets.QDialog):
             
     @QtCore.pyqtSlot(QtGui.QColor)
     def setColor(self, color, update = True):
-        print ('in set color')
         for i in self.Icons:
             i.Color = color
             i.Update() 
