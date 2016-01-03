@@ -46,6 +46,7 @@ class MapController:
         self.mhandle = handle
         self.imageFactory = ImageFactory(handle.basepath)
         self.globalResImageFactory = ImageFactory(os.path.join('ui', 'res'))
+        self.sharedResImageFactory = ImageFactory(os.path.join("widgets", "shared", "res"))
         
     def createGlobalWidget(self, parent):
         self.globalWidget = GlobalMapWidget(self.mhandle, self, parent)
