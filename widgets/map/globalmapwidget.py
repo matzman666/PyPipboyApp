@@ -12,6 +12,7 @@ from widgets import widgets
 from widgets.shared import settings
 from .marker import PipValueMarkerBase, MarkerBase
 from .editpoidialog import EditPOIDialog
+from .editnotedialog import EditNoteDialog
 
 class PlayerMarker(PipValueMarkerBase):
     signalPlayerPositionUpdate = QtCore.pyqtSignal(float, float, float)
@@ -433,28 +434,32 @@ class LocationMarker(PipValueMarkerBase):
             @QtCore.pyqtSlot()
             def _addMarkerNote():
                 if(self.uid == None):
-                    print('marker has no uid, cannot create note')
+                    self.widget._logger.warn('marker has no uid, cannot create note')
                     return
-                settingPath = 'globalmapwidget/locationmarkernotes/'
-                notestr = self.widget._app.settings.value(settingPath+self.uid, '')
-
-                noteDlg = QtWidgets.QInputDialog()
-                noteDlg.setInputMode(QtWidgets.QInputDialog.TextInput)
-                noteDlg.setLabelText(self.pipValue.child('Name').value())
-                noteDlg.setTextValue(notestr)
+                    
+                notestr = self.note
+                noteDlg = EditNoteDialog()
+                noteDlg.txtNote.setText(notestr)
+                noteDlg.lblLocation.setText(self.pipValue.child('Name').value())
+                noteDlg.chkCharacterOnly.setText(noteDlg.chkCharacterOnly.text() + '(' +self.widget.pipPlayerName +')')
                 ok = noteDlg.exec_()
-                notestr = noteDlg.textValue()
+                notestr = noteDlg.txtNote.text()
+                thisCharOnly = noteDlg.chkCharacterOnly.isChecked()
                 noteDlg.show()
             
                 if (ok != 0):
+                    noteSettingPath = 'globalmapwidget/locationmarkernotes/'
+                    if thisCharOnly:
+                        noteSettingPath = noteSettingPath + self.widget.pipPlayerName +'/'
+                
                     if (len(notestr) > 0):
-                        self.widget._app.settings.setValue('globalmapwidget/locationmarkernotes/'+self.uid, notestr)
+                        self.widget._app.settings.setValue(noteSettingPath+self.uid, notestr)
                         self.setNote(notestr, True)
 
                         self.widget._app.settings.setValue('globalmapwidget/stickylabels2/'+self.uid, int(True))
                         self.setStickyLabel(True, True)
                     else: 
-                        self.widget._app.settings.beginGroup("globalmapwidget/locationmarkernotes/");
+                        self.widget._app.settings.beginGroup(noteSettingPath);
                         self.widget._app.settings.remove(self.uid); 
                         self.widget._app.settings.endGroup();
                         self.setNote(notestr, True)
@@ -489,7 +494,9 @@ class LocationMarker(PipValueMarkerBase):
         
     def setSavedSettings(self):
         super().setSavedSettings()
-        if self.uid != None:
+        if self.uid != None and self.widget.pipPlayerName != None:
+            self.setNote (self.widget._app.settings.value('globalmapwidget/locationmarkernotes/'+self.widget.pipPlayerName+'/'+self.uid, ''))
+        if self.uid != None and len(self.note) == 0:
             self.setNote (self.widget._app.settings.value('globalmapwidget/locationmarkernotes/'+self.uid, ''))
 
 class PointofInterestMarker(MarkerBase):
@@ -506,10 +513,11 @@ class PointofInterestMarker(MarkerBase):
         self.setLabel('Point of Interest Marker', False)
         self.filterVisibleFlag = True
         self.uid = str(uid)
+        self.thisCharOnly = True
         self.doUpdate()
         
     def _getPixmap_(self):
-        return self.imageFactory.getPixmap(self.imageFilePath, size=32, color=self.color)
+        return self.imageFactory.getPixmap(self.imageFilePath, size=24, color=self.color)
 
     def _updateMarkerOffset_(self):
         mb = self.markerItem.boundingRect()
@@ -547,13 +555,27 @@ class PointofInterestMarker(MarkerBase):
     def _fillMarkerContextMenu_(self, event, menu):
         @QtCore.pyqtSlot()
         def _deletePOIMarker(): 
-            self.widget._app.settings.beginGroup("globalmapwidget/pointsofinterest/");
+            self.widget._logger.info ('markertodelete: ' +self.uid)
+            poiSettingPath = 'globalmapwidget/pointsofinterest/' 
+            if self.thisCharOnly:
+                poiSettingPath = poiSettingPath + self.widget.pipPlayerName +'/'
+
+            self.widget._app.settings.beginGroup(poiSettingPath);
             self.widget._app.settings.remove(self.uid); 
             self.widget._app.settings.endGroup();
 
-            self.widget._app.settings.beginGroup('globalmapwidget/stickylabels2/');
-            self.widget._app.settings.remove(self.uid); 
-            self.widget._app.settings.endGroup();
+            index = self.widget._app.settings.value(poiSettingPath+'index', None)
+            if index == None: # Yes, this happens (because of buggy Linux QSettings implementation)
+                index = []
+            if index and len(index) > 0:
+                if self.uid in index:
+                    index.remove(self.uid)
+                    self.widget._app.settings.setValue(poiSettingPath+'index', index)
+                    
+                    self.widget._app.settings.beginGroup(poiSettingPath+self.uid);
+                    self.widget._app.settings.remove(""); 
+                    self.widget._app.settings.endGroup();
+            
             self.destroy()
 
         @QtCore.pyqtSlot()
@@ -563,19 +585,26 @@ class PointofInterestMarker(MarkerBase):
             editpoiDialog = EditPOIDialog(self.widget, color=self.color)
             editpoiDialog.txtPOILabel.setText(self.label)
             editpoiDialog.setSelectedIcon(self.imageFilePath)
+            editpoiDialog.chkCharacterOnly.setText(editpoiDialog.chkCharacterOnly.text() + '(' +self.widget.pipPlayerName +')')
+            editpoiDialog.chkCharacterOnly.setChecked(self.thisCharOnly)
+            editpoiDialog.chkCharacterOnly.setEnabled(False)
             ok = editpoiDialog.exec_()
             labelstr = editpoiDialog.txtPOILabel.text()
+            thisCharOnly = editpoiDialog.chkCharacterOnly.isChecked()
+            
             editpoiDialog.show()
             
             if (ok != 0):
                 if (len(labelstr) > 0):
-                    
+                    poiSettingPath = 'globalmapwidget/pointsofinterest/' 
+                    if thisCharOnly:
+                        poiSettingPath = poiSettingPath + self.widget.pipPlayerName +'/'
+                
                     markerKey = self.uid
 
-                    settingPath = 'globalmapwidget/pointsofinterest/' 
-                    self.widget._app.settings.setValue(settingPath+str(markerKey)+'/label', labelstr)
-                    self.widget._app.settings.setValue(settingPath+str(markerKey)+'/color', editpoiDialog.selectedColor)
-                    self.widget._app.settings.setValue(settingPath+str(markerKey)+'/icon', editpoiDialog.IconFile)
+                    self.widget._app.settings.setValue(poiSettingPath+str(markerKey)+'/label', labelstr)
+                    self.widget._app.settings.setValue(poiSettingPath+str(markerKey)+'/color', editpoiDialog.selectedColor)
+                    self.widget._app.settings.setValue(poiSettingPath+str(markerKey)+'/icon', editpoiDialog.IconFile)
                     self.widget._app.settings.sync()
                     self.setSavedSettings()
                     
@@ -584,12 +613,15 @@ class PointofInterestMarker(MarkerBase):
         menu.addAction('Delete POI Marker', _deletePOIMarker)
         
     def setSavedSettings(self):
-        settingPath = 'globalmapwidget/pointsofinterest/'
-        label = self.widget._app.settings.value(settingPath+str(self.uid)+'/label', '')
-        self.imageFilePath = self.widget._app.settings.value(settingPath+str(self.uid)+'/icon', 'mapmarkerpoi_1.svg')
-        worldx = float(self.widget._app.settings.value(settingPath+str(self.uid)+'/worldx', 0.0))
-        worldy = float(self.widget._app.settings.value(settingPath+str(self.uid)+'/worldy', 0.0))
-        color = self.widget._app.settings.value(settingPath+str(self.uid)+'/color', None)
+        poiSettingPath = 'globalmapwidget/pointsofinterest/'
+        if self.thisCharOnly:
+            poiSettingPath = poiSettingPath + self.widget.pipPlayerName +'/'
+        
+        label = self.widget._app.settings.value(poiSettingPath+str(self.uid)+'/label', '')
+        self.imageFilePath = self.widget._app.settings.value(poiSettingPath+str(self.uid)+'/icon', 'mapmarkerpoi_1.svg')
+        worldx = float(self.widget._app.settings.value(poiSettingPath+str(self.uid)+'/worldx', 0.0))
+        worldy = float(self.widget._app.settings.value(poiSettingPath+str(self.uid)+'/worldy', 0.0))
+        color = self.widget._app.settings.value(poiSettingPath+str(self.uid)+'/color', None)
         if (color != None):
             self.setColor(color, True)
 
@@ -659,6 +691,7 @@ class GlobalMapWidget(widgets.WidgetBase):
     signalLocationFilterSetVisible = QtCore.pyqtSignal(bool)
     signalLocationFilterVisibilityCheat = QtCore.pyqtSignal(bool)
     signalMarkerForcePipValueUpdate = QtCore.pyqtSignal()
+
     
     _signalPipWorldQuestsUpdated = QtCore.pyqtSignal()
     _signalPipWorldLocationsUpdated = QtCore.pyqtSignal()
@@ -805,6 +838,8 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.pipMapObject = None
         self.pipMapWorldObject = None
         self.pipColor = None
+        self.pipPlayerObject = None
+        self.pipPlayerName = None
         self.pipWorldQuests = None
         self.pipMapQuestsItems = dict()
         self.pipWorldLocations = None
@@ -847,20 +882,6 @@ class GlobalMapWidget(widgets.WidgetBase):
             self.signalLocationFilterSetVisible.disconnect(marker.filterSetVisible)
             self.signalLocationFilterVisibilityCheat.disconnect(marker.filterVisibilityCheat)
             
-        if marker.markerType == 5:
-            markerKey = marker.uid
-            print ('markertodelete: ' +markerKey)
-
-            settingPath = 'globalmapwidget/pointsofinterest/'
-            index = self._app.settings.value(settingPath+'index', None)
-            if index and len(index) > 0:
-                if markerKey in index:
-                    index.remove(markerKey)
-                    self._app.settings.setValue(settingPath+'index', index)
-                    
-                    self._app.settings.beginGroup(settingPath+markerKey);
-                    self._app.settings.remove(""); 
-                    self._app.settings.endGroup();
             
     
     def _onRootObjectEvent(self, rootObject):
@@ -868,7 +889,17 @@ class GlobalMapWidget(widgets.WidgetBase):
         if self.pipMapObject:
             self.pipMapObject.registerValueUpdatedListener(self._onPipMapReset)
             self._onPipMapReset(None, None, None)
-                
+        self.pipPlayerObject = rootObject.child('PlayerInfo')
+        if self.pipPlayerObject:
+            self.pipPlayerObject.registerValueUpdatedListener(self._onPipPlayerReset)
+            self._onPipPlayerReset(None, None, None)
+
+    def _onPipPlayerReset(self, caller, value, pathObjs):
+        if self.pipPlayerObject:
+            name = self.pipPlayerObject.child('PlayerName')
+            if name:
+                self.pipPlayerName = name.value()
+            
     def _onPipMapReset(self, caller, value, pathObjs):
         self.pipMapWorldObject = self.pipMapObject.child('World')
         if self.pipMapWorldObject:
@@ -905,11 +936,10 @@ class GlobalMapWidget(widgets.WidgetBase):
             if self.pipWorldLocations:
                 self.pipWorldLocations.registerValueUpdatedListener(self._onPipWorldLocationsUpdated, 0)
                 self._signalPipWorldLocationsUpdated.emit()
-                    
-                    
+
     def _onPipWorldQuestsUpdated(self, caller, value, pathObjs):
         self._signalPipWorldQuestsUpdated.emit()
-
+        
     @QtCore.pyqtSlot() 
     def _slotPipWorldQuestsUpdated(self):
         newDict = dict()
@@ -929,7 +959,6 @@ class GlobalMapWidget(widgets.WidgetBase):
         for i in self.pipMapQuestsItems:
             self.pipMapQuestsItems[i].destroy()
         self.pipMapQuestsItems = newDict
-                    
                     
     def _onPipWorldLocationsUpdated(self, caller, value, pathObjs):
         self._signalPipWorldLocationsUpdated.emit()
@@ -969,9 +998,9 @@ class GlobalMapWidget(widgets.WidgetBase):
                     
                     if (len(marker.note) == 0):
                         marker.setNote (self._app.settings.value('globalmapwidget/locationnotes/'+str(rx)+','+str(ry), ''))
-                    if (len(marker.note) > 0):
-                        self._app.settings.setValue('globalmapwidget/locationmarkernotes/'+marker.uid, marker.note)
-                        self._app.settings.remove('globalmapwidget/locationnotes/'+str(rx)+','+str(ry))
+                        if (len(marker.note) > 0):
+                            self._app.settings.setValue('globalmapwidget/locationmarkernotes/'+marker.uid, marker.note)
+                            self._app.settings.remove('globalmapwidget/locationnotes/'+str(rx)+','+str(ry))
 
 
                 self._app.settings.beginGroup("globalmapwidget/locationnotes");
@@ -993,20 +1022,33 @@ class GlobalMapWidget(widgets.WidgetBase):
         for i in self.poiLocationItems:
             self.poiLocationItems[i].destroy()
             
-        settingPath = 'globalmapwidget/pointsofinterest/'
-        index = self._app.settings.value(settingPath+'index', None)
+        poisettingPath = 'globalmapwidget/pointsofinterest/'
+        index = self._app.settings.value(poisettingPath+'index', None)
         poiLocDict = dict()
         if index and len(index) > 0:
             for i in index:
-                #poimarker = PointofInterestMarker(i,self,self.controller.imageFactory, self.mapColor)
                 poimarker = PointofInterestMarker(i,self,self.controller.sharedResImageFactory, self.mapColor)
-                poimarker.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, False)
-                poimarker.filterSetVisible(True)
+                poimarker.thisCharOnly = False
                 poimarker.setSavedSettings()
-                
+                poimarker.filterSetVisible(True)
+                poimarker.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, True)
                 self._connectMarker(poimarker)
                 poiLocDict[str(i)] = poimarker
-            
+
+        if self.pipPlayerName:
+            index = self._app.settings.value(poisettingPath+ self.pipPlayerName +'/index', None)
+            poiLocDict = dict()
+            if index and len(index) > 0:
+                for i in index:
+                    poimarker = PointofInterestMarker(i,self,self.controller.sharedResImageFactory, self.mapColor)
+                    poimarker.thisCharOnly = True
+                    poimarker.setSavedSettings()
+                    poimarker.filterSetVisible(True)
+                    poimarker.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, True)
+                    self._connectMarker(poimarker)
+                    poiLocDict[str(i)] = poimarker
+
+                
         self.pipMapLocationItems = newDict
         self.poiLocationItems = poiLocDict
         
@@ -1204,19 +1246,15 @@ class GlobalMapWidget(widgets.WidgetBase):
                         ry = self.mapCoords.map2pip_y(markerPos.y())
                         labelstr = ''
                         
-                        #noteDlg = QtWidgets.QInputDialog()
-                        #noteDlg.setInputMode(QtWidgets.QInputDialog.TextInput)
-                        #noteDlg.setLabelText('Enter marker name:')
-                        #noteDlg.setTextValue(labelstr)
-                        #ok = noteDlg.exec_()
-                        #labelstr = noteDlg.textValue()
-                        #noteDlg.show()
+
 
                         editpoiDialog = EditPOIDialog(self, color=self.mapColor)
                         editpoiDialog.txtPOILabel.setText(labelstr)
+                        editpoiDialog.chkCharacterOnly.setText(editpoiDialog.chkCharacterOnly.text() + '(' +self.pipPlayerName +')')
                         ok = editpoiDialog.exec_()
                         labelstr = editpoiDialog.txtPOILabel.text()
                         editpoiDialog.show()
+                        thisCharOnly = editpoiDialog.chkCharacterOnly.isChecked()
                         
                         if (ok != 0):
                             if (len(labelstr) > 0):
@@ -1227,25 +1265,31 @@ class GlobalMapWidget(widgets.WidgetBase):
                                 poimarker.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, False)
                                 poimarker.filterSetVisible(True)
                                 poimarker.setStickyLabel(True, True)
+                                poimarker.thisCharOnly = thisCharOnly
                                 
                                 markerKey = poimarker.uid
                                 self.poiLocationItems[markerKey] = poimarker
                             
-                                index = []
-                                for k,v in self.poiLocationItems.items():
-                                    index.append(str(k))
+                                poiSettingPath = 'globalmapwidget/pointsofinterest/' 
+                                if thisCharOnly:
+                                    poiSettingPath = poiSettingPath + self.pipPlayerName +'/'
 
-                                settingPath = 'globalmapwidget/pointsofinterest/' 
-                                self._app.settings.setValue(settingPath+'index', index)
+                                index = self._app.settings.value(poiSettingPath+'index', None)
+                                if index == None: 
+                                    index = []
                                 
-                                self._app.settings.setValue(settingPath+str(markerKey)+'/worldx', rx)
-                                self._app.settings.setValue(settingPath+str(markerKey)+'/worldy', ry)
-                                self._app.settings.setValue(settingPath+str(markerKey)+'/label', labelstr)
-                                self._app.settings.setValue(settingPath+str(markerKey)+'/color', editpoiDialog.selectedColor)
-                                self._app.settings.setValue(settingPath+str(markerKey)+'/icon', editpoiDialog.IconFile)
+                                index.append(str(markerKey))
+                                    
+                                self._app.settings.setValue(poiSettingPath+'index', index)
                                 
+                                self._app.settings.setValue(poiSettingPath+str(markerKey)+'/worldx', rx)
+                                self._app.settings.setValue(poiSettingPath+str(markerKey)+'/worldy', ry)
+                                self._app.settings.setValue(poiSettingPath+str(markerKey)+'/label', labelstr)
+                                self._app.settings.setValue(poiSettingPath+str(markerKey)+'/color', editpoiDialog.selectedColor)
+                                self._app.settings.setValue(poiSettingPath+str(markerKey)+'/icon', editpoiDialog.IconFile)
+
                                 settingPath = 'globalmapwidget/stickylabels2/'
-                                self._app.settings.setValue(settingPath+markerKey, int(True))
+                                self._app.settings.setValue(settingPath+markerKey, int(True))                                
                         return
 
                     menu.addAction('Add Point of Interest', _setPoiLocationMarker)
