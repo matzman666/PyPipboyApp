@@ -11,7 +11,86 @@ from widgets.shared.graphics import ImageFactory
 from widgets import widgets
 from widgets.shared import settings
 from .marker import PipValueMarkerBase, MarkerBase
+from widgets.shared.PipboyIcon import PipboyIcon
 
+class EditPOIDialog(QtWidgets.QDialog):
+
+    signalSetColor = QtCore.pyqtSignal(QtGui.QColor)
+    def __init__(self, parent=None, color=None):
+        super().__init__(parent)
+        self.basepath = os.path.join("widgets", "map")
+        uic.loadUi(os.path.join(self.basepath, 'ui', 'editpoimarker.ui'), self)
+        if (color == None):
+            self.selectedColor = QtCore.Qt.black
+        else:
+            self.selectedColor = color
+            
+        self.Icons = [
+            PipboyIcon("mapmarkerpoi_1.svg", self.gvIconPreview_1, 28, "preview"),
+            PipboyIcon("Target.svg", self.gvIconPreview_2, 28, "preview"),
+            PipboyIcon("Warning.svg", self.gvIconPreview_3, 28, "preview"),
+            PipboyIcon("Shield.svg", self.gvIconPreview_4, 28, "preview"),
+            PipboyIcon("StarEmpty.svg", self.gvIconPreview_5, 28, "preview"),
+            PipboyIcon("StarFilled.svg", self.gvIconPreview_6, 28, "preview")
+        ]
+            
+        for i in self.Icons:
+            i.Color = self.selectedColor 
+            i.BGColor = QtCore.Qt.transparent
+            i.Update()
+
+        self.IconFile = self.Icons[0].FileName
+        self.signalSetColor.connect(self.setColor)        
+        self.btnColor.clicked.connect(self._slotPOIColorSelectionTriggered)
+        self.rdoIcon_1.toggled.connect(self.iconSelectionChanged)
+        self.rdoIcon_2.toggled.connect(self.iconSelectionChanged)
+        self.rdoIcon_3.toggled.connect(self.iconSelectionChanged)
+        self.rdoIcon_4.toggled.connect(self.iconSelectionChanged)
+        self.rdoIcon_5.toggled.connect(self.iconSelectionChanged)
+        self.rdoIcon_6.toggled.connect(self.iconSelectionChanged)
+
+    def setSelectedIcon(self, iconname):
+        count = 1
+        for i in self.Icons:
+            #print ('rdoIcon_'+str(count))
+            if i.FileName == iconname:
+                print ('matched')
+                rdo = getattr(self, 'rdoIcon_'+str(count))
+                rdo.setChecked(True)
+                return
+            count +=1
+        
+    @QtCore.pyqtSlot(bool)        
+    def iconSelectionChanged(self, value):
+        if (value):
+            if self.rdoIcon_1.isChecked():
+                self.IconFile = self.Icons[0].FileName
+            elif self.rdoIcon_2.isChecked():
+                self.IconFile = self.Icons[1].FileName
+            elif self.rdoIcon_3.isChecked():
+                self.IconFile = self.Icons[2].FileName
+            elif self.rdoIcon_4.isChecked():
+                self.IconFile = self.Icons[3].FileName
+            elif self.rdoIcon_5.isChecked():
+                self.IconFile = self.Icons[4].FileName
+            elif self.rdoIcon_6.isChecked():
+                self.IconFile = self.Icons[5].FileName
+        
+        
+    @QtCore.pyqtSlot()        
+    def _slotPOIColorSelectionTriggered(self):
+        print ('in btn handler')
+        color = QtWidgets.QColorDialog.getColor(self.selectedColor, self)
+        if color.isValid:
+            self.selectedColor = color
+            self.signalSetColor.emit(color)
+            
+    @QtCore.pyqtSlot(QtGui.QColor)
+    def setColor(self, color, update = True):
+        print ('in set color')
+        for i in self.Icons:
+            i.Color = color
+            i.Update() 
 
 class PlayerMarker(PipValueMarkerBase):
     signalPlayerPositionUpdate = QtCore.pyqtSignal(float, float, float)
@@ -493,12 +572,12 @@ class LocationMarker(PipValueMarkerBase):
             self.setNote (self.widget._app.settings.value('globalmapwidget/locationmarkernotes/'+self.uid, ''))
 
 class PointofInterestMarker(MarkerBase):
-    def __init__(self, uid, widget, imageFactory, color, parent = None):
+    def __init__(self, uid, widget, imageFactory, color, iconfile='mapmarkerpoi_1.svg', parent = None):
         super().__init__(widget.mapScene, widget.mapView, parent)
         self.markerType = 5
         self.widget = widget
         self.imageFactory = imageFactory
-        self.imageFilePath = os.path.join('res', 'mapmarkerpoi_1.svg')
+        self.imageFilePath = iconfile
         self.pipValueListenerDepth = 1
         self.markerItem.setZValue(0)
         self.setColor(color,False)
@@ -509,7 +588,7 @@ class PointofInterestMarker(MarkerBase):
         self.doUpdate()
         
     def _getPixmap_(self):
-        return self.imageFactory.getPixmap(self.imageFilePath, size=48, color=self.color)
+        return self.imageFactory.getPixmap(self.imageFilePath, size=32, color=self.color)
 
     def _updateMarkerOffset_(self):
         mb = self.markerItem.boundingRect()
@@ -546,7 +625,7 @@ class PointofInterestMarker(MarkerBase):
                 
     def _fillMarkerContextMenu_(self, event, menu):
         @QtCore.pyqtSlot()
-        def _deleteCustomMarker(): 
+        def _deletePOIMarker(): 
             self.widget._app.settings.beginGroup("globalmapwidget/pointsofinterest/");
             self.widget._app.settings.remove(self.uid); 
             self.widget._app.settings.endGroup();
@@ -556,7 +635,48 @@ class PointofInterestMarker(MarkerBase):
             self.widget._app.settings.endGroup();
             self.destroy()
 
-        menu.addAction('Delete Marker', _deleteCustomMarker)
+        @QtCore.pyqtSlot()
+        def _editPOIMarker():
+            labelstr = ''
+            
+            editpoiDialog = EditPOIDialog(self.widget, color=self.color)
+            editpoiDialog.txtPOILabel.setText(self.label)
+            editpoiDialog.setSelectedIcon(self.imageFilePath)
+            ok = editpoiDialog.exec_()
+            labelstr = editpoiDialog.txtPOILabel.text()
+            editpoiDialog.show()
+            
+            if (ok != 0):
+                if (len(labelstr) > 0):
+                    
+                    markerKey = self.uid
+
+                    settingPath = 'globalmapwidget/pointsofinterest/' 
+                    self.widget._app.settings.setValue(settingPath+str(markerKey)+'/label', labelstr)
+                    self.widget._app.settings.setValue(settingPath+str(markerKey)+'/color', editpoiDialog.selectedColor)
+                    self.widget._app.settings.setValue(settingPath+str(markerKey)+'/icon', editpoiDialog.IconFile)
+                    self.widget._app.settings.sync()
+                    self.setSavedSettings()
+                    
+        
+        menu.addAction('Edit POI Marker', _editPOIMarker)
+        menu.addAction('Delete POI Marker', _deletePOIMarker)
+        
+    def setSavedSettings(self):
+        settingPath = 'globalmapwidget/pointsofinterest/'
+        label = self.widget._app.settings.value(settingPath+str(self.uid)+'/label', '')
+        self.imageFilePath = self.widget._app.settings.value(settingPath+str(self.uid)+'/icon', 'mapmarkerpoi_1.svg')
+        worldx = float(self.widget._app.settings.value(settingPath+str(self.uid)+'/worldx', 0.0))
+        worldy = float(self.widget._app.settings.value(settingPath+str(self.uid)+'/worldy', 0.0))
+        color = self.widget._app.settings.value(settingPath+str(self.uid)+'/color', None)
+        if (color != None):
+            self.setColor(color, True)
+
+        self.setMapPos(self.widget.mapCoords.pip2map_x(worldx), self.widget.mapCoords.pip2map_y(worldy))
+        self.setLabel(label)
+        self.invalidateMarkerPixmap()
+        super().setSavedSettings()
+        
 
 class MapGraphicsItem(QtCore.QObject):
     
@@ -957,16 +1077,8 @@ class GlobalMapWidget(widgets.WidgetBase):
         poiLocDict = dict()
         if index and len(index) > 0:
             for i in index:
-                label = self._app.settings.value(settingPath+str(i)+'/label', '')
-                if label == '':
-                    continue
-                
-                worldx = float(self._app.settings.value(settingPath+str(i)+'/worldx', 0.0))
-                worldy = float(self._app.settings.value(settingPath+str(i)+'/worldy', 0.0))
-
-                poimarker = PointofInterestMarker(i,self,self.controller.imageFactory, self.mapColor)
-                poimarker.setMapPos(self.mapCoords.pip2map_x(worldx), self.mapCoords.pip2map_y(worldy))
-                poimarker.setLabel(label)
+                #poimarker = PointofInterestMarker(i,self,self.controller.imageFactory, self.mapColor)
+                poimarker = PointofInterestMarker(i,self,self.controller.sharedResImageFactory, self.mapColor)
                 poimarker.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, False)
                 poimarker.filterSetVisible(True)
                 poimarker.setSavedSettings()
@@ -1171,17 +1283,23 @@ class GlobalMapWidget(widgets.WidgetBase):
                         ry = self.mapCoords.map2pip_y(markerPos.y())
                         labelstr = ''
                         
-                        noteDlg = QtWidgets.QInputDialog()
-                        noteDlg.setInputMode(QtWidgets.QInputDialog.TextInput)
-                        noteDlg.setLabelText('Enter marker name:')
-                        noteDlg.setTextValue(labelstr)
-                        ok = noteDlg.exec_()
-                        labelstr = noteDlg.textValue()
-                        noteDlg.show()
+                        #noteDlg = QtWidgets.QInputDialog()
+                        #noteDlg.setInputMode(QtWidgets.QInputDialog.TextInput)
+                        #noteDlg.setLabelText('Enter marker name:')
+                        #noteDlg.setTextValue(labelstr)
+                        #ok = noteDlg.exec_()
+                        #labelstr = noteDlg.textValue()
+                        #noteDlg.show()
+
+                        editpoiDialog = EditPOIDialog(self, color=self.mapColor)
+                        editpoiDialog.txtPOILabel.setText(labelstr)
+                        ok = editpoiDialog.exec_()
+                        labelstr = editpoiDialog.txtPOILabel.text()
+                        editpoiDialog.show()
                         
                         if (ok != 0):
                             if (len(labelstr) > 0):
-                                poimarker = PointofInterestMarker(uuid.uuid4(), self,self.controller.imageFactory, self.mapColor)
+                                poimarker = PointofInterestMarker(uuid.uuid4(), self,self.controller.sharedResImageFactory, editpoiDialog.selectedColor, editpoiDialog.IconFile)
                                 poimarker.setLabel(labelstr)
                                 self._connectMarker(poimarker)
                                 poimarker.setMapPos(self.mapCoords.pip2map_x(rx), self.mapCoords.pip2map_y(ry))
@@ -1202,12 +1320,11 @@ class GlobalMapWidget(widgets.WidgetBase):
                                 self._app.settings.setValue(settingPath+str(markerKey)+'/worldx', rx)
                                 self._app.settings.setValue(settingPath+str(markerKey)+'/worldy', ry)
                                 self._app.settings.setValue(settingPath+str(markerKey)+'/label', labelstr)
+                                self._app.settings.setValue(settingPath+str(markerKey)+'/color', editpoiDialog.selectedColor)
+                                self._app.settings.setValue(settingPath+str(markerKey)+'/icon', editpoiDialog.IconFile)
                                 
                                 settingPath = 'globalmapwidget/stickylabels2/'
                                 self._app.settings.setValue(settingPath+markerKey, int(True))
-                                
-                                
-                                
                         return
 
                     menu.addAction('Add Point of Interest', _setPoiLocationMarker)
@@ -1251,3 +1368,6 @@ class GlobalMapWidget(widgets.WidgetBase):
         
         if Quest:
             Quest.mapCenterOn()
+
+
+                            
