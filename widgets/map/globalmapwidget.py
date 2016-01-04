@@ -5,12 +5,14 @@ import os
 import json
 import logging
 import textwrap
+import uuid
 from PyQt5 import QtWidgets, QtCore, QtGui, uic, QtSvg
 from widgets.shared.graphics import ImageFactory
 from widgets import widgets
 from widgets.shared import settings
-from .marker import PipValueMarkerBase
-
+from .marker import PipValueMarkerBase, MarkerBase
+from .editpoidialog import EditPOIDialog
+from .editnotedialog import EditNoteDialog
 
 class PlayerMarker(PipValueMarkerBase):
     signalPlayerPositionUpdate = QtCore.pyqtSignal(float, float, float)
@@ -18,6 +20,7 @@ class PlayerMarker(PipValueMarkerBase):
     def __init__(self, widget, imageFactory, color, parent = None):
         super().__init__(widget.mapScene, widget.mapView, parent)
         self.markerType = 0
+        self.uid = 'playermarker'
         self.widget = widget
         self.imageFactory = imageFactory
         self.imageFilePath = os.path.join('res', 'mapmarkerplayer.svg')
@@ -50,6 +53,7 @@ class CustomMarker(PipValueMarkerBase):
     def __init__(self, widget, imageFactory, color, parent = None):
         super().__init__(widget.mapScene, widget.mapView, parent)
         self.markerType = 1
+        self.uid = 'pipcustommarker'
         self.widget = widget
         self.imageFactory = imageFactory
         self.imageFilePath = os.path.join('res', 'mapmarkercustom.svg')
@@ -97,6 +101,7 @@ class PowerArmorMarker(PipValueMarkerBase):
     def __init__(self, widget, imageFactory, color, parent = None):
         super().__init__(widget.mapScene, widget.mapView, parent)
         self.markerType = 2
+        self.uid = 'powerarmormarker'
         self.widget = widget
         self.imageFactory = imageFactory
         self.imageFilePath = os.path.join('res', 'mapmarkerpowerarmor.svg')
@@ -146,6 +151,7 @@ class QuestMarker(PipValueMarkerBase):
     def __init__(self, widget, imageFactory, color, parent = None):
         super().__init__(widget.mapScene, widget.mapView, parent)
         self.markerType = 3
+        self.uid = 'questmarker'
         self.widget = widget
         self.imageFactory = imageFactory
         self.imageFilePath = os.path.join('res', 'mapmarkerquest.svg')
@@ -221,6 +227,7 @@ class LocationMarker(PipValueMarkerBase):
         self.filterVisibleFlag = True
         self.filterVisibilityCheatFlag = False
         self.artilleryRangeCircle = None
+        self.isOwnedWorkshop = False
         self.doUpdate()
     
     def showArtilleryRange(self, value, updateSignal = True):
@@ -297,7 +304,12 @@ class LocationMarker(PipValueMarkerBase):
                 note = self.colouriseIcon(self.imageFactory2.getImage('note8.png'), self.color)
                 pn.drawPixmap(QtCore.QRect(30,overlayYOffset,8,8), note)
                 overlayYOffset += 8+2
-                
+            
+            if (self.isOwnedWorkshop):
+                hammer = self.colouriseIcon(self.imageFactory2.getImage('hammer8.png'), self.color)
+                pn.drawPixmap(QtCore.QRect(30,overlayYOffset,8,8), hammer)
+                overlayYOffset += 8+2
+            
             if (self.cleared):
                 tick = self.colouriseIcon(self.imageFactory2.getImage('tick8.png'), self.color)
                 pn.drawPixmap(QtCore.QRect(30,overlayYOffset,8,8), tick)
@@ -342,6 +354,8 @@ class LocationMarker(PipValueMarkerBase):
     
     def setPipValue(self, value, datamanager, mapCoords = None, signal = True):
         super().setPipValue(value, datamanager, mapCoords, signal)
+        if self.uid == None and self.pipValue and self.pipValue.child('LocationMarkerFormId'):
+            self.uid = hex(self.pipValue.child('LocationMarkerFormId').value()).lower()
         if self.pipValue and self.pipValue.child('LocationMarkerFormId'):
             idList = self.widget._app.settings.value('globalmapwidget/showArtilleryFormIDs', [])
             if idList:
@@ -388,6 +402,9 @@ class LocationMarker(PipValueMarkerBase):
                 self.setMapPos(px, py)
             else:
                 self.setMapPos(px, py, False)
+            if (self.pipValue.child('WorkshopOwned')):
+                self.isOwnedWorkshop = self.pipValue.child('WorkshopOwned').value()
+
             
     def _labelStr_(self):
         tmp = self.label
@@ -416,33 +433,41 @@ class LocationMarker(PipValueMarkerBase):
             
             @QtCore.pyqtSlot()
             def _addMarkerNote():
-                rx = self.pipValue.child('X').value()
-                ry = self.pipValue.child('Y').value()
-                settingPath = 'globalmapwidget/locationnotes/'
-                notestr = self.widget._app.settings.value(settingPath+str(rx)+','+str(ry), '')
-
-                noteDlg = QtWidgets.QInputDialog()
-                noteDlg.setInputMode(QtWidgets.QInputDialog.TextInput)
-                noteDlg.setLabelText(self.pipValue.child('Name').value())
-                noteDlg.setTextValue(notestr)
+                if(self.uid == None):
+                    self.widget._logger.warn('marker has no uid, cannot create note')
+                    return
+                    
+                notestr = self.note
+                noteDlg = EditNoteDialog()
+                noteDlg.txtNote.setText(notestr)
+                noteDlg.lblLocation.setText(self.pipValue.child('Name').value())
+                noteDlg.chkCharacterOnly.setText(noteDlg.chkCharacterOnly.text() + '(' +self.widget.pipPlayerName +')')
                 ok = noteDlg.exec_()
-                notestr = noteDlg.textValue()
+                notestr = noteDlg.txtNote.text()
+                thisCharOnly = noteDlg.chkCharacterOnly.isChecked()
                 noteDlg.show()
             
                 if (ok != 0):
-                    settingPath = 'globalmapwidget/locationnotes/'
-                    rx = self.pipValue.child('X').value()
-                    ry = self.pipValue.child('Y').value()
+                    noteSettingPath = 'globalmapwidget/locationmarkernotes/'
+                    if thisCharOnly:
+                        noteSettingPath = noteSettingPath + self.widget.pipPlayerName +'/'
+                
                     if (len(notestr) > 0):
-                        self.widget._app.settings.setValue(settingPath+str(rx)+','+str(ry), notestr)
-                        self.setStickyLabel(True, True)
+                        self.widget._app.settings.setValue(noteSettingPath+self.uid, notestr)
                         self.setNote(notestr, True)
+
+                        self.widget._app.settings.setValue('globalmapwidget/stickylabels2/'+self.uid, int(True))
+                        self.setStickyLabel(True, True)
                     else: 
-                        self.widget._app.settings.beginGroup("globalmapwidget/locationnotes/");
-                        self.widget._app.settings.remove(str(rx)+','+str(ry)); 
+                        self.widget._app.settings.beginGroup(noteSettingPath);
+                        self.widget._app.settings.remove(self.uid); 
+                        self.widget._app.settings.endGroup();
+                        self.setNote(notestr, True)
+
+                        self.widget._app.settings.beginGroup('globalmapwidget/stickylabels2/');
+                        self.widget._app.settings.remove(self.uid); 
                         self.widget._app.settings.endGroup();
                         self.setStickyLabel(False, True)
-                        self.setNote(notestr, True)
 
             menu.addAction('Add\Edit Note', _addMarkerNote)
             
@@ -466,24 +491,145 @@ class LocationMarker(PipValueMarkerBase):
         self.labelDirty = True
         self.markerPixmapDirty = True
         self.doUpdate()
+        
+    def setSavedSettings(self):
+        super().setSavedSettings()
+        if self.uid != None and self.widget.pipPlayerName != None:
+            self.setNote (self.widget._app.settings.value('globalmapwidget/locationmarkernotes/'+self.widget.pipPlayerName+'/'+self.uid, ''))
+        if self.uid != None and len(self.note) == 0:
+            self.setNote (self.widget._app.settings.value('globalmapwidget/locationmarkernotes/'+self.uid, ''))
 
+class PointofInterestMarker(MarkerBase):
+    def __init__(self, uid, widget, imageFactory, color, iconfile='mapmarkerpoi_1.svg', parent = None):
+        super().__init__(widget.mapScene, widget.mapView, parent)
+        self.markerType = 5
+        self.widget = widget
+        self.imageFactory = imageFactory
+        self.imageFilePath = iconfile
+        self.pipValueListenerDepth = 1
+        self.markerItem.setZValue(0)
+        self.setColor(color,False)
+        self.setLabelFont(QtGui.QFont("Times", 8, QtGui.QFont.Bold), False)
+        self.setLabel('Point of Interest Marker', False)
+        self.filterVisibleFlag = True
+        self.uid = str(uid)
+        self.thisCharOnly = True
+        self.doUpdate()
+        
+    def _getPixmap_(self):
+        return self.imageFactory.getPixmap(self.imageFilePath, size=24, color=self.color)
+
+    def _updateMarkerOffset_(self):
+        mb = self.markerItem.boundingRect()
+        self.markerItem.setOffset(-mb.width()/2, -mb.height())
+        
     @QtCore.pyqtSlot(bool)
-    def setStickyLabel(self, sticky, update = True):
+    def filterSetVisible(self, value):
+        self.filterVisibleFlag = value
+        if not value:
+            self.setVisible(False)
+        elif value :
+            self.setVisible(value)
+            self.doUpdate()
+    
+    @QtCore.pyqtSlot()        
+    def _slotPipValueUpdated(self):
+        return
         if self.pipValue:
-            settingPath = 'globalmapwidget/stickylabels/'
+            self.PipVisible = self.pipValue.child('Visible').value()
             rx = self.pipValue.child('X').value()
             ry = self.pipValue.child('Y').value()
-
-            if (sticky):
-                self.widget._app.settings.setValue(settingPath+str(rx)+','+str(ry), int(sticky))
+            px = self.mapCoords.pip2map_x(rx)
+            py = self.mapCoords.pip2map_y(ry)
+            height = self.pipValue.child('Height').value()
+            self.markerItem.setToolTip( 'Pos: (' + str(rx) + ', ' + str(ry) + ')\n'
+                                        + 'Visible: ' + str(self.PipVisible) + '\n'
+                                        + 'Height: ' +str(height) )
+            self.setMapPos(px, py, False)
+            if self.PipVisible and self.filterVisibleFlag:
+                self.setVisible(True)
+                self.doUpdate()
             else:
-                self.widget._app.settings.beginGroup("globalmapwidget/stickylabels/");
-                self.widget._app.settings.remove(str(rx)+','+str(ry)); 
-                self.widget._app.settings.endGroup();
+                self.setVisible(False)
+                
+    def _fillMarkerContextMenu_(self, event, menu):
+        @QtCore.pyqtSlot()
+        def _deletePOIMarker(): 
+            self.widget._logger.info ('markertodelete: ' +self.uid)
+            poiSettingPath = 'globalmapwidget/pointsofinterest/' 
+            if self.thisCharOnly:
+                poiSettingPath = poiSettingPath + self.widget.pipPlayerName +'/'
 
-        super().setStickyLabel(sticky, update)
+            self.widget._app.settings.beginGroup(poiSettingPath);
+            self.widget._app.settings.remove(self.uid); 
+            self.widget._app.settings.endGroup();
 
+            index = self.widget._app.settings.value(poiSettingPath+'index', None)
+            if index == None: # Yes, this happens (because of buggy Linux QSettings implementation)
+                index = []
+            if index and len(index) > 0:
+                if self.uid in index:
+                    index.remove(self.uid)
+                    self.widget._app.settings.setValue(poiSettingPath+'index', index)
+                    
+                    self.widget._app.settings.beginGroup(poiSettingPath+self.uid);
+                    self.widget._app.settings.remove(""); 
+                    self.widget._app.settings.endGroup();
+            
+            self.destroy()
 
+        @QtCore.pyqtSlot()
+        def _editPOIMarker():
+            labelstr = ''
+            
+            editpoiDialog = EditPOIDialog(self.widget, color=self.color)
+            editpoiDialog.txtPOILabel.setText(self.label)
+            editpoiDialog.setSelectedIcon(self.imageFilePath)
+            editpoiDialog.chkCharacterOnly.setText(editpoiDialog.chkCharacterOnly.text() + '(' +self.widget.pipPlayerName +')')
+            editpoiDialog.chkCharacterOnly.setChecked(self.thisCharOnly)
+            editpoiDialog.chkCharacterOnly.setEnabled(False)
+            ok = editpoiDialog.exec_()
+            labelstr = editpoiDialog.txtPOILabel.text()
+            thisCharOnly = editpoiDialog.chkCharacterOnly.isChecked()
+            
+            editpoiDialog.show()
+            
+            if (ok != 0):
+                if (len(labelstr) > 0):
+                    poiSettingPath = 'globalmapwidget/pointsofinterest/' 
+                    if thisCharOnly:
+                        poiSettingPath = poiSettingPath + self.widget.pipPlayerName +'/'
+                
+                    markerKey = self.uid
+
+                    self.widget._app.settings.setValue(poiSettingPath+str(markerKey)+'/label', labelstr)
+                    self.widget._app.settings.setValue(poiSettingPath+str(markerKey)+'/color', editpoiDialog.selectedColor)
+                    self.widget._app.settings.setValue(poiSettingPath+str(markerKey)+'/icon', editpoiDialog.IconFile)
+                    self.widget._app.settings.sync()
+                    self.setSavedSettings()
+                    
+        
+        menu.addAction('Edit POI Marker', _editPOIMarker)
+        menu.addAction('Delete POI Marker', _deletePOIMarker)
+        
+    def setSavedSettings(self):
+        poiSettingPath = 'globalmapwidget/pointsofinterest/'
+        if self.thisCharOnly:
+            poiSettingPath = poiSettingPath + self.widget.pipPlayerName +'/'
+        
+        label = self.widget._app.settings.value(poiSettingPath+str(self.uid)+'/label', '')
+        self.imageFilePath = self.widget._app.settings.value(poiSettingPath+str(self.uid)+'/icon', 'mapmarkerpoi_1.svg')
+        worldx = float(self.widget._app.settings.value(poiSettingPath+str(self.uid)+'/worldx', 0.0))
+        worldy = float(self.widget._app.settings.value(poiSettingPath+str(self.uid)+'/worldy', 0.0))
+        color = self.widget._app.settings.value(poiSettingPath+str(self.uid)+'/color', None)
+        if (color != None):
+            self.setColor(color, True)
+
+        self.setMapPos(self.widget.mapCoords.pip2map_x(worldx), self.widget.mapCoords.pip2map_y(worldy))
+        self.setLabel(label)
+        self.invalidateMarkerPixmap()
+        super().setSavedSettings()
+        
 
 class MapGraphicsItem(QtCore.QObject):
     
@@ -545,6 +691,7 @@ class GlobalMapWidget(widgets.WidgetBase):
     signalLocationFilterSetVisible = QtCore.pyqtSignal(bool)
     signalLocationFilterVisibilityCheat = QtCore.pyqtSignal(bool)
     signalMarkerForcePipValueUpdate = QtCore.pyqtSignal()
+
     
     _signalPipWorldQuestsUpdated = QtCore.pyqtSignal()
     _signalPipWorldLocationsUpdated = QtCore.pyqtSignal()
@@ -691,10 +838,13 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.pipMapObject = None
         self.pipMapWorldObject = None
         self.pipColor = None
+        self.pipPlayerObject = None
+        self.pipPlayerName = None
         self.pipWorldQuests = None
         self.pipMapQuestsItems = dict()
         self.pipWorldLocations = None
         self.pipMapLocationItems = dict()
+        self.poiLocationItems = dict()
         self._signalPipWorldQuestsUpdated.connect(self._slotPipWorldQuestsUpdated)
         self._signalPipWorldLocationsUpdated.connect(self._slotPipWorldLocationsUpdated)
         self.datamanager.registerRootObjectListener(self._onRootObjectEvent)
@@ -731,13 +881,25 @@ class GlobalMapWidget(widgets.WidgetBase):
         if marker.markerType == 4:
             self.signalLocationFilterSetVisible.disconnect(marker.filterSetVisible)
             self.signalLocationFilterVisibilityCheat.disconnect(marker.filterVisibilityCheat)
+            
+            
     
     def _onRootObjectEvent(self, rootObject):
         self.pipMapObject = rootObject.child('Map')
         if self.pipMapObject:
             self.pipMapObject.registerValueUpdatedListener(self._onPipMapReset)
             self._onPipMapReset(None, None, None)
-                
+        self.pipPlayerObject = rootObject.child('PlayerInfo')
+        if self.pipPlayerObject:
+            self.pipPlayerObject.registerValueUpdatedListener(self._onPipPlayerReset)
+            self._onPipPlayerReset(None, None, None)
+
+    def _onPipPlayerReset(self, caller, value, pathObjs):
+        if self.pipPlayerObject:
+            name = self.pipPlayerObject.child('PlayerName')
+            if name:
+                self.pipPlayerName = name.value()
+            
     def _onPipMapReset(self, caller, value, pathObjs):
         self.pipMapWorldObject = self.pipMapObject.child('World')
         if self.pipMapWorldObject:
@@ -757,12 +919,15 @@ class GlobalMapWidget(widgets.WidgetBase):
             pipWorldPlayer = self.pipMapWorldObject.child('Player')
             if pipWorldPlayer:
                 self.playerMarker.setPipValue(pipWorldPlayer, self.datamanager, self.mapCoords)
+                self.playerMarker.setSavedSettings()
             pipWorldCustom = self.pipMapWorldObject.child('Custom')
             if pipWorldCustom:
                 self.customMarker.setPipValue(pipWorldCustom, self.datamanager, self.mapCoords)
+                self.customMarker.setSavedSettings()
             pipWorldPower = self.pipMapWorldObject.child('PowerArmor')
             if pipWorldPower:
                 self.powerArmorMarker.setPipValue(pipWorldPower, self.datamanager, self.mapCoords)
+                self.powerArmorMarker.setSavedSettings()
             self.pipWorldQuests = self.pipMapWorldObject.child('Quests')
             if self.pipWorldQuests:
                 self.pipWorldQuests.registerValueUpdatedListener(self._onPipWorldQuestsUpdated, 0)
@@ -771,11 +936,10 @@ class GlobalMapWidget(widgets.WidgetBase):
             if self.pipWorldLocations:
                 self.pipWorldLocations.registerValueUpdatedListener(self._onPipWorldLocationsUpdated, 0)
                 self._signalPipWorldLocationsUpdated.emit()
-                    
-                    
+
     def _onPipWorldQuestsUpdated(self, caller, value, pathObjs):
         self._signalPipWorldQuestsUpdated.emit()
-
+        
     @QtCore.pyqtSlot() 
     def _slotPipWorldQuestsUpdated(self):
         newDict = dict()
@@ -790,11 +954,11 @@ class GlobalMapWidget(widgets.WidgetBase):
                 marker.setStickyLabel(self.stickyLabelsEnabled, False)
                 marker.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, False)
                 marker.setPipValue(q, self.datamanager, self.mapCoords)
+                marker.setSavedSettings()
                 newDict[q.pipId] = marker
         for i in self.pipMapQuestsItems:
             self.pipMapQuestsItems[i].destroy()
         self.pipMapQuestsItems = newDict
-                    
                     
     def _onPipWorldLocationsUpdated(self, caller, value, pathObjs):
         self._signalPipWorldLocationsUpdated.emit()
@@ -811,24 +975,84 @@ class GlobalMapWidget(widgets.WidgetBase):
                 marker = LocationMarker(self, self.controller.imageFactory, self.controller.globalResImageFactory, self.mapColor)
                 self._connectMarker(marker)
 
-                rx = l.child('X').value()
-                ry = l.child('Y').value()
-                settingPath = 'globalmapwidget/locationnotes/'
-                marker.setNote (self._app.settings.value(settingPath+str(rx)+','+str(ry), ''))
-
-                marker.setStickyLabel(self.stickyLabelsEnabled, False)
-                settingPath = 'globalmapwidget/stickylabels/'
-                marker.setStickyLabel(  bool(int(self._app.settings.value(settingPath+str(rx)+','+str(ry), 0))), False)
-
                 marker.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, False)
                 marker.filterSetVisible(self.locationFilterEnableFlag, False)
                 marker.filterVisibilityCheat(self.locationVisibilityCheatFlag, False)
                 marker.setPipValue(l, self.datamanager, self.mapCoords)
+                marker.setStickyLabel(self.stickyLabelsEnabled, False)
+
+                marker.setSavedSettings()
+
+                #convert old coord indexed notes and stickies to new uid indexed from
+                #and remove old entries - remove this block in vNext (0.9?)
+                if (marker.uid != None):
+                    rx = l.child('X').value()
+                    ry = l.child('Y').value()
+
+                    if not marker.stickyLabel:
+                        oldsavedsticky =  bool(int(self._app.settings.value('globalmapwidget/stickylabels/'+str(rx)+','+str(ry), 0)))
+                    if oldsavedsticky:
+                        marker.setStickyLabel(oldsavedsticky, True)
+                        self._app.settings.setValue('globalmapwidget/stickylabels2/'+marker.uid, 1)
+                        self._app.settings.remove('globalmapwidget/stickylabels/'+str(rx)+','+str(ry))
+                    
+                    if (len(marker.note) == 0):
+                        marker.setNote (self._app.settings.value('globalmapwidget/locationnotes/'+str(rx)+','+str(ry), ''))
+                        if (len(marker.note) > 0):
+                            self._app.settings.setValue('globalmapwidget/locationmarkernotes/'+marker.uid, marker.note)
+                            self._app.settings.remove('globalmapwidget/locationnotes/'+str(rx)+','+str(ry))
+
+
+                self._app.settings.beginGroup("globalmapwidget/locationnotes");
+                if len(self._app.settings.childKeys()) == 0 :
+                    self._app.settings.remove(''); 
+                self._app.settings.endGroup();
+
+                self._app.settings.beginGroup("globalmapwidget/stickylabels");
+                if len(self._app.settings.childKeys()) == 0 :
+                    self._app.settings.remove(''); 
+                self._app.settings.endGroup();
+                #end convert and clean up - remove this block in vNext (0.9?)
+                        
+                        
                 newDict[l.pipId] = marker
         for i in self.pipMapLocationItems:
             self.pipMapLocationItems[i].destroy()
+
+        for i in self.poiLocationItems:
+            self.poiLocationItems[i].destroy()
+            
+        poisettingPath = 'globalmapwidget/pointsofinterest/'
+        index = self._app.settings.value(poisettingPath+'index', None)
+        poiLocDict = dict()
+        if index and len(index) > 0:
+            for i in index:
+                poimarker = PointofInterestMarker(i,self,self.controller.sharedResImageFactory, self.mapColor)
+                poimarker.thisCharOnly = False
+                poimarker.setSavedSettings()
+                poimarker.filterSetVisible(True)
+                poimarker.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, True)
+                self._connectMarker(poimarker)
+                poiLocDict[str(i)] = poimarker
+
+        if self.pipPlayerName:
+            index = self._app.settings.value(poisettingPath+ self.pipPlayerName +'/index', None)
+            poiLocDict = dict()
+            if index and len(index) > 0:
+                for i in index:
+                    poimarker = PointofInterestMarker(i,self,self.controller.sharedResImageFactory, self.mapColor)
+                    poimarker.thisCharOnly = True
+                    poimarker.setSavedSettings()
+                    poimarker.filterSetVisible(True)
+                    poimarker.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, True)
+                    self._connectMarker(poimarker)
+                    poiLocDict[str(i)] = poimarker
+
+                
         self.pipMapLocationItems = newDict
+        self.poiLocationItems = poiLocDict
         
+        self._signalPipWorldQuestsUpdated.emit()
 
     @QtCore.pyqtSlot()        
     def _slotMapColorSelectionTriggered(self):
@@ -1015,6 +1239,63 @@ class GlobalMapWidget(widgets.WidgetBase):
                         self.datamanager.rpcSetCustomMarker(self.mapCoords.map2pip_x(markerPos.x()), self.mapCoords.map2pip_y(markerPos.y()))
                     action = menu.addAction('Set Custom Marker')
                     action.triggered.connect(_setCustomMarker)
+
+                    @QtCore.pyqtSlot()
+                    def _setPoiLocationMarker():
+                        rx = self.mapCoords.map2pip_x(markerPos.x())
+                        ry = self.mapCoords.map2pip_y(markerPos.y())
+                        labelstr = ''
+                        
+
+
+                        editpoiDialog = EditPOIDialog(self, color=self.mapColor)
+                        editpoiDialog.txtPOILabel.setText(labelstr)
+                        editpoiDialog.chkCharacterOnly.setText(editpoiDialog.chkCharacterOnly.text() + '(' +self.pipPlayerName +')')
+                        ok = editpoiDialog.exec_()
+                        labelstr = editpoiDialog.txtPOILabel.text()
+                        editpoiDialog.show()
+                        thisCharOnly = editpoiDialog.chkCharacterOnly.isChecked()
+                        
+                        if (ok != 0):
+                            if (len(labelstr) > 0):
+                                poimarker = PointofInterestMarker(uuid.uuid4(), self,self.controller.sharedResImageFactory, editpoiDialog.selectedColor, editpoiDialog.IconFile)
+                                poimarker.setLabel(labelstr)
+                                self._connectMarker(poimarker)
+                                poimarker.setMapPos(self.mapCoords.pip2map_x(rx), self.mapCoords.pip2map_y(ry))
+                                poimarker.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, False)
+                                poimarker.filterSetVisible(True)
+                                poimarker.setStickyLabel(True, True)
+                                poimarker.thisCharOnly = thisCharOnly
+                                
+                                markerKey = poimarker.uid
+                                self.poiLocationItems[markerKey] = poimarker
+                            
+                                poiSettingPath = 'globalmapwidget/pointsofinterest/' 
+                                if thisCharOnly:
+                                    poiSettingPath = poiSettingPath + self.pipPlayerName +'/'
+
+                                index = self._app.settings.value(poiSettingPath+'index', None)
+                                if index == None: 
+                                    index = []
+                                
+                                index.append(str(markerKey))
+                                    
+                                self._app.settings.setValue(poiSettingPath+'index', index)
+                                
+                                self._app.settings.setValue(poiSettingPath+str(markerKey)+'/worldx', rx)
+                                self._app.settings.setValue(poiSettingPath+str(markerKey)+'/worldy', ry)
+                                self._app.settings.setValue(poiSettingPath+str(markerKey)+'/label', labelstr)
+                                self._app.settings.setValue(poiSettingPath+str(markerKey)+'/color', editpoiDialog.selectedColor)
+                                self._app.settings.setValue(poiSettingPath+str(markerKey)+'/icon', editpoiDialog.IconFile)
+
+                                settingPath = 'globalmapwidget/stickylabels2/'
+                                self._app.settings.setValue(settingPath+markerKey, int(True))                                
+                        return
+
+                    menu.addAction('Add Point of Interest', _setPoiLocationMarker)
+
+
+
                     menu.exec(event.globalPos())
                 return True
             elif event.type() == QtCore.QEvent.MouseButtonDblClick:
@@ -1052,3 +1333,6 @@ class GlobalMapWidget(widgets.WidgetBase):
         
         if Quest:
             Quest.mapCenterOn()
+
+
+                            
