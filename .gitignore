@@ -6,6 +6,15 @@ __pycache__
 /widgets/map/res/*.png
 /widgets/playerinfo/res/*.svg
 /widgets/playerinfo/res/*.png
+/widgets/shared/res/poi_house.svg
+/widgets/shared/res/poi_lock.svg
+/widgets/shared/res/poi_question.svg
+/widgets/shared/res/poi_spanner.svg
+/widgets/shared/res/poi_terminal.svg
+/widgets/shared/res/poi_bust.svg
+/widgets/shared/res/poi_cross.svg
+/widgets/shared/res/poi_death.svg
+/widgets/shared/res/poi_firstaid.svg
 /pypipboy/
 THumbs.db
 log.txt
