@@ -272,8 +272,12 @@ class LocationMarker(PipValueMarkerBase):
                 self.artilleryRangeCircle.setVisible(False)
         super().doUpdate()
             
-        
-        
+    def destroy(self):
+        if self.artilleryRangeCircle:
+            self.scene.removeItem(self.artilleryRangeCircle)
+            self.artilleryRangeCircle = None
+            
+
     def _getPixmap_(self):
         def _getDefaultPixmap():
             if self.discovered:
