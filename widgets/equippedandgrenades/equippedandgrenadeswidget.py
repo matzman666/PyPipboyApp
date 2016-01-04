@@ -106,15 +106,6 @@ class EquippedAndGrenadesWidget(widgets.WidgetBase):
     def _slotInfoUpdated(self):
         self.updateWeaponViews()
 
-    def _isItemReal(self, item):
-        if(self.pipInventoryInfo):
-            # Better to iterate over value(), range() causes race conditions
-            for i in self.pipInventoryInfo.child('sortedIDS').value():
-                
-                if (item and item.pipId == tmp.value()):
-                    return True
-        return False
-        
     def updateWeaponViews(self):
         self.grenademodel.clear()
         selectedgrenade = -1
