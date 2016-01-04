@@ -537,23 +537,8 @@ class PointofInterestMarker(MarkerBase):
     
     @QtCore.pyqtSlot()        
     def _slotPipValueUpdated(self):
+        self.setSavedSettings()
         return
-        if self.pipValue:
-            self.PipVisible = self.pipValue.child('Visible').value()
-            rx = self.pipValue.child('X').value()
-            ry = self.pipValue.child('Y').value()
-            px = self.mapCoords.pip2map_x(rx)
-            py = self.mapCoords.pip2map_y(ry)
-            height = self.pipValue.child('Height').value()
-            self.markerItem.setToolTip( 'Pos: (' + str(rx) + ', ' + str(ry) + ')\n'
-                                        + 'Visible: ' + str(self.PipVisible) + '\n'
-                                        + 'Height: ' +str(height) )
-            self.setMapPos(px, py, False)
-            if self.PipVisible and self.filterVisibleFlag:
-                self.setVisible(True)
-                self.doUpdate()
-            else:
-                self.setVisible(False)
                 
     def _fillMarkerContextMenu_(self, event, menu):
         @QtCore.pyqtSlot()
