@@ -12,40 +12,68 @@ class EditPOIDialog(QtWidgets.QDialog):
         super().__init__(parent)
         self.basepath = os.path.join("widgets", "map")
         uic.loadUi(os.path.join(self.basepath, 'ui', 'editpoidialog.ui'), self)
+
         if (color == None):
             self.selectedColor = QtCore.Qt.black
         else:
             self.selectedColor = color
-            
-        self.Icons = [
-            PipboyIcon("mapmarkerpoi_1.svg", self.gvIconPreview_1, 28, "preview"),
-            PipboyIcon("Target.svg", self.gvIconPreview_2, 28, "preview"),
-            PipboyIcon("Warning.svg", self.gvIconPreview_3, 28, "preview"),
-            PipboyIcon("Shield.svg", self.gvIconPreview_4, 28, "preview"),
-            PipboyIcon("StarEmpty.svg", self.gvIconPreview_5, 28, "preview"),
-            PipboyIcon("StarFilled.svg", self.gvIconPreview_6, 28, "preview")
+        
+        iconFiles = [
+            "mapmarkerpoi_1.svg",
+            "Target.svg",
+            "Warning.svg",
+            "Shield.svg",
+            "StarEmpty.svg",
+            "StarFilled.svg"
         ]
+        self.Icons = []
+
+        icondir = os.path.join(self.basepath, os.pardir, 'shared', 'res') 
+        for filename in os.listdir(icondir):
+         if os.path.isfile(os.path.join(icondir,filename)):
+             if filename.find('poi_') == 0:
+                 iconFiles.append(filename)
+
+        numitems = len(iconFiles)
+        itemsperrow = 6
+        rows = numitems/itemsperrow
+        row = 0
+        col = 0
+        for i in range(0, numitems):
+            gv = QtWidgets.QGraphicsView()
+            gv.setObjectName('gvIconPreview_'+str(i))
+            gv.setFixedSize(28,28)
+            gv.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+            gv.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+            rdo = QtWidgets.QRadioButton()
+            rdo.setObjectName('rdoIcon_'+str(i))
+            rdo.toggled.connect(self.iconSelectionChanged)
+            self.gridLayout.addWidget(gv, row, col, 1, 1)
+            self.gridLayout.addWidget(rdo, row, col+1, 1, 1)
             
-        for i in self.Icons:
-            i.Color = self.selectedColor 
-            i.BGColor = QtCore.Qt.transparent
-            i.Update()
+            pi = PipboyIcon(iconFiles[i], gv, 28)
+            self.Icons.append(pi)
+            pi.Color = self.selectedColor 
+            pi.BGColor = QtCore.Qt.transparent
+            pi.Update()
+
+            col += 2
+            if col >= itemsperrow*2:
+                col = 0
+                row += 1
 
         self.IconFile = self.Icons[0].FileName
         self.signalSetColor.connect(self.setColor)        
         self.btnColor.clicked.connect(self._slotPOIColorSelectionTriggered)
-        self.rdoIcon_1.toggled.connect(self.iconSelectionChanged)
-        self.rdoIcon_2.toggled.connect(self.iconSelectionChanged)
-        self.rdoIcon_3.toggled.connect(self.iconSelectionChanged)
-        self.rdoIcon_4.toggled.connect(self.iconSelectionChanged)
-        self.rdoIcon_5.toggled.connect(self.iconSelectionChanged)
-        self.rdoIcon_6.toggled.connect(self.iconSelectionChanged)
-
+        
+        rdo = self.findChild(QtWidgets.QRadioButton, 'rdoIcon_0')
+        rdo.setChecked(True)
+        
     def setSelectedIcon(self, iconname):
-        count = 1
+        count = 0
         for i in self.Icons:
             if i.FileName == iconname:
-                rdo = getattr(self, 'rdoIcon_'+str(count))
+                rdo = self.findChild(QtWidgets.QRadioButton, 'rdoIcon_'+str(count))
                 rdo.setChecked(True)
                 return
             count +=1
@@ -53,24 +81,18 @@ class EditPOIDialog(QtWidgets.QDialog):
     @QtCore.pyqtSlot(bool)        
     def iconSelectionChanged(self, value):
         if (value):
-            if self.rdoIcon_1.isChecked():
-                self.IconFile = self.Icons[0].FileName
-            elif self.rdoIcon_2.isChecked():
-                self.IconFile = self.Icons[1].FileName
-            elif self.rdoIcon_3.isChecked():
-                self.IconFile = self.Icons[2].FileName
-            elif self.rdoIcon_4.isChecked():
-                self.IconFile = self.Icons[3].FileName
-            elif self.rdoIcon_5.isChecked():
-                self.IconFile = self.Icons[4].FileName
-            elif self.rdoIcon_6.isChecked():
-                self.IconFile = self.Icons[5].FileName
-        
+            count = 0
+            for i in self.Icons:
+                rdo = self.findChild(QtWidgets.QRadioButton, 'rdoIcon_'+str(count))
+                if rdo.isChecked():
+                    self.IconFile = self.Icons[count].FileName
+                    return
+                count +=1
         
     @QtCore.pyqtSlot()        
     def _slotPOIColorSelectionTriggered(self):
         color = QtWidgets.QColorDialog.getColor(self.selectedColor, self)
-        if color.isValid:
+        if color.isValid():
             self.selectedColor = color
             self.signalSetColor.emit(color)
             

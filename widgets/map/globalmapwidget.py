@@ -520,6 +520,9 @@ class PointofInterestMarker(MarkerBase):
         self.uid = str(uid)
         self.thisCharOnly = True
         self.doUpdate()
+
+    def _labelStr_(self):
+        return textwrap.fill(self.label, 25)
         
     def _getPixmap_(self):
         return self.imageFactory.getPixmap(self.imageFilePath, size=24, color=self.color)
@@ -539,23 +542,8 @@ class PointofInterestMarker(MarkerBase):
     
     @QtCore.pyqtSlot()        
     def _slotPipValueUpdated(self):
+        self.setSavedSettings()
         return
-        if self.pipValue:
-            self.PipVisible = self.pipValue.child('Visible').value()
-            rx = self.pipValue.child('X').value()
-            ry = self.pipValue.child('Y').value()
-            px = self.mapCoords.pip2map_x(rx)
-            py = self.mapCoords.pip2map_y(ry)
-            height = self.pipValue.child('Height').value()
-            self.markerItem.setToolTip( 'Pos: (' + str(rx) + ', ' + str(ry) + ')\n'
-                                        + 'Visible: ' + str(self.PipVisible) + '\n'
-                                        + 'Height: ' +str(height) )
-            self.setMapPos(px, py, False)
-            if self.PipVisible and self.filterVisibleFlag:
-                self.setVisible(True)
-                self.doUpdate()
-            else:
-                self.setVisible(False)
                 
     def _fillMarkerContextMenu_(self, event, menu):
         @QtCore.pyqtSlot()
@@ -600,18 +588,17 @@ class PointofInterestMarker(MarkerBase):
             editpoiDialog.show()
             
             if (ok != 0):
-                if (len(labelstr) > 0):
-                    poiSettingPath = 'globalmapwidget/pointsofinterest/' 
-                    if thisCharOnly:
-                        poiSettingPath = poiSettingPath + self.widget.pipPlayerName +'/'
-                
-                    markerKey = self.uid
+                poiSettingPath = 'globalmapwidget/pointsofinterest/' 
+                if thisCharOnly:
+                    poiSettingPath = poiSettingPath + self.widget.pipPlayerName +'/'
+            
+                markerKey = self.uid
 
-                    self.widget._app.settings.setValue(poiSettingPath+str(markerKey)+'/label', labelstr)
-                    self.widget._app.settings.setValue(poiSettingPath+str(markerKey)+'/color', editpoiDialog.selectedColor)
-                    self.widget._app.settings.setValue(poiSettingPath+str(markerKey)+'/icon', editpoiDialog.IconFile)
-                    self.widget._app.settings.sync()
-                    self.setSavedSettings()
+                self.widget._app.settings.setValue(poiSettingPath+str(markerKey)+'/label', labelstr)
+                self.widget._app.settings.setValue(poiSettingPath+str(markerKey)+'/color', editpoiDialog.selectedColor)
+                self.widget._app.settings.setValue(poiSettingPath+str(markerKey)+'/icon', editpoiDialog.IconFile)
+                self.widget._app.settings.sync()
+                self.setSavedSettings()
                     
         
         menu.addAction('Edit POI Marker', _editPOIMarker)
@@ -996,10 +983,10 @@ class GlobalMapWidget(widgets.WidgetBase):
 
                     if not marker.stickyLabel:
                         oldsavedsticky =  bool(int(self._app.settings.value('globalmapwidget/stickylabels/'+str(rx)+','+str(ry), 0)))
-                    if oldsavedsticky:
-                        marker.setStickyLabel(oldsavedsticky, True)
-                        self._app.settings.setValue('globalmapwidget/stickylabels2/'+marker.uid, 1)
-                        self._app.settings.remove('globalmapwidget/stickylabels/'+str(rx)+','+str(ry))
+                        if oldsavedsticky:
+                            marker.setStickyLabel(oldsavedsticky, True)
+                            self._app.settings.setValue('globalmapwidget/stickylabels2/'+marker.uid, 1)
+                            self._app.settings.remove('globalmapwidget/stickylabels/'+str(rx)+','+str(ry))
                     
                     if (len(marker.note) == 0):
                         marker.setNote (self._app.settings.value('globalmapwidget/locationnotes/'+str(rx)+','+str(ry), ''))
@@ -1042,7 +1029,6 @@ class GlobalMapWidget(widgets.WidgetBase):
 
         if self.pipPlayerName:
             index = self._app.settings.value(poisettingPath+ self.pipPlayerName +'/index', None)
-            poiLocDict = dict()
             if index and len(index) > 0:
                 for i in index:
                     poimarker = PointofInterestMarker(i,self,self.controller.sharedResImageFactory, self.mapColor)
@@ -1262,43 +1248,41 @@ class GlobalMapWidget(widgets.WidgetBase):
                         thisCharOnly = editpoiDialog.chkCharacterOnly.isChecked()
                         
                         if (ok != 0):
-                            if (len(labelstr) > 0):
-                                poimarker = PointofInterestMarker(uuid.uuid4(), self,self.controller.sharedResImageFactory, editpoiDialog.selectedColor, editpoiDialog.IconFile)
-                                poimarker.setLabel(labelstr)
-                                self._connectMarker(poimarker)
-                                poimarker.setMapPos(self.mapCoords.pip2map_x(rx), self.mapCoords.pip2map_y(ry))
-                                poimarker.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, False)
-                                poimarker.filterSetVisible(True)
-                                poimarker.setStickyLabel(True, True)
-                                poimarker.thisCharOnly = thisCharOnly
-                                
-                                markerKey = poimarker.uid
-                                self.poiLocationItems[markerKey] = poimarker
+                            poimarker = PointofInterestMarker(uuid.uuid4(), self,self.controller.sharedResImageFactory, editpoiDialog.selectedColor, editpoiDialog.IconFile)
+                            poimarker.setLabel(labelstr)
+                            self._connectMarker(poimarker)
+                            poimarker.setMapPos(self.mapCoords.pip2map_x(rx), self.mapCoords.pip2map_y(ry))
+                            poimarker.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, False)
+                            poimarker.filterSetVisible(True)
+                            poimarker.setStickyLabel(True, True)
+                            poimarker.thisCharOnly = thisCharOnly
                             
-                                poiSettingPath = 'globalmapwidget/pointsofinterest/' 
-                                if thisCharOnly:
-                                    poiSettingPath = poiSettingPath + self.pipPlayerName +'/'
+                            markerKey = poimarker.uid
+                            self.poiLocationItems[markerKey] = poimarker
+                        
+                            poiSettingPath = 'globalmapwidget/pointsofinterest/' 
+                            if thisCharOnly:
+                                poiSettingPath = poiSettingPath + self.pipPlayerName +'/'
 
-                                index = self._app.settings.value(poiSettingPath+'index', None)
-                                if index == None: 
-                                    index = []
+                            index = self._app.settings.value(poiSettingPath+'index', None)
+                            if index == None: 
+                                index = []
+                            
+                            index.append(str(markerKey))
                                 
-                                index.append(str(markerKey))
-                                    
-                                self._app.settings.setValue(poiSettingPath+'index', index)
-                                
-                                self._app.settings.setValue(poiSettingPath+str(markerKey)+'/worldx', rx)
-                                self._app.settings.setValue(poiSettingPath+str(markerKey)+'/worldy', ry)
-                                self._app.settings.setValue(poiSettingPath+str(markerKey)+'/label', labelstr)
-                                self._app.settings.setValue(poiSettingPath+str(markerKey)+'/color', editpoiDialog.selectedColor)
-                                self._app.settings.setValue(poiSettingPath+str(markerKey)+'/icon', editpoiDialog.IconFile)
+                            self._app.settings.setValue(poiSettingPath+'index', index)
+                            
+                            self._app.settings.setValue(poiSettingPath+str(markerKey)+'/worldx', rx)
+                            self._app.settings.setValue(poiSettingPath+str(markerKey)+'/worldy', ry)
+                            self._app.settings.setValue(poiSettingPath+str(markerKey)+'/label', labelstr)
+                            self._app.settings.setValue(poiSettingPath+str(markerKey)+'/color', editpoiDialog.selectedColor)
+                            self._app.settings.setValue(poiSettingPath+str(markerKey)+'/icon', editpoiDialog.IconFile)
 
-                                settingPath = 'globalmapwidget/stickylabels2/'
-                                self._app.settings.setValue(settingPath+markerKey, int(True))                                
+                            settingPath = 'globalmapwidget/stickylabels2/'
+                            self._app.settings.setValue(settingPath+markerKey, int(True))                                
                         return
 
                     menu.addAction('Add Point of Interest', _setPoiLocationMarker)
-
 
 
                     menu.exec(event.globalPos())

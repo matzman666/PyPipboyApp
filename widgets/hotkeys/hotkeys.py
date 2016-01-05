@@ -10,6 +10,7 @@ from widgets import widgets
 from widgets.shared import settings
 from collections import namedtuple
 from collections import OrderedDict
+from pypipboy import inventoryutils
 
 import logging
 
@@ -37,7 +38,6 @@ class HotkeyWidget(widgets.WidgetBase):
         self._app = app
         self.llh = LLHookey()
         
-        
         self.widget.btnLoad.clicked.connect(self._loadButtonHandler)
         self.widget.btnSave.clicked.connect(self._saveButtonHandler)
         self.widget.btnDelete.clicked.connect(self._deleteButtonHandler)
@@ -45,18 +45,11 @@ class HotkeyWidget(widgets.WidgetBase):
 
         forcedInstructionsCounter = 1
         forceInstructions = int(self._app.settings.value('hotkeyswidget/forcedInstructionsCounter', 0)) < forcedInstructionsCounter
-        
-        #if not forceInstructions and (int(self._app.settings.value('hotkeyswidget/splittercollapsed', 0)) == 1):
-        #    self.widget.splitter.setSizes([0,100])
-        
         if not forceInstructions:
-            # Better to use QSplitter.saveState() (wrapped in a shared function for more flexibility)
             settings.setSplitterState(self.widget.splitter, self._app.settings.value('hotkeyswidget/splitterState', None))
 
         self._app.settings.setValue('hotkeyswidget/forcedInstructionsCounter', forcedInstructionsCounter)
-        
         self.widget.splitter.splitterMoved.connect(self._slotSplitterMoved)
-
 
         Actions['testHotkeyHook'] =Action('Test Hotkey Hook', '', self.testHotkeyHook, 0 ) 
         Actions['toggleAllHotkeys'] =Action('Toggle Hotkeys On/Off', '', self.llh.toggleAllHotkeys, 0 ) 
@@ -67,12 +60,11 @@ class HotkeyWidget(widgets.WidgetBase):
         Actions['unequipAllApparel'] =Action('Unequip all items of apparel', '', self.unequipAllApparel, 0 ) 
         Actions['toggleRadio'] =Action('Toggle Radio On\Off', '', self.toggleRadio, 0 ) 
         Actions['nextRadio'] =Action('Tune to next radio station', '', self.nextRadio, 0 ) 
-        Actions['useStimpak'] =Action('Use Stimpak', '', datamanager.rpcUseStimpak, 0 ) 
-        Actions['useRadaway'] =Action('Use Radaway', '', datamanager.rpcUseRadAway, 0 ) 
+        Actions['useStimpak'] =Action('Use Stimpak', '', self.useStimpak, 0 ) 
+        Actions['useRadaway'] =Action('Use Radaway', '', self.useRadAway, 0 ) 
         Actions['useJet'] = Action('Use Jet', '', self.useJet, 0 ) 
         Actions['useNamedItem'] =Action('Use Named Item' , '(param1: Inventory Section [ie:48], param2: ItemName [ie: psycho])', self.useItemByName, 2 ) 
         Actions['cycleWidgets'] = Action('Cycle Tabbed Widgets', '(param1: Comma seperated list of widget titles to cycle through)', self.cycleWidgets, 1 ) 
-
         
         for k, v in VK_CODE.items():    
             self.widget.keyComboBox.addItem(k, v)
@@ -81,7 +73,6 @@ class HotkeyWidget(widgets.WidgetBase):
             self.widget.actionComboBox.addItem(v.name + v.description, k)
 
         self.widget.actionComboBox.currentIndexChanged.connect(self._actionComboBoxCurrentIndexChanged)
-        
         self.widget.param1Label.setVisible(False)
         self.widget.param1LineEdit.setVisible(False)
         self.widget.param2Label.setVisible(False)
@@ -110,7 +101,6 @@ class HotkeyWidget(widgets.WidgetBase):
             self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('numpad_9'), actionkey='unequipAllApparel')) 
             self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('backspace'), actionkey='cycleWidgets', params=["Global Map, HotkeyWidget"])) 
         
-        #self.llh.addHotkey(190, action=self.useItemByFormID, params=("43", 598551)) #.
         #self.llh.addHotkey( Hotkey(keycode=VK_CODE.get('home'), control=True , alt=True, shift=True, actionkey='useNamedItem', params=("48", "psycho")))
 
         #h1 = Hotkey(keycode=VK_CODE.get(','), action=self.useItemByName, params=("29", "formal hat"))
@@ -131,7 +121,6 @@ class HotkeyWidget(widgets.WidgetBase):
         for index in range (0,100):
             settingPath = 'hotkeyswidget/apparelslots/'
             self.savedApparelSlots[str(index)] = self._app.settings.value(settingPath+str(index), None)
-
 
         return
 
@@ -156,26 +145,25 @@ class HotkeyWidget(widgets.WidgetBase):
         return
     
     def unequipAllApparel(self):
-        equiped = []
         if (self.pipInventoryInfo):
-            inventory = self.pipInventoryInfo.child('29')
-            for i in range(0, inventory.childCount()):
-                item = inventory.child(i)
-                if (item.child('equipState').value() > 0):
-                    equiped.append(item)
-    
-        for i in range(0, len(equiped)):
-            if (self._isItemReal(equiped[i])):
-                self.dataManager.rpcUseItem(equiped[i])
-                ### This is a vile hack to allow each rpc call to complete
-                ### before sending the next 
-                ### It'll do for now, but should really find a better way 
-                ### of handling this, queue action method on datamanager.py 
-                ### perhaps?
-                time.sleep(0.1)             
-
+            def _filterFunc(item):
+                return inventoryutils.itemHasAnyFilterCategory(item, inventoryutils.eItemFilterCategory.Apparel)
+            apparels = inventoryutils.inventoryGetItems(self.pipInventoryInfo, _filterFunc)
+            if(not apparels):
+                return
+            for apparel in apparels:        
+                if (apparel.child('equipState').value() > 0):
+                    try:
+                        self.dataManager.rpcUseItem(apparel)
+                    except Exception as e:
+                        self._logger.error('unequipAllApparel Exception in rpc call: ' + str(e))
+                    ### This is a vile hack to allow each rpc call to complete
+                    ### before sending the next 
+                    ### It'll do for now, but should really find a better way 
+                    ### of handling this, queue action method on datamanager.py 
+                    ### perhaps?
+                    time.sleep(0.1)             
         return
-        
             
     def saveEquippedApparelToSlot(self, slotIndex):
         slotIndex = str(slotIndex)
@@ -184,19 +172,20 @@ class HotkeyWidget(widgets.WidgetBase):
         selectedSlot = self.savedApparelSlots[slotIndex]
         
         if (self.pipInventoryInfo):
-            inventory = self.pipInventoryInfo.child('29')
-            for i in range(0, inventory.childCount()):
-                item = inventory.child(i)
-                if (item.child('equipState').value() > 0):
-                    if (self._isItemReal(item)):
-                        selectedSlot.append(item.child('text').value())
+            def _filterFunc(item):
+                return inventoryutils.itemHasAnyFilterCategory(item, inventoryutils.eItemFilterCategory.Apparel)
+            apparels = inventoryutils.inventoryGetItems(self.pipInventoryInfo, _filterFunc)
+            if(not apparels):
+                return
+            for apparel in apparels:        
+                if (apparel.child('equipState').value() > 0):
+                    selectedSlot.append(item.apparel('text').value())
                     
             self._logger.debug('saveEquippedApparelToSlot: saving: ' + str(selectedSlot))
             settingPath = 'hotkeyswidget/apparelslots/'
             self._app.settings.setValue(settingPath+str(slotIndex), selectedSlot)
 
         return
-        
         
     def equipApparelFromSlot(self, slotIndex):
         str(slotIndex)
@@ -222,12 +211,18 @@ class HotkeyWidget(widgets.WidgetBase):
         
         if (self.currentRadioStation):
             self._logger.debug('toggleRadio: currentstation: ' + self.currentRadioStation.child('text').value())
-            self.dataManager.rpcToggleRadioStation(self.currentRadioStation)
+            try:
+                self.dataManager.rpcToggleRadioStation(self.currentRadioStation)
+            except Exception as e:
+                self._logger.error('toggleRadio Exception in rpc call: ' + str(e))
         else:
             self._logger.debug('toggleRadio: no current, trying station 0')
             numStations = len(self.availableRadioStations)
             if numStations > 0:
-                self.dataManager.rpcToggleRadioStation(self.availableRadioStations[0])
+                try:
+                    self.dataManager.rpcToggleRadioStation(self.availableRadioStations[0])
+                except Exception as e:
+                    self._logger.error('toggleRadio Exception in rpc call: ' + str(e))
                 
         return
         
@@ -247,7 +242,10 @@ class HotkeyWidget(widgets.WidgetBase):
             
         if (getIndex <= numStations):
             self._logger.debug('nextRadio: tuning radio to: ' + self.availableRadioStations[getIndex].child('text').value())
-            self.dataManager.rpcToggleRadioStation(self.availableRadioStations[getIndex])
+            try:
+                self.dataManager.rpcToggleRadioStation(self.availableRadioStations[getIndex])
+            except Exception as e:
+                self._logger.error('nextRadio Exception in rpc call: ' + str(e))
         
         return        
         
@@ -280,37 +278,53 @@ class HotkeyWidget(widgets.WidgetBase):
     def useJet(self):   
         self.useItemByName("48", "jet")
         return
-
-    def useItemByFormID(self,inventorySection, itemFormID):
-        if (self.pipInventoryInfo):
-            inventory = self.pipInventoryInfo.child(inventorySection)
-            for i in range(0, inventory.childCount()):
-                formid = inventory.child(i).child('formID').value()
-                if (formid == itemFormID):
-                    if (self._isItemReal(inventory.child(i))):
-                        self.dataManager.rpcUseItem(inventory.child(i))
-                        return
-        return
-
-    def useItemByName(self,inventorySection, itemName):
-        itemName = itemName.lower()
-        if (self.pipInventoryInfo):
-            inventory = self.pipInventoryInfo.child(inventorySection)
-            for i in range(0, inventory.childCount()):
-                name = inventory.child(i).child('text').value()
-                if (name.lower() == itemName):
-                    if (self._isItemReal(inventory.child(i))):
-                        self.dataManager.rpcUseItem(inventory.child(i))
-                        return
-        return
-
-    def _isItemReal(self, item):
-        if(self.pipInventoryInfo):
-            for i in range (0, self.pipInventoryInfo.child('sortedIDS').childCount()):
-                if (item and item.pipId == self.pipInventoryInfo.child('sortedIDS').child(i).value()):
-                    return True
-        return False
         
+    def useStimpak(self):
+        try:
+            self.dataManager.rpcUseStimpak()
+        except Exception as e:
+            self._logger.error('useStimpak Exception in rpc call: ' + str(e))
+        return
+        
+    def useRadAway(self):
+        try:
+            self.dataManager.rpcUseRadAway()
+        except Exception as e:
+            self._logger.error('useRadAway Exception in rpc call: ' + str(e))
+        return
+
+    def _useItemByName(self,filterCategory, itemName):
+        def _filterFunc(item):
+            if inventoryutils.itemHasAnyFilterCategory(item, filterCategory):
+                if item.child('text').value().lower() == itemName.lower():
+                    return True
+            return False
+
+        item = inventoryutils.inventoryGetItem(self.pipInventoryInfo, _filterFunc)
+        try:
+            self.dataManager.rpcUseItem(item)
+        except Exception as e:
+            self._logger.error('useItemByName Exception in rpc call: ' + str(e))
+        return
+    
+    def useItemByName(self,inventorySection, itemName):
+        filtercat = None
+        if inventorySection == '29':
+            filtercat = inventoryutils.eItemFilterCategory.Apparel
+        if inventorySection == '35':
+            filtercat = inventoryutils.eItemFilterCategory.Misc
+        if inventorySection == '43':
+            filtercat = inventoryutils.eItemFilterCategory.Weapon
+        if inventorySection == '44':
+            filtercat = inventoryutils.eItemFilterCategory.Ammo
+        if inventorySection == '48':
+            filtercat = inventoryutils.eItemFilterCategory.Aid
+    
+        if filtercat != None:
+            self._useItemByName(filtercat, itemName)
+
+        return
+
     def _onPipRootObjectEvent(self, rootObject):
         self.pipInventoryInfo = rootObject.child('Inventory')
         if self.pipInventoryInfo:
@@ -330,17 +344,17 @@ class HotkeyWidget(widgets.WidgetBase):
     def _slotInfoUpdated(self):
         self.availableGrenades = []
         if (self.pipInventoryInfo):
-            weapons = self.pipInventoryInfo.child('43')
+            def _filterFunc(item):
+                return inventoryutils.itemHasAnyFilterCategory(item, inventoryutils.eItemFilterCategory.Weapon)
+            weapons = inventoryutils.inventoryGetItems(self.pipInventoryInfo, _filterFunc)
             if(not weapons):
                 return
-            for i in range(0, weapons.childCount()):
+            for weapon in weapons:        
                 equipped = False
-                name = weapons.child(i).child('text').value()
-                if (name.lower().find('mine') > -1 
-                or name.lower().find('grenade') > -1 
-                or name.lower().find('molotov') > -1 ):
-                    count = str(weapons.child(i).child('count').value())
-                    if (weapons.child(i).child('equipState').value() == 3):
+                if inventoryutils.itemIsWeaponThrowable(weapon):        
+                    count = str(weapon.child('count').value())
+                    name = str(weapon.child('text').value())
+                    if (weapon.child('equipState').value() == 3):
                         equipped = True
                         self.lastEquippedGrenade = name.lower()
                     
@@ -358,14 +372,7 @@ class HotkeyWidget(widgets.WidgetBase):
                     
     @QtCore.pyqtSlot(int, int)
     def _slotSplitterMoved(self, pos, index):
-        #if (self.widget.splitter.sizes()[0] == 0):
-        #    splittercollapsed = 1
-        #else: 
-        #    splittercollapsed = 0
-       
-        #self._app.settings.setValue('hotkeyswidget/splittercollapsed', splittercollapsed)
         self._app.settings.setValue('hotkeyswidget/splitterState', settings.getSplitterState(self.widget.splitter))
-
                     
     @QtCore.pyqtSlot()
     def _loadButtonHandler(self):
@@ -414,8 +421,6 @@ class HotkeyWidget(widgets.WidgetBase):
                 self._app.settings.setValue(settingPath+'params', hk.params)
             if(hk.actionkey):
                 self._app.settings.setValue(settingPath+'action', hk.actionkey)
-            
-    
 
     @QtCore.pyqtSlot()
     def _addButtonHandler(self):
