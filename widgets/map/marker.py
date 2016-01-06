@@ -70,8 +70,15 @@ class MarkerBase(QtCore.QObject):
         self.markerHooverActive = False
         self.note =''
         self.uid = None
+        
         self.signalDoUpdate.connect(self.doUpdate)
         
+    def updateZIndex(self):
+        if hasattr(self.widget, 'mapMarkerZIndexes'):
+            if (self.markerItem):
+                self.markerItem.setZValue(self.widget.mapMarkerZIndexes.get(str(type(self)), 0))
+            if (self.labelItem):
+                self.labelItem.setZValue(self.widget.mapMarkerZIndexes.get(str(type(self)), 0)+1000)
         
     def _markerHoverEnterEvent_(self, event):
         if self.labelItem and not self.labelAlwaysVisible and not self.stickyLabel:
@@ -169,7 +176,8 @@ class MarkerBase(QtCore.QObject):
                 lp = (mb.bottomRight() + mb.bottomLeft())/2.0
                 lp += QtCore.QPointF(-self.labelItem.boundingRect().width()/2, 0)
                 self.labelItem.setPos(lp)
-
+        
+        self.updateZIndex()
 
                 
     @QtCore.pyqtSlot(QtGui.QColor)

@@ -48,7 +48,6 @@ class PlayerMarker(PipValueMarkerBase):
             self.setMapPos(px, py, pr)
             self.signalPlayerPositionUpdate.emit(px, py, pr)
 
-
 class CustomMarker(PipValueMarkerBase):
     def __init__(self, widget, imageFactory, color, parent = None):
         super().__init__(widget.mapScene, widget.mapView, parent)
@@ -95,7 +94,6 @@ class CustomMarker(PipValueMarkerBase):
             def _removeCustomMarker():
                 self.datamanager.rpcRemoveCustomMarker()
             menu.addAction('Remove Marker', _removeCustomMarker)
-    
     
 class PowerArmorMarker(PipValueMarkerBase):
     def __init__(self, widget, imageFactory, color, parent = None):
@@ -144,8 +142,6 @@ class PowerArmorMarker(PipValueMarkerBase):
                 self.doUpdate()
             else:
                 self.setVisible(False)
-    
-
 
 class QuestMarker(PipValueMarkerBase):
     def __init__(self, widget, imageFactory, color, parent = None):
@@ -202,7 +198,6 @@ class QuestMarker(PipValueMarkerBase):
                 tttext += ']'
             self.markerItem.setToolTip( tttext )
             self.setMapPos(px, py)
-        
     
 class LocationMarker(PipValueMarkerBase):
     artilleryRange = 97000
@@ -229,7 +224,18 @@ class LocationMarker(PipValueMarkerBase):
         self.artilleryRangeCircle = None
         self.isOwnedWorkshop = False
         self.doUpdate()
-    
+
+    def updateZIndex(self):
+        if hasattr(self.widget, 'mapMarkerZIndexes'):
+            if (self.note and len(self.note) > 0):
+                if (self.markerItem):
+                    self.markerItem.setZValue(self.widget.mapMarkerZIndexes.get('LabelledLocationMarker', 0))
+                if (self.labelItem):
+                    self.labelItem.setZValue(self.widget.mapMarkerZIndexes.get('LabelledLocationMarker', 0)+1000)
+            else:
+                super().updateZIndex()
+        
+        
     def showArtilleryRange(self, value, updateSignal = True):
         idList = self.widget._app.settings.value('globalmapwidget/showArtilleryFormIDs', [])
         if idList == None: # Yes, this happens (because of buggy Linux QSettings implementation)
@@ -621,7 +627,6 @@ class PointofInterestMarker(MarkerBase):
         self.setLabel(label)
         self.invalidateMarkerPixmap()
         super().setSavedSettings()
-        
 
 class MapGraphicsItem(QtCore.QObject):
     
@@ -737,6 +742,19 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.mapItem.setMapFile(file, mapfile['colorable'], mapfile['nw'], mapfile['ne'], mapfile['sw'])
         self.signalSetZoomLevel.connect(self.mapItem.setZoomLevel)
         self.signalSetColor.connect(self.mapItem.setColor)
+
+        self.mapMarkerZIndexes = {}
+        self.mapMarkerZIndexes[str(PlayerMarker)] = 100
+        self.mapMarkerZIndexes[str(CustomMarker)] = 90
+        self.mapMarkerZIndexes[str(QuestMarker)] = 80
+        self.mapMarkerZIndexes[str(PowerArmorMarker)] = 70
+        self.mapMarkerZIndexes[str(PointofInterestMarker)] = 60
+        self.mapMarkerZIndexes['LabelledLocationMarker'] = 50
+        #self.mapMarkerZIndexes[str(CollectableMarker)] = 40
+        self.mapMarkerZIndexes[str(LocationMarker)] = 30
+        self.mapMarkerZIndexes[str(MarkerBase)] = 0
+        
+
         # Add player marker
         self.playerMarker = PlayerMarker(self,self.controller.imageFactory, self.mapColor)
         self._connectMarker(self.playerMarker)
@@ -840,6 +858,8 @@ class GlobalMapWidget(widgets.WidgetBase):
         self._signalPipWorldQuestsUpdated.connect(self._slotPipWorldQuestsUpdated)
         self._signalPipWorldLocationsUpdated.connect(self._slotPipWorldLocationsUpdated)
         self.datamanager.registerRootObjectListener(self._onRootObjectEvent)
+        
+        
 
     @QtCore.pyqtSlot(float, float, float)
     def saveZoom(self, zoom, mapposx, mapposy):
