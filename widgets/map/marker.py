@@ -69,6 +69,7 @@ class MarkerBase(QtCore.QObject):
         self.labelItem = None
         self.markerHooverActive = False
         self.note =''
+        self.uid = None
         self.signalDoUpdate.connect(self.doUpdate)
         
         
@@ -88,6 +89,14 @@ class MarkerBase(QtCore.QObject):
         if self.labelItem and not self.labelAlwaysVisible:
             @QtCore.pyqtSlot(bool)
             def _toggleStickyLabel(value):
+                if self.uid != None:
+                    settingPath = 'globalmapwidget/stickylabels2/'
+                    if (value):
+                        self.widget._app.settings.setValue(settingPath+self.uid, int(value))
+                    else:
+                        self.widget._app.settings.beginGroup(settingPath);
+                        self.widget._app.settings.remove(self.uid); 
+                        self.widget._app.settings.endGroup();
                 self.setStickyLabel(value)
             ftaction = menu.addAction('Sticky Label')
             ftaction.toggled.connect(_toggleStickyLabel)
@@ -124,6 +133,7 @@ class MarkerBase(QtCore.QObject):
             self.markerPixmapDirty = False
             self.markerItem.setPixmap(self._getPixmap_())
             self._updateMarkerOffset_()
+
         if self.labelDirty:
             self.labelDirty = False
             label = self._labelStr_()
@@ -159,8 +169,8 @@ class MarkerBase(QtCore.QObject):
                 lp = (mb.bottomRight() + mb.bottomLeft())/2.0
                 lp += QtCore.QPointF(-self.labelItem.boundingRect().width()/2, 0)
                 self.labelItem.setPos(lp)
-            
-            
+
+
                 
     @QtCore.pyqtSlot(QtGui.QColor)
     def setColor(self, color, update = True):
@@ -236,7 +246,13 @@ class MarkerBase(QtCore.QObject):
             self.scene.removeItem(self.markerItem)
             self.markerItem = None
         self.signalMarkerDestroyed.emit(self)
-        
+
+    def setSavedSettings(self):
+        if self.uid != None:
+            settingPath = 'globalmapwidget/stickylabels2/'
+            self.setStickyLabel(bool(self.widget._app.settings.value(settingPath+self.uid, 0)), True)
+        return
+
     def mapCenterOn(self):
         self.view.centerOn(self.mapPosX * self.zoomLevel, self.mapPosY * self.zoomLevel)
 
@@ -253,6 +269,7 @@ class PipValueMarkerBase(MarkerBase):
         self._signalPipValueUpdated.connect(self._slotPipValueUpdated)
         
     def setPipValue(self, value, datamanager, mapCoords = None, signal = True):
+        #self.setSavedSettings()
         self.datamanager = datamanager
         self.mapCoords = mapCoords
         if self.pipValue:
