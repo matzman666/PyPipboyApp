@@ -1,5 +1,5 @@
 from widgets import widgets
-from .ammocountwidget import WorkshopsWidget
+from .ammocountwidget import AmmoCountWidget
 
 class ModuleInfo(widgets.ModuleInfoBase):
     LABEL = "ammocount"
@@ -7,4 +7,4 @@ class ModuleInfo(widgets.ModuleInfoBase):
     
     @staticmethod
     def createWidgets(handle, parent):
-        return WorkshopsWidget(handle, parent)
+        return AmmoCountWidget(handle, parent)

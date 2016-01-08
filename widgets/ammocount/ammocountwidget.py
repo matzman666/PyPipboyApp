@@ -4,253 +4,134 @@ from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from widgets import widgets
-from widgets.shared.PipboyIcon import PipboyIcon
+from pypipboy import inventoryutils
+from widgets.shared import settings
+from ..shared.graphics import ImageFactory
+from ..shared.PipboyIcon import PipboyIcon
+from os import path
 
-class WorkshopsWidget(widgets.WidgetBase):
-    WorkshopListSignal = QtCore.pyqtSignal()
-    WorkshopInfoSignal = QtCore.pyqtSignal()
-    ColorUpdateSignal = QtCore.pyqtSignal(QColor)
-    
-    WorkshopListModel = QStandardItemModel()
-    
-    Widgets = None
-    
-    DataManager = None
-    WorkshopData = None
-    WorkshopInfoData = None
-    ColorData = None
-    
-    Icons = None
-    SelectedWorkshopId = -1
-        
+GlobalImageLoader2 = ImageFactory(path.join("widgets", "shared", "res"))
+
+class AmmoCountWidget(widgets.WidgetBase):
+    _signalInfoUpdated = QtCore.pyqtSignal()
+
     def __init__(self, mhandle, parent):
-        super().__init__("Workshops Browser", parent)
-        
-        self.Widgets = uic.loadUi(os.path.join(mhandle.basepath, "ui", "ammocountwidget.ui"))
-        self.setWidget(self.Widgets)
-        
-        self.Icons = [
-            PipboyIcon("People.svg", self.Widgets.iconPeople)
-            , PipboyIcon("Food.svg", self.Widgets.iconFood)
-            , PipboyIcon("Drop.svg", self.Widgets.iconWater)
-            , PipboyIcon("Energy.svg", self.Widgets.iconPower)
-            , PipboyIcon("Shield.svg", self.Widgets.iconDefense)
-            , PipboyIcon("Bed.svg", self.Widgets.iconBeds)
-            , PipboyIcon("Smile.svg", self.Widgets.iconHappiness)
-            , PipboyIcon("Warning.svg", self.Widgets.warningPeople)
-            , PipboyIcon("Warning.svg", self.Widgets.warningFood)
-            , PipboyIcon("Warning.svg", self.Widgets.warningWater)
-            , PipboyIcon("Warning.svg", self.Widgets.warningPower)
-            , PipboyIcon("Warning.svg", self.Widgets.warningDefense)
-            , PipboyIcon("Warning.svg", self.Widgets.warningBeds)
-            , PipboyIcon("Warning.svg", self.Widgets.warningHappiness)
-        ]
-        
-        for i in self.Icons:
-            if i.FileName == "Warning.svg":
-                i.Enabled = False
-            i.Update()
-        
-        self.WorkshopListSignal.connect(self.UpdateWorkshopList)
-        self.WorkshopInfoSignal.connect(self.UpdateWorkshopInfo)
-        self.ColorUpdateSignal.connect(self.UpdateIconColor)
-        
-        self.Widgets.workshopList.setModel(self.WorkshopListModel) # we need to call setModel() before selectionModel() (and never afterwards)
-        self.Widgets.workshopList.selectionModel().currentChanged.connect(self.WorkshopListCurrentChanged)
-        self.Widgets.workshopList.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.Widgets.workshopList.customContextMenuRequested.connect(self.workshopListMenuRequested)
+        super().__init__("Ammo Count", parent)
+        self.widget  = uic.loadUi(os.path.join(mhandle.basepath, "ui", "ammocountwidget.ui"))
+        self.setWidget( self.widget)
+        self._signalInfoUpdated.connect(self._slotInfoUpdated)
+        self.AmmoListModel = QStandardItemModel()
+        self.ammoWatchListModel = QStandardItemModel()
+        self.widget.ammoList.setModel(self.AmmoListModel) # we need to call setModel() before selectionModel() (and never afterwards)
+        self.AmmoListModel.itemChanged.connect(self.on_item_changed)
+        self.ammoNameLabelDict = {}
+        self.ammoNumberLabelDict = {}
+        self.ammoSpacerDict = {}
+        self.AmmoWatchList = []
+
+
     def init(self, app, dataManager):
         super().init(app, dataManager)
-        
+        self._app = app
         self.DataManager = dataManager
-        self.DataManager.registerRootObjectListener(self.DataManagerUpdated)
+        self.DataManager.registerRootObjectListener(self._onPipRootObjectEvent)
+        self.AmmoWatchList = self._app.settings.value('ammocount/savedAmmoWatchList', [])
+        settings.setSplitterState(self.widget.splitter, self._app.settings.value('ammocount/splitterState2', None))
+        self.widget.splitter.splitterMoved.connect(self._slotSplitterMoved)
+        self.setAmmoWatch()
 
-    @QtCore.pyqtSlot(QtCore.QPoint)
-    def workshopListMenuRequested(self, pos):
-        menu = QMenu(self)
-        index = self.Widgets.workshopList.indexAt(pos)
-        if (index.isValid()):
-            model = self.Widgets.workshopList.model()
-            modelIndex = model.index(index.row(), 0)
-            self.locationIndex = int(model.data(modelIndex))
-            location_name = self.WorkshopData.child(self.locationIndex).child("text").value()
-            addFastTravelAction = QAction('Fast Travel to ' + location_name , menu)
-            addFastTravelAction.triggered.connect(self._fastTravelTo)
-            menu.addAction(addFastTravelAction)
-        menu.exec(self.Widgets.workshopList.mapToGlobal(pos))
-        return
+    def _onPipRootObjectEvent(self, rootObject):
+        self.pipInventoryInfo = rootObject.child('Inventory')
+        if self.pipInventoryInfo:
+            self.pipInventoryInfo.registerValueUpdatedListener(self._onPipInventoryInfoUpdate, 1)
+        self._signalInfoUpdated.emit()
+        self.ammoWatchListUpdate()
 
-    def _fastTravelTo(self):
-        mapMarkerID = self.WorkshopData.child(self.locationIndex).child("mapMarkerID").value()
-        pipWorldLocations = self.rootObject.child('Map').child('World').child('Locations')
-        if pipWorldLocations:
-            for k in pipWorldLocations.value():
-                if k.child('LocationMarkerFormId').value() == mapMarkerID:
-                    self.DataManager.rpcFastTravel(k)
+    def _onPipInventoryInfoUpdate(self, caller, value, pathObjs):
+        self._signalInfoUpdated.emit()
 
-    def DataManagerUpdated(self, rootObject):
-        self.rootObject = rootObject
-        self.WorkshopData = self.rootObject.child("Workshop")
-        self.ColorData = self.rootObject.child("Status").child("EffectColor")
-        
-        if self.WorkshopData:
-            self.WorkshopData.registerValueUpdatedListener(self.WorkshopDataUpdated, 2)
-        
-        if self.ColorData:
-            self.ColorData.registerValueUpdatedListener(self.ColorDataUpdated, 1)
-            
-            R = self.ColorData.child(0).value() * 255
-            G = self.ColorData.child(1).value() * 255
-            B = self.ColorData.child(2).value() * 255
-            
-            self.ColorUpdateSignal.emit(QColor.fromRgb(R, G, B))
-
-        self.WorkshopListSignal.emit()
-        self.WorkshopInfoSignal.emit()
-    
-    def WorkshopDataUpdated(self, caller, value, pathObjs):
-        self.WorkshopListSignal.emit()
-    
-    def WorkshopInfoDataUpdated(self, caller, value, pathObjs):
-        self.WorkshopInfoSignal.emit()
-    
-    def ColorDataUpdated(self, caller, value, pathObjs):
-        if self.ColorData:
-            R = self.ColorData.child(0).value() * 255
-            G = self.ColorData.child(1).value() * 255
-            B = self.ColorData.child(2).value() * 255
-            
-            self.ColorUpdateSignal.emit(QColor.fromRgb(R, G, B))
-    
-    def SetWorkshopId(self, workshopId):
-        self.SelectedWorkshopId = workshopId
-        
-        if self.WorkshopData:            
-            if self.WorkshopInfoData:
-                self.WorkshopInfoData.unregisterValueUpdatedListener(self.WorkshopInfoDataUpdated)
-            
-            self.WorkshopInfoData = self.WorkshopData.child(self.SelectedWorkshopId)
-            self.WorkshopInfoData.registerValueUpdatedListener(self.WorkshopInfoDataUpdated, 3)
-        
-        self.WorkshopInfoSignal.emit()
-    
-    def SetWarningWidget(self, widget, state):
-        for i in self.Icons:
-            if i.Widget == widget:
-                i.Enabled = state
-                i.Update()
-
-    @QtCore.pyqtSlot(QModelIndex, QModelIndex)
-    def WorkshopListCurrentChanged(self, index, previous):
-        NewIndex = self.WorkshopListModel.index(index.row(), 0)
-        DataId = self.WorkshopListModel.data(NewIndex)
-        
-        if DataId:
-            self.SetWorkshopId(int(DataId))
-    
-    @QtCore.pyqtSlot(QColor)
-    def UpdateIconColor(self, iconColor):
-        for i in self.Icons:
-            i.Color = iconColor
-            i.Update()
-    
     @QtCore.pyqtSlot()
-    def UpdateWorkshopList(self):
-        self.WorkshopListModel.clear()
-        
-        HighlightFont = QFont()
-        HighlightFont.setBold(True)
-        
-        if self.WorkshopData.childCount():
-            for i in range(0, self.WorkshopData.childCount()):
-                Owned = self.WorkshopData.child(i).child("owned").value()
-                Name = None
-                Rating = None
-                
-                if Owned:
-                    Name = self.WorkshopData.child(i).child("text").value()
-                    Rating = self.WorkshopData.child(i).child("rating").value()
-                    
-                    NameItem = QStandardItem(Name)
-                    
-                    if Rating <= -1:
-                        NameItem.setFont(HighlightFont)
-                    
-                    ListItem = [
-                        QStandardItem(str(i)),
-                        NameItem
-                    ]
-                    self.WorkshopListModel.appendRow(ListItem)
-                    
-            self.Widgets.workshopList.sortByColumn(1, Qt.AscendingOrder)
-            self.Widgets.workshopList.hideColumn(0)
-            
-            if self.SelectedWorkshopId == -1:
-                ModelIndex = self.WorkshopListModel.index(0, 0)
-                DataId = self.WorkshopListModel.data(ModelIndex)
-                
-                if DataId:
-                    self.SetWorkshopId(int(DataId))
-    
+    def _slotInfoUpdated(self):
+        self.getAmmoItems()
+        self.ammoWatchListUpdate()
+    def getAmmoItems(self):
+        if (self.pipInventoryInfo):
+            self.AmmoListModel.clear()
+            def _filterFunc(item):
+                return inventoryutils.itemHasAnyFilterCategory(item, inventoryutils.eItemFilterCategory.Ammo)
+
+            ammo_list = inventoryutils.inventoryGetItems(self.pipInventoryInfo, _filterFunc)
+            for ammo_item in ammo_list:
+                item = QStandardItem(ammo_item.child('text').value())
+                item.setCheckable(True)
+                if ammo_item.child('text').value() in self.AmmoWatchList:
+                   item.setCheckState(Qt.Checked)
+
+                else:
+                    item.setCheckState(Qt.Unchecked)
+                self.AmmoListModel.appendRow(item)
+
+    def on_item_changed(self, item):
+        # If the changed item is not checked, don't bother checking others
+        index = self.AmmoListModel.index(item.row(), 0)
+        itemName = self.AmmoListModel.data(index)
+
+        if item.checkState():
+            self.AmmoWatchList.append(itemName)
+            self.ammoWatchListUpdate()
+        else:
+            self.AmmoWatchList.remove(itemName)
+            self.ammoWatchListUpdate()
+        self._app.settings.setValue('ammocount/savedAmmoWatchList', self.AmmoWatchList)
+
+    @QtCore.pyqtSlot(int, int)
+    def _slotSplitterMoved(self, pos, index):
+        self._app.settings.setValue('ammocount/splitterState2', settings.getSplitterState(self.widget.splitter))
+
+
+    def setAmmoWatch(self):
+        i =1
+        for ammoItem in self.AmmoWatchList:
+
+            i+=1
+
     @QtCore.pyqtSlot()
-    def UpdateWorkshopInfo(self):
-        if self.WorkshopData.childCount() and self.WorkshopInfoData:
-            Name = self.WorkshopData.child(self.SelectedWorkshopId).child("text").value()
-            PopulationValue = self.WorkshopInfoData.child("workshopData").child(0).child("Value").value()
-            PopulationRating = self.WorkshopInfoData.child("workshopData").child(0).child("rating").value()
-            FoodValue = self.WorkshopInfoData.child("workshopData").child(1).child("Value").value()
-            FoodRating = self.WorkshopInfoData.child("workshopData").child(1).child("rating").value()
-            WaterValue = self.WorkshopInfoData.child("workshopData").child(2).child("Value").value()
-            WaterRating = self.WorkshopInfoData.child("workshopData").child(2).child("rating").value()
-            PowerValue = self.WorkshopInfoData.child("workshopData").child(3).child("Value").value()
-            PowerRating = self.WorkshopInfoData.child("workshopData").child(3).child("rating").value()
-            DefenseValue = self.WorkshopInfoData.child("workshopData").child(4).child("Value").value()
-            DefenseRating = self.WorkshopInfoData.child("workshopData").child(4).child("rating").value()
-            BedsValue = self.WorkshopInfoData.child("workshopData").child(5).child("Value").value()
-            BedsRating = self.WorkshopInfoData.child("workshopData").child(5).child("rating").value()
-            HappinessValue = self.WorkshopInfoData.child("workshopData").child(6).child("Value").value()
-            HappinessRating = self.WorkshopInfoData.child("workshopData").child(6).child("rating").value()
-            
-            self.Widgets.labelLocation.setText(Name)
-            self.Widgets.numberPeople.setText(str(PopulationValue))
-            self.Widgets.numberFood.setText(str(FoodValue))
-            self.Widgets.numberWater.setText(str(WaterValue))
-            self.Widgets.numberPower.setText(str(PowerValue))
-            self.Widgets.numberDefense.setText(str(DefenseValue))
-            self.Widgets.numberBeds.setText(str(BedsValue))
-            self.Widgets.numberHappiness.setText(str(HappinessValue))
-            
-            if PopulationRating < 0:
-                self.SetWarningWidget(self.Widgets.warningPeople, True)
-            else:
-                self.SetWarningWidget(self.Widgets.warningPeople, False)
-            
-            if FoodRating < 0:
-                self.SetWarningWidget(self.Widgets.warningFood, True)
-            else:
-                self.SetWarningWidget(self.Widgets.warningFood, False)
-            
-            if WaterRating < 0:
-                self.SetWarningWidget(self.Widgets.warningWater, True)
-            else:
-                self.SetWarningWidget(self.Widgets.warningWater, False)
-            
-            if PowerRating < 0:
-                self.SetWarningWidget(self.Widgets.warningPower, True)
-            else:
-                self.SetWarningWidget(self.Widgets.warningPower, False)
-            
-            if DefenseRating < 0:
-                self.SetWarningWidget(self.Widgets.warningDefense, True)
-            else:
-                self.SetWarningWidget(self.Widgets.warningDefense, False)
-            
-            if BedsRating < 0:
-                self.SetWarningWidget(self.Widgets.warningBeds, True)
-            else:
-                self.SetWarningWidget(self.Widgets.warningBeds, False)
-            
-            if HappinessRating < 0 and HappinessValue > 20:
-                self.SetWarningWidget(self.Widgets.warningHappiness, True)
-            else:
-                self.SetWarningWidget(self.Widgets.warningHappiness, False)
+    def ammoWatchListUpdate(self):
+
+        self.ammoWatchListModel.clear()
+        itemList = self.AmmoWatchList
+        print(itemList)
+        if (self.pipInventoryInfo):
+
+            def _filterFunc(item):
+                if (inventoryutils.itemHasAnyFilterCategory(item,inventoryutils.eItemFilterCategory.Ammo)
+                        and (itemList == None or item.child('text').value() in itemList)):
+                    return True
+                else:
+                    return False
+            ammoItems = inventoryutils.inventoryGetItems(self.pipInventoryInfo, _filterFunc)
+            print(ammoItems)
+            if(not ammoItems):
+                return
+            for i in ammoItems:
+                name = i.child('text').value()
+                count = str(i.child('count').value())
+                item = [
+                    QStandardItem(name) ,
+                    QStandardItem(count)
+                ]
+
+                item[1].setData(QtCore.Qt.AlignCenter, QtCore.Qt.TextAlignmentRole)
+                self.ammoWatchListModel.appendRow(item)
+            self.widget.ammoTableView.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+            self.widget.ammoTableView.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
+            self.widget.ammoTableView.verticalHeader().setStretchLastSection(False)
+            self.widget.ammoTableView.horizontalHeader().setStretchLastSection(True)
+            self.widget.ammoTableView.setModel(self.ammoWatchListModel)
+
+            self.widget.ammoTableView.sortByColumn(0, QtCore.Qt.AscendingOrder)
+
+
+
+
+
