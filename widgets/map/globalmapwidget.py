@@ -765,6 +765,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.widget.mapZoomSlider.setSingleStep(5)
         self.widget.mapZoomSlider.valueChanged.connect(self._slotZoomSliderTriggered)
         self.widget.locationMarkerSizeSlider.valueChanged.connect(self._slotlocationMarkerSizeSliderTriggered)
+        self.widget.locationMarkerSizeSpinbox.valueChanged.connect(self._slotlocationMarkerSizeSpinboxTriggered)
         # Init zoom Spinbox
         self.widget.mapZoomSpinbox.setMinimum(self.MAPZOOM_SCALE_MIN*100.0)
         self.widget.mapZoomSpinbox.setMaximum(self.MAPZOOM_SCALE_MAX*100.0)
@@ -992,7 +993,7 @@ class GlobalMapWidget(widgets.WidgetBase):
                 marker.filterVisibilityCheat(self.locationVisibilityCheatFlag, False)
                 marker.setPipValue(l, self.datamanager, self.mapCoords)
                 marker.setStickyLabel(self.stickyLabelsEnabled, False)
-
+                marker.setSize(self.locMarkSize,False)
                 marker.setSavedSettings()
 
                 #convert old coord indexed notes and stickies to new uid indexed from
@@ -1118,15 +1119,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.widget.mapZoomSpinbox.blockSignals(False)
         self.signalSetZoomLevel.emit(self.mapZoomLevel, mcenterpos.x(), mcenterpos.y())
 
-    @QtCore.pyqtSlot(int)
-    def _slotlocationMarkerSizeSliderTriggered (self,size):
-        self.widget.locationMarkerSizeSpinbox.blockSignals(True)
-        self.widget.locationMarkerSizeSpinbox.setValue(size)
-        self.widget.locationMarkerSizeSpinbox.blockSignals(False)
-        self.locMarkSize = self._app.settings.setValue('globalmapwidget/locationMarkeSize', size)
-        self.locMarkSize = size
-        print(self.locMarkSize)
-        self.signalSetLocationSize.emit(size)
+
 
 
     @QtCore.pyqtSlot(float)
@@ -1146,8 +1139,26 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.widget.mapZoomSlider.blockSignals(False)
         self.signalSetZoomLevel.emit(self.mapZoomLevel, mcenterpos.x(), mcenterpos.y())
         
-        
-    @QtCore.pyqtSlot(bool)        
+    @QtCore.pyqtSlot(int)
+    def _slotlocationMarkerSizeSliderTriggered (self,size):
+        self.widget.locationMarkerSizeSpinbox.blockSignals(True)
+        self.widget.locationMarkerSizeSpinbox.setValue(size)
+        self.widget.locationMarkerSizeSpinbox.blockSignals(False)
+        self._app.settings.setValue('globalmapwidget/locationMarkeSize', size)
+        self.locMarkSize = size
+
+        self.signalSetLocationSize.emit(size)
+
+    @QtCore.pyqtSlot(int)
+    def _slotlocationMarkerSizeSpinboxTriggered (self,size):
+        self.widget.locationMarkerSizeSlider.blockSignals(True)
+        self.widget.locationMarkerSizeSlider.setValue(size)
+        self.widget.locationMarkerSizeSlider.blockSignals(False)
+        self.locMarkSize = size
+        self._app.settings.setValue('globalmapwidget/locationMarkeSize', size)
+        self.signalSetLocationSize.emit(size)
+
+    @QtCore.pyqtSlot(bool)
     def _slotStickyLabelsTriggered(self, value):
         self.stickyLabelsEnabled = value
         self._app.settings.setValue('globalmapwidget/stickyLabels', int(value))
