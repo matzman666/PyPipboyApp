@@ -227,6 +227,7 @@ class MarkerBase(QtCore.QObject):
     @QtCore.pyqtSlot(int)
     def setSize(self, size, update = True):
         self.size = size
+        self.markerPixmapDirty = True
         self.positionDirty = True
         if update:
             self.doUpdate()
