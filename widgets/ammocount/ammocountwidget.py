@@ -36,6 +36,8 @@ class AmmoCountWidget(widgets.WidgetBase):
         self.DataManager = dataManager
         self.DataManager.registerRootObjectListener(self._onPipRootObjectEvent)
         self.AmmoWatchList = self._app.settings.value('ammocount/savedAmmoWatchList', [])
+        if not self.AmmoWatchList: # QSettings are buggy on Linux
+            self.AmmoWatchList = []
         settings.setSplitterState(self.widget.splitter, self._app.settings.value('ammocount/splitterState2', None))
         self.widget.splitter.splitterMoved.connect(self._slotSplitterMoved)
         self.setAmmoWatch()
@@ -92,7 +94,6 @@ class AmmoCountWidget(widgets.WidgetBase):
     def setAmmoWatch(self):
         i =1
         for ammoItem in self.AmmoWatchList:
-
             i+=1
 
     @QtCore.pyqtSlot()
