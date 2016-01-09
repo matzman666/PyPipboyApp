@@ -688,6 +688,7 @@ class GlobalMapWidget(widgets.WidgetBase):
     
     signalSetZoomLevel = QtCore.pyqtSignal(float, float, float)
     signalSetColor = QtCore.pyqtSignal(QtGui.QColor)
+    signalSetLocationSize = QtCore.pyqtSignal(int)
     signalSetStickyLabel = QtCore.pyqtSignal(bool)
     signalLocationFilterSetVisible = QtCore.pyqtSignal(bool)
     signalLocationFilterVisibilityCheat = QtCore.pyqtSignal(bool)
@@ -871,10 +872,12 @@ class GlobalMapWidget(widgets.WidgetBase):
     def _connectMarker(self, marker):
         self.signalSetZoomLevel.connect(marker.setZoomLevel)
         self.signalSetColor.connect(marker.setColor)
+
         self.signalSetStickyLabel.connect(marker.setStickyLabel)
         self.signalMarkerForcePipValueUpdate.connect(marker._slotPipValueUpdated)
         marker.signalMarkerDestroyed.connect(self._disconnectMarker)
         if marker.markerType == 4:
+            self.signalSetLocationSize.connect(marker.setSize)
             self.signalLocationFilterSetVisible.connect(marker.filterSetVisible)
             self.signalLocationFilterVisibilityCheat.connect(marker.filterVisibilityCheat)
         
@@ -886,6 +889,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.signalSetColor.disconnect(marker.setColor)
         self.signalMarkerForcePipValueUpdate.disconnect(marker._slotPipValueUpdated)
         if marker.markerType == 4:
+            self.signalSetLocationSize.disconnect(marker.setSize)
             self.signalLocationFilterSetVisible.disconnect(marker.filterSetVisible)
             self.signalLocationFilterVisibilityCheat.disconnect(marker.filterVisibilityCheat)
             
@@ -1121,8 +1125,9 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.widget.locationMarkerSizeSpinbox.blockSignals(False)
         self.locMarkSize = self._app.settings.setValue('globalmapwidget/locationMarkeSize', size)
         self.locMarkSize = size
-        self._signalPipWorldLocationsUpdated.emit()
         print(self.locMarkSize)
+        self.signalSetLocationSize.emit(size)
+
 
     @QtCore.pyqtSlot(float)
     def _slotZoomSpinTriggered(self, zoom):
