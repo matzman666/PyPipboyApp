@@ -100,7 +100,6 @@ class AmmoCountWidget(widgets.WidgetBase):
 
         self.ammoWatchListModel.clear()
         itemList = self.AmmoWatchList
-        print(itemList)
         if (self.pipInventoryInfo):
 
             def _filterFunc(item):
@@ -110,7 +109,6 @@ class AmmoCountWidget(widgets.WidgetBase):
                 else:
                     return False
             ammoItems = inventoryutils.inventoryGetItems(self.pipInventoryInfo, _filterFunc)
-            print(ammoItems)
             if(not ammoItems):
                 return
             for i in ammoItems:

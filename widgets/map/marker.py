@@ -70,6 +70,7 @@ class MarkerBase(QtCore.QObject):
         self.markerHooverActive = False
         self.note =''
         self.uid = None
+        self.size = None
         self.signalDoUpdate.connect(self.doUpdate)
         
         
@@ -222,7 +223,15 @@ class MarkerBase(QtCore.QObject):
         self.positionDirty = True
         if update:
             self.doUpdate()
-            
+
+    @QtCore.pyqtSlot(int)
+    def setSize(self, size, update = True):
+        self.size = size
+        self.markerPixmapDirty = True
+        self.positionDirty = True
+        if update:
+            self.doUpdate()
+
     @QtCore.pyqtSlot(float, float, float)
     def setMapPos(self, x, y, r = 0.0, update = True):
         self.mapPosX = x
