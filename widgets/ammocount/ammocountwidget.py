@@ -47,7 +47,6 @@ class AmmoCountWidget(widgets.WidgetBase):
         if self.pipInventoryInfo:
             self.pipInventoryInfo.registerValueUpdatedListener(self._onPipInventoryInfoUpdate, 1)
         self._signalInfoUpdated.emit()
-        self.ammoWatchListUpdate()
 
     def _onPipInventoryInfoUpdate(self, caller, value, pathObjs):
         self._signalInfoUpdated.emit()
@@ -56,6 +55,7 @@ class AmmoCountWidget(widgets.WidgetBase):
     def _slotInfoUpdated(self):
         self.getAmmoItems()
         self.ammoWatchListUpdate()
+    
     def getAmmoItems(self):
         if (self.pipInventoryInfo):
             self.AmmoListModel.clear()
