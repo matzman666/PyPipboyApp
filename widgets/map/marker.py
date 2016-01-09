@@ -141,6 +141,7 @@ class MarkerBase(QtCore.QObject):
             if label:
                 if not self.labelItem:
                     self.labelItem = MarkerBase.LabelItem(self, label)
+                    self.labelItem.setZValue(self.markerItem.zValue()+1)
                     self.scene.addItem(self.labelItem)
                     self.labelItem.setAcceptHoverEvents(True)
                     if self.isVisible and (self.labelAlwaysVisible or self.stickyLabel):
@@ -168,7 +169,7 @@ class MarkerBase(QtCore.QObject):
             if self.labelItem:
                 mb = self.markerItem.sceneBoundingRect()
                 lp = (mb.bottomRight() + mb.bottomLeft())/2.0
-                lp += QtCore.QPointF(-self.labelItem.boundingRect().width()/2, 0)
+                lp += QtCore.QPointF(-self.labelItem.boundingRect().width()/2, 6)
                 self.labelItem.setPos(lp)
 
 

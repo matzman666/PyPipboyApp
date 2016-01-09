@@ -293,9 +293,7 @@ class LocationMarker(PipValueMarkerBase):
             else:
                 self.imageFilePath = os.path.join('res', 'mapmarkerloctype_default_u.svg')
             return self.imageFactory.getPixmap(self.imageFilePath, size=self.size, color=self.color)
-        if self.locType < 0:
-            return _getDefaultPixmap()
-        else:
+        if not self.locType < 0:
             filepath = 'mapmarkerloctype_' + str(self.locType)
             if self.discovered:
                 self.imageFilePath = os.path.join('res', filepath + '_d.svg')
@@ -305,30 +303,33 @@ class LocationMarker(PipValueMarkerBase):
             if not p:
                 self.noTypePixmapFound = True
                 p = _getDefaultPixmap()
+        else:
+            p = _getDefaultPixmap()
+        px = QtGui.QPixmap(p.width() + 10, p.height())
+        px.fill(QtCore.Qt.transparent)
+        pn = QtGui.QPainter(px)
+        pn.drawPixmap(QtCore.QRect(0,0,p.width(),p.height()), p)
+        overlayXOffset = p.width() + 2
+        overlayYOffset = 0
+        if (len(self.note) > 0):
+            note = self.colouriseIcon(self.imageFactory2.getImage('note8.png'), self.color)
+            pn.drawPixmap(QtCore.QRect(overlayXOffset, overlayYOffset, 8, 8), note)
+            overlayYOffset += 8+2
+        if (self.isOwnedWorkshop):
+            hammer = self.colouriseIcon(self.imageFactory2.getImage('hammer8.png'), self.color)
+            pn.drawPixmap(QtCore.QRect(overlayXOffset, overlayYOffset, 8, 8), hammer)
+            overlayYOffset += 8+2
+        if (self.cleared):
+            tick = self.colouriseIcon(self.imageFactory2.getImage('tick8.png'), self.color)
+            pn.drawPixmap(QtCore.QRect(overlayXOffset, overlayYOffset, 8, 8), tick)
+            overlayYOffset += 8+2
+        pn.end()
+        return px
             
-            px = QtGui.QPixmap(40,self.size)
-            px.fill(QtCore.Qt.transparent)
-            pn = QtGui.QPainter(px)
-            pn.drawPixmap(QtCore.QRect(0,0,self.size,self.size), p)
-            overlayYOffset = 0
+    def _updateMarkerOffset_(self):
+        mb = self.markerItem.boundingRect()
+        self.markerItem.setOffset(-(mb.width()-10)/2, -mb.height()/2)
             
-            if (len(self.note) > 0):
-                note = self.colouriseIcon(self.imageFactory2.getImage('note8.png'), self.color)
-                pn.drawPixmap(QtCore.QRect(30,overlayYOffset,8,8), note)
-                overlayYOffset += 8+2
-            
-            if (self.isOwnedWorkshop):
-                hammer = self.colouriseIcon(self.imageFactory2.getImage('hammer8.png'), self.color)
-                pn.drawPixmap(QtCore.QRect(30,overlayYOffset,8,8), hammer)
-                overlayYOffset += 8+2
-            
-            if (self.cleared):
-                tick = self.colouriseIcon(self.imageFactory2.getImage('tick8.png'), self.color)
-                pn.drawPixmap(QtCore.QRect(30,overlayYOffset,8,8), tick)
-                overlayYOffset += 8+2
-
-            pn.end()
-            return px
 
     def colouriseIcon(self, img, colour):
         size = img.size()
@@ -722,7 +723,7 @@ class GlobalMapWidget(widgets.WidgetBase):
             self.mapFiles = json.load(configFile)
         except Exception as e:
             self._logger.error('Could not load map-files: ' + str(e))
-        self.locMarkSize = self._app.settings.value('globalmapwidget/locationMarkeSize', 28)
+        self.locMarkSize = int(self._app.settings.value('globalmapwidget/locationMarkeSize', 28))
         self.selectedMapFile = self._app.settings.value('globalmapwidget/selectedMapFile', 'default')
         # Init graphics view
         self.mapColor = QtGui.QColor.fromRgb(20,255,23)
@@ -877,8 +878,8 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.signalSetStickyLabel.connect(marker.setStickyLabel)
         self.signalMarkerForcePipValueUpdate.connect(marker._slotPipValueUpdated)
         marker.signalMarkerDestroyed.connect(self._disconnectMarker)
+        self.signalSetLocationSize.connect(marker.setSize)
         if marker.markerType == 4:
-            self.signalSetLocationSize.connect(marker.setSize)
             self.signalLocationFilterSetVisible.connect(marker.filterSetVisible)
             self.signalLocationFilterVisibilityCheat.connect(marker.filterVisibilityCheat)
         
@@ -889,8 +890,8 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.signalSetStickyLabel.disconnect(marker.setStickyLabel)
         self.signalSetColor.disconnect(marker.setColor)
         self.signalMarkerForcePipValueUpdate.disconnect(marker._slotPipValueUpdated)
+        self.signalSetLocationSize.disconnect(marker.setSize)
         if marker.markerType == 4:
-            self.signalSetLocationSize.disconnect(marker.setSize)
             self.signalLocationFilterSetVisible.disconnect(marker.filterSetVisible)
             self.signalLocationFilterVisibilityCheat.disconnect(marker.filterVisibilityCheat)
             

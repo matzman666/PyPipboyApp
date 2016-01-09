@@ -81,8 +81,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>270</width>
-            <height>385</height>
+            <width>298</width>
+            <height>464</height>
            </rect>
           </property>
           <attribute name="label">
@@ -229,8 +229,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>270</width>
-            <height>385</height>
+            <width>316</width>
+            <height>357</height>
            </rect>
           </property>
           <attribute name="label">
@@ -296,7 +296,7 @@
               <item row="0" column="0">
                <widget class="QLabel" name="label">
                 <property name="text">
-                 <string>Location Markers Size</string>
+                 <string>Marker Size</string>
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignCenter</set>
@@ -309,7 +309,7 @@
                  <number>10</number>
                 </property>
                 <property name="maximum">
-                 <number>50</number>
+                 <number>100</number>
                 </property>
                 <property name="orientation">
                  <enum>Qt::Horizontal</enum>
@@ -334,7 +334,7 @@
                  <double>10.000000000000000</double>
                 </property>
                 <property name="maximum">
-                 <double>50.000000000000000</double>
+                 <double>100.000000000000000</double>
                 </property>
                </widget>
               </item>
