@@ -17,7 +17,7 @@ from .editnotedialog import EditNoteDialog
 class PlayerMarker(PipValueMarkerBase):
     signalPlayerPositionUpdate = QtCore.pyqtSignal(float, float, float)
     
-    def __init__(self, widget, imageFactory, color,size=32,  parent = None):
+    def __init__(self, widget, imageFactory, color,  size, parent = None):
         super().__init__(widget.mapScene, widget.mapView, parent)
         self.markerType = 0
         self.uid = 'playermarker'
@@ -27,7 +27,7 @@ class PlayerMarker(PipValueMarkerBase):
         self.pipValueListenerDepth = 1
         self.markerItem.setZValue(10)
         self.setColor(color,False)
-        self.setSize(size,False)
+        self.setSize(size, False)
         self.setLabelFont(QtGui.QFont("Times", 8, QtGui.QFont.Bold), False)
         self.setLabel('Player', False)
         self.doUpdate()
@@ -51,7 +51,7 @@ class PlayerMarker(PipValueMarkerBase):
             self.signalPlayerPositionUpdate.emit(px, py, pr)
 
 class CustomMarker(PipValueMarkerBase):
-    def __init__(self, widget, imageFactory, color,size=48, parent = None):
+    def __init__(self, widget, imageFactory, color, size, parent = None):
         super().__init__(widget.mapScene, widget.mapView, parent)
         self.markerType = 1
         self.uid = 'pipcustommarker'
@@ -61,7 +61,7 @@ class CustomMarker(PipValueMarkerBase):
         self.pipValueListenerDepth = 1
         self.markerItem.setZValue(0)
         self.setColor(color,False)
-        self.setSize(size,False)
+        self.setSize(size, False)
         self.setLabelFont(QtGui.QFont("Times", 8, QtGui.QFont.Bold), False)
         self.setLabel('Custom Marker', False)
         self.doUpdate()
@@ -72,6 +72,11 @@ class CustomMarker(PipValueMarkerBase):
     def _updateMarkerOffset_(self):
         mb = self.markerItem.boundingRect()
         self.markerItem.setOffset(-mb.width()/2, -mb.height())
+        
+    @QtCore.pyqtSlot(int)
+    def setSize(self, size, update = True):
+        # We want it to be a little bit bigger than the other marker
+        super().setSize(size * 1.4, update)
     
     @QtCore.pyqtSlot()        
     def _slotPipValueUpdated(self):
@@ -99,7 +104,7 @@ class CustomMarker(PipValueMarkerBase):
             menu.addAction('Remove Marker', _removeCustomMarker)
     
 class PowerArmorMarker(PipValueMarkerBase):
-    def __init__(self, widget, imageFactory, color,size=32, parent = None):
+    def __init__(self, widget, imageFactory, color, size, parent = None):
         super().__init__(widget.mapScene, widget.mapView, parent)
         self.markerType = 2
         self.uid = 'powerarmormarker'
@@ -148,7 +153,7 @@ class PowerArmorMarker(PipValueMarkerBase):
                 self.setVisible(False)
 
 class QuestMarker(PipValueMarkerBase):
-    def __init__(self, widget, imageFactory, color,size=22, parent = None):
+    def __init__(self, widget, imageFactory, color, size, parent = None):
         super().__init__(widget.mapScene, widget.mapView, parent)
         self.markerType = 3
         self.uid = 'questmarker'
@@ -165,12 +170,16 @@ class QuestMarker(PipValueMarkerBase):
         self.doUpdate()
         
     def _getPixmap_(self):
-
         return self.imageFactory.getPixmap(self.imageFilePath, size=self.size, color=self.color)
             
     def _updateMarkerOffset_(self):
         mb = self.markerItem.boundingRect()
         self.markerItem.setOffset(-mb.width()/2, -mb.height())
+        
+    @QtCore.pyqtSlot(int)
+    def setSize(self, size, update = True):
+        # We want it to be a little bit bigger than the other marker
+        super().setSize(size * 1.2, update)
         
     @QtCore.pyqtSlot()        
     def _slotPipValueUpdated(self):
@@ -208,7 +217,7 @@ class QuestMarker(PipValueMarkerBase):
 class LocationMarker(PipValueMarkerBase):
     artilleryRange = 97000
     
-    def __init__(self, widget, imageFactory, imageFactory2, color,size=28,parent = None):
+    def __init__(self, widget, imageFactory, imageFactory2, color, size, parent = None):
         super().__init__(widget.mapScene, widget.mapView, parent)
         self.markerType = 4
         self.widget = widget
@@ -519,7 +528,7 @@ class LocationMarker(PipValueMarkerBase):
             self.setNote (self.widget._app.settings.value('globalmapwidget/locationmarkernotes/'+self.uid, ''))
 
 class PointofInterestMarker(MarkerBase):
-    def __init__(self, uid, widget, imageFactory, color,size=24, iconfile='mapmarkerpoi_1.svg', parent = None):
+    def __init__(self, uid, widget, imageFactory, color, size, iconfile='mapmarkerpoi_1.svg', parent = None):
         super().__init__(widget.mapScene, widget.mapView, parent)
         self.markerType = 5
         self.widget = widget
@@ -694,7 +703,7 @@ class GlobalMapWidget(widgets.WidgetBase):
     
     signalSetZoomLevel = QtCore.pyqtSignal(float, float, float)
     signalSetColor = QtCore.pyqtSignal(QtGui.QColor)
-    signalSetLocationSize = QtCore.pyqtSignal(int)
+    signalSetMarkerSize = QtCore.pyqtSignal(int)
     signalSetStickyLabel = QtCore.pyqtSignal(bool)
     signalLocationFilterSetVisible = QtCore.pyqtSignal(bool)
     signalLocationFilterVisibilityCheat = QtCore.pyqtSignal(bool)
@@ -728,7 +737,7 @@ class GlobalMapWidget(widgets.WidgetBase):
             self.mapFiles = json.load(configFile)
         except Exception as e:
             self._logger.error('Could not load map-files: ' + str(e))
-        self.locMarkSize = int(self._app.settings.value('globalmapwidget/locationMarkeSize', 28))
+        self.mapMarkerSize = int(self._app.settings.value('globalmapwidget/mapMarkerSize', 28))
         self.selectedMapFile = self._app.settings.value('globalmapwidget/selectedMapFile', 'default')
         # Init graphics view
         self.mapColor = QtGui.QColor.fromRgb(20,255,23)
@@ -768,14 +777,14 @@ class GlobalMapWidget(widgets.WidgetBase):
         
 
         # Add player marker
-        self.playerMarker = PlayerMarker(self,self.controller.imageFactory, self.mapColor)
+        self.playerMarker = PlayerMarker(self,self.controller.imageFactory, self.mapColor, self.mapMarkerSize)
         self._connectMarker(self.playerMarker)
         self.playerMarker.signalPlayerPositionUpdate.connect(self._slotPlayerMarkerPositionUpdated)
         # Add custom marker
-        self.customMarker = CustomMarker(self,self.controller.imageFactory, self.mapColor)
+        self.customMarker = CustomMarker(self,self.controller.imageFactory, self.mapColor, self.mapMarkerSize)
         self._connectMarker(self.customMarker)
         # Add powerarmor marker
-        self.powerArmorMarker = PowerArmorMarker(self,self.controller.imageFactory, self.mapColor)
+        self.powerArmorMarker = PowerArmorMarker(self,self.controller.imageFactory, self.mapColor, self.mapMarkerSize)
         self._connectMarker(self.powerArmorMarker)
         # Init zoom slider
         self.widget.mapZoomSlider.setMinimum(-100)
@@ -783,8 +792,8 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.widget.mapZoomSlider.setValue(0)
         self.widget.mapZoomSlider.setSingleStep(5)
         self.widget.mapZoomSlider.valueChanged.connect(self._slotZoomSliderTriggered)
-        self.widget.locationMarkerSizeSlider.valueChanged.connect(self._slotlocationMarkerSizeSliderTriggered)
-        self.widget.locationMarkerSizeSpinbox.valueChanged.connect(self._slotlocationMarkerSizeSpinboxTriggered)
+        self.widget.markerSizeSlider.valueChanged.connect(self._slotMarkerSizeSliderTriggered)
+        self.widget.markerSizeSpinbox.valueChanged.connect(self._slotMarkerSizeSpinboxTriggered)
         # Init zoom Spinbox
         self.widget.mapZoomSpinbox.setMinimum(self.MAPZOOM_SCALE_MIN*100.0)
         self.widget.mapZoomSpinbox.setMaximum(self.MAPZOOM_SCALE_MAX*100.0)
@@ -808,8 +817,8 @@ class GlobalMapWidget(widgets.WidgetBase):
             self.widget.mapZoomSpinbox.blockSignals(False)
             self.signalSetZoomLevel.emit(self.mapZoomLevel, 0, 0)
         #Init Location MArker size spinbox and slider
-        self.widget.locationMarkerSizeSlider.setValue(self.locMarkSize)
-        self.widget.locationMarkerSizeSpinbox.setValue(self.locMarkSize)
+        self.widget.markerSizeSlider.setValue(self.mapMarkerSize)
+        self.widget.markerSizeSpinbox.setValue(self.mapMarkerSize)
         # Init map file combo box
         i = 0
         self.mapFileComboItems = []
@@ -894,11 +903,10 @@ class GlobalMapWidget(widgets.WidgetBase):
     def _connectMarker(self, marker):
         self.signalSetZoomLevel.connect(marker.setZoomLevel)
         self.signalSetColor.connect(marker.setColor)
-
         self.signalSetStickyLabel.connect(marker.setStickyLabel)
         self.signalMarkerForcePipValueUpdate.connect(marker._slotPipValueUpdated)
         marker.signalMarkerDestroyed.connect(self._disconnectMarker)
-        self.signalSetLocationSize.connect(marker.setSize)
+        self.signalSetMarkerSize.connect(marker.setSize)
         if marker.markerType == 4:
             self.signalLocationFilterSetVisible.connect(marker.filterSetVisible)
             self.signalLocationFilterVisibilityCheat.connect(marker.filterVisibilityCheat)
@@ -910,7 +918,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.signalSetStickyLabel.disconnect(marker.setStickyLabel)
         self.signalSetColor.disconnect(marker.setColor)
         self.signalMarkerForcePipValueUpdate.disconnect(marker._slotPipValueUpdated)
-        self.signalSetLocationSize.disconnect(marker.setSize)
+        self.signalSetMarkerSize.disconnect(marker.setSize)
         if marker.markerType == 4:
             self.signalLocationFilterSetVisible.disconnect(marker.filterSetVisible)
             self.signalLocationFilterVisibilityCheat.disconnect(marker.filterVisibilityCheat)
@@ -982,7 +990,7 @@ class GlobalMapWidget(widgets.WidgetBase):
                 newDict[q.pipId] = marker
                 del self.pipMapQuestsItems[q.pipId]
             else:
-                marker = QuestMarker(self,self.controller.imageFactory, self.mapColor)
+                marker = QuestMarker(self,self.controller.imageFactory, self.mapColor, self.mapMarkerSize)
                 self._connectMarker(marker)
                 marker.setStickyLabel(self.stickyLabelsEnabled, False)
                 marker.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, False)
@@ -1005,7 +1013,7 @@ class GlobalMapWidget(widgets.WidgetBase):
                 newDict[l.pipId] = marker
                 del self.pipMapLocationItems[l.pipId]
             else:
-                marker = LocationMarker(self, self.controller.imageFactory, self.controller.globalResImageFactory, self.mapColor,self.locMarkSize)
+                marker = LocationMarker(self, self.controller.imageFactory, self.controller.globalResImageFactory, self.mapColor, self.mapMarkerSize)
 
                 self._connectMarker(marker)
 
@@ -1014,7 +1022,7 @@ class GlobalMapWidget(widgets.WidgetBase):
                 marker.filterVisibilityCheat(self.locationVisibilityCheatFlag, False)
                 marker.setPipValue(l, self.datamanager, self.mapCoords)
                 marker.setStickyLabel(self.stickyLabelsEnabled, False)
-                marker.setSize(self.locMarkSize,False)
+                marker.setSize(self.mapMarkerSize,False)
                 marker.setSavedSettings()
 
                 #convert old coord indexed notes and stickies to new uid indexed from
@@ -1061,7 +1069,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         poiLocDict = dict()
         if index and len(index) > 0:
             for i in index:
-                poimarker = PointofInterestMarker(i,self,self.controller.sharedResImageFactory, self.mapColor)
+                poimarker = PointofInterestMarker(i,self,self.controller.sharedResImageFactory, self.mapColor, self.mapMarkerSize)
                 poimarker.thisCharOnly = False
                 poimarker.setSavedSettings()
                 poimarker.filterSetVisible(True)
@@ -1073,7 +1081,7 @@ class GlobalMapWidget(widgets.WidgetBase):
             index = self._app.settings.value(poisettingPath+ self.pipPlayerName +'/index', None)
             if index and len(index) > 0:
                 for i in index:
-                    poimarker = PointofInterestMarker(i,self,self.controller.sharedResImageFactory, self.mapColor)
+                    poimarker = PointofInterestMarker(i,self,self.controller.sharedResImageFactory, self.mapColor, self.mapMarkerSize)
                     poimarker.thisCharOnly = True
                     poimarker.setSavedSettings()
                     poimarker.filterSetVisible(True)
@@ -1161,23 +1169,22 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.signalSetZoomLevel.emit(self.mapZoomLevel, mcenterpos.x(), mcenterpos.y())
         
     @QtCore.pyqtSlot(int)
-    def _slotlocationMarkerSizeSliderTriggered (self,size):
-        self.widget.locationMarkerSizeSpinbox.blockSignals(True)
-        self.widget.locationMarkerSizeSpinbox.setValue(size)
-        self.widget.locationMarkerSizeSpinbox.blockSignals(False)
-        self._app.settings.setValue('globalmapwidget/locationMarkeSize', size)
-        self.locMarkSize = size
-
-        self.signalSetLocationSize.emit(size)
+    def _slotMarkerSizeSliderTriggered (self,size):
+        self.widget.markerSizeSpinbox.blockSignals(True)
+        self.widget.markerSizeSpinbox.setValue(size)
+        self.widget.markerSizeSpinbox.blockSignals(False)
+        self._app.settings.setValue('globalmapwidget/mapMarkerSize', size)
+        self.mapMarkerSize = size
+        self.signalSetMarkerSize.emit(size)
 
     @QtCore.pyqtSlot(int)
-    def _slotlocationMarkerSizeSpinboxTriggered (self,size):
-        self.widget.locationMarkerSizeSlider.blockSignals(True)
-        self.widget.locationMarkerSizeSlider.setValue(size)
-        self.widget.locationMarkerSizeSlider.blockSignals(False)
-        self.locMarkSize = size
-        self._app.settings.setValue('globalmapwidget/locationMarkeSize', size)
-        self.signalSetLocationSize.emit(size)
+    def _slotMarkerSizeSpinboxTriggered (self,size):
+        self.widget.markerSizeSlider.blockSignals(True)
+        self.widget.markerSizeSlider.setValue(size)
+        self.widget.markerSizeSlider.blockSignals(False)
+        self.mapMarkerSize = size
+        self._app.settings.setValue('globalmapwidget/mapMarkerSize', size)
+        self.signalSetMarkerSize.emit(size)
 
     @QtCore.pyqtSlot(bool)
     def _slotStickyLabelsTriggered(self, value):
@@ -1310,7 +1317,7 @@ class GlobalMapWidget(widgets.WidgetBase):
                         thisCharOnly = editpoiDialog.chkCharacterOnly.isChecked()
                         
                         if (ok != 0):
-                            poimarker = PointofInterestMarker(uuid.uuid4(), self,self.controller.sharedResImageFactory, editpoiDialog.selectedColor, editpoiDialog.IconFile)
+                            poimarker = PointofInterestMarker(uuid.uuid4(), self,self.controller.sharedResImageFactory, editpoiDialog.selectedColor, self.mapMarkerSize, editpoiDialog.IconFile)
                             poimarker.setLabel(labelstr)
                             self._connectMarker(poimarker)
                             poimarker.setMapPos(self.mapCoords.pip2map_x(rx), self.mapCoords.pip2map_y(ry))
