@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Form</class>
- <widget class="QWidget" name="Form">
+ <class>CollectablesFormLayout</class>
+ <widget class="QWidget" name="CollectablesFormLayout">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -81,8 +81,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>298</width>
-            <height>464</height>
+            <width>270</width>
+            <height>385</height>
            </rect>
           </property>
           <attribute name="label">
@@ -229,8 +229,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>316</width>
-            <height>357</height>
+            <width>270</width>
+            <height>385</height>
            </rect>
           </property>
           <attribute name="label">
@@ -276,6 +276,9 @@
               <string>Show Unknown Locations</string>
              </property>
             </widget>
+           </item>
+           <item>
+            <layout class="QVBoxLayout" name="CollectablesLayout"/>
            </item>
            <item>
             <widget class="Line" name="line">

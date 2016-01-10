@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import datetime
 import os
 from PyQt5 import QtGui, QtWidgets, QtCore, uic
 from PyQt5.QtWidgets import *
@@ -9,6 +8,7 @@ from .. import widgets
 from pypipboy import inventoryutils
 
 import logging
+
 
 class DoctorsBagWidget(widgets.WidgetBase):
     _signalInfoUpdated = QtCore.pyqtSignal()
@@ -20,11 +20,10 @@ class DoctorsBagWidget(widgets.WidgetBase):
         self.widget = uic.loadUi(os.path.join(mhandle.basepath, 'ui', 'doctorsbagwidget.ui'))
         self._logger = logging.getLogger('pypipboyapp.doctorsbagwidget')
         self.setWidget(self.widget)
+        self.foreColor = QtGui.QColor.fromRgb(0,255,0)
         self.pipColour = None
         self.pipInventoryInfo = None
-        self.foreColor = QtGui.QColor.fromRgb(0,255,0)
 
-        
         self._signalInfoUpdated.connect(self._slotInfoUpdated)
         self._signalColorUpdated.connect(self._slotColorUpdated)
 
@@ -32,6 +31,7 @@ class DoctorsBagWidget(widgets.WidgetBase):
         super().init(app, datamanager)
         self.dataManager = datamanager
         self.dataManager.registerRootObjectListener(self._onPipRootObjectEvent)
+
         self._app = app
 
         #self.viewMode = 'All'
@@ -89,7 +89,7 @@ class DoctorsBagWidget(widgets.WidgetBase):
         self.pipColor = rootObject.child('Status').child('EffectColor')
         self.pipColor.registerValueUpdatedListener(self._onPipColorChanged, 1)
         self._onPipColorChanged(None, None, None)
-        
+
     def _onPipColorChanged(self, caller, value, pathObjs):
         if self.pipColor:
             r = self.pipColor.child(0).value() * 255
