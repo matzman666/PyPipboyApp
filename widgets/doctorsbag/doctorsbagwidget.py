@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import datetime
 import os
+import json
 from PyQt5 import QtGui, QtWidgets, QtCore, uic
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
@@ -20,11 +21,20 @@ class DoctorsBagWidget(widgets.WidgetBase):
         self.widget = uic.loadUi(os.path.join(mhandle.basepath, 'ui', 'doctorsbagwidget.ui'))
         self._logger = logging.getLogger('pypipboyapp.doctorsbagwidget')
         self.setWidget(self.widget)
+        self.foreColor = QtGui.QColor.fromRgb(0,255,0)
         self.pipColour = None
         self.pipInventoryInfo = None
-        self.foreColor = QtGui.QColor.fromRgb(0,255,0)
+        self.pipPlayerObject = None
+        self.pipPlayerName = None
 
-        
+        self.collectableFormIDs = []
+        inputFile = open(os.path.join('collectables-processed.json'))
+        collectables = json.load(inputFile)
+
+        for k, v in collectables.items():
+            for i in v.get('items', None):
+                self.collectableFormIDs.append(int(i.get('formid'), 16))
+
         self._signalInfoUpdated.connect(self._slotInfoUpdated)
         self._signalColorUpdated.connect(self._slotColorUpdated)
 
@@ -32,6 +42,8 @@ class DoctorsBagWidget(widgets.WidgetBase):
         super().init(app, datamanager)
         self.dataManager = datamanager
         self.dataManager.registerRootObjectListener(self._onPipRootObjectEvent)
+        self.globalMap = app.iwcGetEndpoint('globalmapwidget')
+
         self._app = app
 
         #self.viewMode = 'All'
@@ -89,6 +101,18 @@ class DoctorsBagWidget(widgets.WidgetBase):
         self.pipColor = rootObject.child('Status').child('EffectColor')
         self.pipColor.registerValueUpdatedListener(self._onPipColorChanged, 1)
         self._onPipColorChanged(None, None, None)
+
+        self.pipPlayerObject = rootObject.child('PlayerInfo')
+        if self.pipPlayerObject:
+            self.pipPlayerObject.registerValueUpdatedListener(self._onPipPlayerReset)
+            self._onPipPlayerReset(None, None, None)
+
+
+    def _onPipPlayerReset(self, caller, value, pathObjs):
+        if self.pipPlayerObject:
+            name = self.pipPlayerObject.child('PlayerName')
+            if name:
+                self.pipPlayerName = name.value()
         
     def _onPipColorChanged(self, caller, value, pathObjs):
         if self.pipColor:
@@ -152,6 +176,29 @@ class DoctorsBagWidget(widgets.WidgetBase):
             self.updateDrugView(None)
         else:
             self.updateDrugView(None)
+
+        if self.pipInventoryInfo:
+            def _filterFunc(item):
+                if (inventoryutils.itemHasAnyFilterCategory(item,inventoryutils.eItemFilterCategory.Misc)
+                        and (self.collectableFormIDs is not None and item.child('formID').value() in self.collectableFormIDs)):
+                    return True
+                else:
+                    return False
+            collectables = inventoryutils.inventoryGetItems(self.pipInventoryInfo, _filterFunc)
+            if collectables is not None and self.pipPlayerName is not None:
+                for item in collectables:
+                    collectedcollectablesSettingsPath = 'percharacterdata/' + self.pipPlayerName + '/collectedcollectables'
+                    index = self._app.settings.value(collectedcollectablesSettingsPath, None)
+                    if index is None:
+                        index = []
+
+                    if str(item.child('formID').value()) not in index:
+                        index.append(item.child('formID').value())
+                        self._app.settings.setValue(collectedcollectablesSettingsPath, index)
+                        self.globalMap.iwcSetCollectableCollected(item.child('formID').value())
+
+
+
 
     def _isItemReal(self, item):
         if(self.pipInventoryInfo):

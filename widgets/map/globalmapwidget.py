@@ -639,6 +639,7 @@ class CollectableMarker(MarkerBase):
         self.filterVisibleFlag = True
         self.uid = uid
         self.collected = False
+        self.itemFormID = None
         self.doUpdate()
 
     def _labelStr_(self):
@@ -683,18 +684,18 @@ class CollectableMarker(MarkerBase):
     def _fillMarkerContextMenu_(self, event, menu):
         @QtCore.pyqtSlot(bool)
         def _markAsCollected(value):
-            if self.uid != None:
+            if self.itemFormID != None:
                 collectedcollectablesSettingsPath = 'percharacterdata/' + self.widget.pipPlayerName + '/collectedcollectables'
                 index = self.widget._app.settings.value(collectedcollectablesSettingsPath, None)
                 if index == None:
                     index = []
                 if (value):
-                    if self.uid not in index:
-                        index.append(self.uid)
+                    if self.itemFormID not in index:
+                        index.append(self.itemFormID)
                         self.widget._app.settings.setValue(collectedcollectablesSettingsPath, index)
                 else:
-                    if self.uid in index:
-                        index.remove(self.uid)
+                    if self.itemFormID in index:
+                        index.remove(self.itemFormID)
                         self.widget._app.settings.setValue(collectedcollectablesSettingsPath, index)
             self.setCollected(value)
         ftaction = menu.addAction('Mark as Collected')
@@ -709,7 +710,7 @@ class CollectableMarker(MarkerBase):
             index = []
 
         if index and len(index) > 0:
-            if self.uid in index:
+            if str(int(self.itemFormID,16)) in index:
                 self.setCollected(True)
 
         super().setSavedSettings()
@@ -946,7 +947,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.pipWorldLocations = None
         self.pipMapLocationItems = dict()
         self.poiLocationItems = dict()
-        self.collectableLocationItems = dict()
+        self.collectableLocationMarkers = dict()
         # Init Collectables
         self.showCollectables = {}
 
@@ -1047,15 +1048,16 @@ class GlobalMapWidget(widgets.WidgetBase):
                 self._signalPipWorldLocationsUpdated.emit()
 
     def loadMarkerForCollectables(self):
-        for i in self.collectableLocationItems:
-            self.collectableLocationItems[i].destroy()
+        for i in self.collectableLocationMarkers:
+            self.collectableLocationMarkers[i].destroy()
 
         self._logger.warn('Reloading CollectableMarkers')
-        inputFile = open(os.path.join(self.basepath, 'res', 'collectables-processed.json'))
+        #inputFile = open(os.path.join(self.basepath, 'res', 'collectables-processed.json'))
+        inputFile = open(os.path.join('collectables-processed.json'))
         collectables = json.load(inputFile)
 
         for k, v in collectables.items():
-            self.collectableLocationItems[k] = {}
+            self.collectableLocationMarkers[k] = {}
             chk = QtWidgets.QCheckBox()
             chk.setObjectName(k + '_CheckBox')
             chk.setText(v.get('friendlyname', k))
@@ -1067,31 +1069,32 @@ class GlobalMapWidget(widgets.WidgetBase):
                 cmx = i.get('commonwealthx', None)
                 cmy = i.get('commonwealthy', None)
                 if cmx is not None and cmy is not None:
-                    m = CollectableMarker(i.get('uid'), self, self.controller.sharedResImageFactory, QtCore.Qt.red, icon=v.get('icon', 'Starfilled.svg'))
+                    m = CollectableMarker(i.get('instanceformid'), self, self.controller.sharedResImageFactory, QtCore.Qt.red, icon=v.get('icon', 'Starfilled.svg'))
                     m.setLabel(textwrap.fill(i.get('name', ''), 30) + '\n' + textwrap.fill(i.get('description', ''), 30))
+                    m.itemFormID = i.get('formid')
                     m.setMapPos(self.mapCoords.pip2map_x(float(cmx)), self.mapCoords.pip2map_y(float(cmy)))
                     m.filterSetVisible(chk.isChecked())
                     m.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, True)
                     m.setSavedSettings()
                     self._connectMarker(m)
 
-                    self.collectableLocationItems[k][i.get('uid', str(uuid.uuid4()))] = m
+                    self.collectableLocationMarkers[k][i.get('instanceformid', str(uuid.uuid4()))] = m
         return
 
     @QtCore.pyqtSlot(bool)
     def chkcollectableTriggered(self, value):
-        for k in self.collectableLocationItems.keys():
+        for k in self.collectableLocationMarkers.keys():
             chk = self.widget.findChild(QtWidgets.QCheckBox, k + '_CheckBox')
 
             if chk.isChecked():
                 self._app.settings.setValue('globalmapwidget/show' + k, 1)
                 self.showCollectables[k] = True
-                for i,j in self.collectableLocationItems[k].items():
+                for i,j in self.collectableLocationMarkers[k].items():
                     j.filterSetVisible(True)
             else:
                 self._app.settings.setValue('globalmapwidget/show' + k, 0)
                 self.showCollectables[k] = False
-                for i,j in self.collectableLocationItems[k].items():
+                for i,j in self.collectableLocationMarkers[k].items():
                     j.filterSetVisible(False)
 
     def _onPipWorldQuestsUpdated(self, caller, value, pathObjs):
@@ -1487,7 +1490,16 @@ class GlobalMapWidget(widgets.WidgetBase):
                 return True
         return False
     
-    
+
+    def iwcSetCollectableCollected(self, formid):
+            print ('in iwcColl, f:' + str(formid))
+            for k in self.collectableLocationMarkers.keys():
+                for i,j in self.collectableLocationMarkers[k].items():
+                    if int(j.itemFormID,16) == formid:
+                        j.setCollected(True)
+
+
+
     def iwcCenterOnLocation(self, pipId):
         try:
             loc = self.pipMapLocationItems[pipId]
