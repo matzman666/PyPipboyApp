@@ -1058,8 +1058,10 @@ class GlobalMapWidget(widgets.WidgetBase):
                 self._signalPipWorldLocationsUpdated.emit()
 
     def loadMarkerForCollectables(self):
-        for i in self.collectableLocationMarkers:
-            self.collectableLocationMarkers[i].destroy()
+
+        for k in self.collectableLocationMarkers.keys():
+            for i,j in self.collectableLocationMarkers[k].items():
+                j.destroy()
 
         self._logger.warn('Reloading CollectableMarkers')
         inputFile = open(os.path.join('widgets', 'shared', 'res', 'collectables-processed.json'))
