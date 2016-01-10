@@ -652,7 +652,7 @@ class CollectableMarker(MarkerBase):
         self.filterVisibleFlag = True
         self.uid = "CollectableMarker"
         self.collected = False
-        self.doUpdate()        
+        self.doUpdate()
 
     def _labelStr_(self):
         return self.label
@@ -909,7 +909,10 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.pipWorldLocations = None
         self.pipMapLocationItems = dict()
         self.poiLocationItems = dict()
-        self.colLocationItems = dict()
+        self.collectableLocationItems = dict()
+        # Init Collectables
+        self.showCollectables = {}
+
         self._signalPipWorldQuestsUpdated.connect(self._slotPipWorldQuestsUpdated)
         self._signalPipWorldLocationsUpdated.connect(self._slotPipWorldLocationsUpdated)
         self.datamanager.registerRootObjectListener(self._onRootObjectEvent)
@@ -1005,30 +1008,53 @@ class GlobalMapWidget(widgets.WidgetBase):
             if self.pipWorldLocations:
                 self.pipWorldLocations.registerValueUpdatedListener(self._onPipWorldLocationsUpdated, 0)
                 self._signalPipWorldLocationsUpdated.emit()
-            
-    def loadMarkerForCollectables(self):
-        for i in self.colLocationItems:
-            self.colLocationItems[i].destroy()        
 
+    def loadMarkerForCollectables(self):
+        for i in self.collectableLocationItems:
+            self.collectableLocationItems[i].destroy()
+
+        self._logger.warn('Reloading CollectableMarkers')
         inputFile = open(os.path.join(self.basepath, 'res', 'collectables-processed.json'))
         collectables = json.load(inputFile)
-        
+
         for k, v in collectables.items():
+            self.collectableLocationItems[k] = {}
+            chk = QtWidgets.QCheckBox()
+            chk.setObjectName(k + '_CheckBox')
+            chk.setText(v.get('friendlyname', k))
+            chk.setChecked(bool(int(self._app.settings.value('globalmapwidget/show' + k, 0))))
+            chk.stateChanged.connect(self.chkcollectableTriggered)
+            self.widget.CollectablesLayout.addWidget(chk)
+
             for i in v.get('items', None):
-                self.colLocationItems[k] = {}
                 cmx = i.get('commonwealthx', None)
                 cmy = i.get('commonwealthy', None)
                 if cmx is not None and cmy is not None:
                     m = CollectableMarker(self,self.controller.sharedResImageFactory, QtCore.Qt.red, icon=v.get('icon', 'Starfilled.svg'))
                     m.setLabel(textwrap.fill(i.get('name', ''), 30) + '\n' + textwrap.fill(i.get('description', ''), 30))
                     m.setMapPos(self.mapCoords.pip2map_x(float(cmx)), self.mapCoords.pip2map_y(float(cmy)))
-
-                    m.filterSetVisible(True)
+                    m.filterSetVisible(chk.isChecked())
                     m.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, True)
                     self._connectMarker(m)
 
-                    self.colLocationItems[k][i.get('name', str(uuid.uuid4()))] = m
+                    self.collectableLocationItems[k][i.get('name', str(uuid.uuid4()))] = m
         return
+
+    @QtCore.pyqtSlot(bool)
+    def chkcollectableTriggered(self, value):
+        for k in self.collectableLocationItems.keys():
+            chk = self.widget.findChild(QtWidgets.QCheckBox, k + '_CheckBox')
+
+            if chk.isChecked():
+                self._app.settings.setValue('globalmapwidget/show' + k, 1)
+                self.showCollectables[k] = True
+                for i,j in self.collectableLocationItems[k].items():
+                    j.filterSetVisible(True)
+            else:
+                self._app.settings.setValue('globalmapwidget/show' + k, 0)
+                self.showCollectables[k] = False
+                for i,j in self.collectableLocationItems[k].items():
+                    j.filterSetVisible(False)
 
     def _onPipWorldQuestsUpdated(self, caller, value, pathObjs):
         self._signalPipWorldQuestsUpdated.emit()
@@ -1145,7 +1171,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.pipMapLocationItems = newDict
         self.poiLocationItems = poiLocDict
         
-        self.loadMarkerForCollectables()        
+        self.loadMarkerForCollectables()
         
         self._signalPipWorldQuestsUpdated.emit()
 
