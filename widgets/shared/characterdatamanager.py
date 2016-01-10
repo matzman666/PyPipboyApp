@@ -21,7 +21,7 @@ class CharacterDataManager(QtCore.QObject):
         self.playerDataPath = None
 
         self.collectableFormIDs = []
-        inputfile = open(os.path.join('collectables-processed.json'))
+        inputfile = open(os.path.join('widgets', 'shared', 'res', 'collectables-processed.json'))
         collectables = json.load(inputfile)
 
         for k, v in collectables.items():

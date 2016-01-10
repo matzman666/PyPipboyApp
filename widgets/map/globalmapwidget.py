@@ -1048,8 +1048,7 @@ class GlobalMapWidget(widgets.WidgetBase):
             self.collectableLocationMarkers[i].destroy()
 
         self._logger.warn('Reloading CollectableMarkers')
-        #inputFile = open(os.path.join(self.basepath, 'res', 'collectables-processed.json'))
-        inputFile = open(os.path.join('collectables-processed.json'))
+        inputFile = open(os.path.join('widgets', 'shared', 'res', 'collectables-processed.json'))
         collectables = json.load(inputFile)
 
         for k, v in collectables.items():
@@ -1061,11 +1060,16 @@ class GlobalMapWidget(widgets.WidgetBase):
             chk.stateChanged.connect(self.chkcollectableTriggered)
             self.widget.CollectablesLayout.addWidget(chk)
 
+            iconcolor = self.mapColor
+            color = v.get('color', None)
+            if color is not None and len(color) == 3:
+                iconcolor = QtGui.QColor(int(color[0]), int(color[1]), int(color[2]))
+
             for i in v.get('items', None):
                 cmx = i.get('commonwealthx', None)
                 cmy = i.get('commonwealthy', None)
                 if cmx is not None and cmy is not None:
-                    m = CollectableMarker(i.get('instanceformid'), self, self.controller.sharedResImageFactory, QtCore.Qt.red, icon=v.get('icon', 'Starfilled.svg'))
+                    m = CollectableMarker(i.get('instanceformid'), self, self.controller.sharedResImageFactory, iconcolor, icon=v.get('icon', 'Starfilled.svg'))
                     m.setLabel(textwrap.fill(i.get('name', ''), 30) + '\n' + textwrap.fill(i.get('description', ''), 30))
                     m.itemFormID = i.get('formid')
                     m.setMapPos(self.mapCoords.pip2map_x(float(cmx)), self.mapCoords.pip2map_y(float(cmy)))

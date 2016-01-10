@@ -1,6 +1,7 @@
 __pycache__
 /.project
 /.pydevproject
+/.idea/
 /.settings/
 /widgets/map/res/*.svg
 /widgets/map/res/*.png
@@ -15,6 +16,8 @@ __pycache__
 /widgets/shared/res/poi_cross.svg
 /widgets/shared/res/poi_death.svg
 /widgets/shared/res/poi_firstaid.svg
+/widgets/shared/res/book.svg
+/widgets/shared/res/award.svg
 /pypipboy/
 THumbs.db
 log.txt
