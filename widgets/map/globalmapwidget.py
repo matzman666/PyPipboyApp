@@ -335,21 +335,8 @@ class LocationMarker(PipValueMarkerBase):
     def _updateMarkerOffset_(self):
         mb = self.markerItem.boundingRect()
         self.markerItem.setOffset(-(mb.width()-10)/2, -mb.height()/2)
-            
 
-    def colouriseIcon(self, img, colour):
-        size = img.size()
-        image = QtGui.QImage(QtCore.QSize(size.width()+1,size.height()+1), QtGui.QImage.Format_ARGB32_Premultiplied)
-        image.fill(QtCore.Qt.transparent)
-        p = QtGui.QPainter(image)
-        p.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver)
-        p.drawImage(QtCore.QRect(1,1,size.width(), size.height()), img)
-        p.setCompositionMode(QtGui.QPainter.CompositionMode_SourceAtop)
-        p.setBrush(colour)
-        p.drawRect(QtCore.QRect(0,0,size.width()+1,size.height()+1))
-        p.end()
-        return QtGui.QPixmap.fromImage(image)   
-        
+
     @QtCore.pyqtSlot(bool)
     def filterSetVisible(self, value, update = True):
         self.filterVisibleFlag = value
@@ -639,7 +626,7 @@ class PointofInterestMarker(MarkerBase):
         super().setSavedSettings()
 
 class CollectableMarker(MarkerBase):
-    def __init__(self, widget, imageFactory, color, parent = None, icon='StarFilled.svg'):
+    def __init__(self, uid, widget, imageFactory, color, parent = None, icon='StarFilled.svg'):
         super().__init__(widget.mapScene, widget.mapView, parent)
         self.markerType = 6
         self.widget = widget
@@ -650,7 +637,7 @@ class CollectableMarker(MarkerBase):
         self.setLabelFont(QtGui.QFont("Times", 8, QtGui.QFont.Bold), False)
         self.setLabel('Collectable Marker', False)
         self.filterVisibleFlag = True
-        self.uid = "CollectableMarker"
+        self.uid = uid
         self.collected = False
         self.doUpdate()
 
@@ -658,11 +645,27 @@ class CollectableMarker(MarkerBase):
         return self.label
         
     def _getPixmap_(self):
-        return self.imageFactory.getPixmap(self.imageFilePath, size=24, color=self.color)
+        p = self.imageFactory.getPixmap(self.imageFilePath, size=24, color=self.color)
+
+        px = QtGui.QPixmap(p.width() + 10, p.height())
+        px.fill(QtCore.Qt.transparent)
+        pn = QtGui.QPainter(px)
+        pn.drawPixmap(QtCore.QRect(0,0,p.width(),p.height()), p)
+        overlayXOffset = p.width() + 2
+        overlayYOffset = 0
+        if (self.collected):
+            tick = self.colouriseIcon(self.imageFactory.getImage('tick8.png'), self.color)
+            pn.drawPixmap(QtCore.QRect(overlayXOffset, overlayYOffset, 8, 8), tick)
+            overlayYOffset += 8+2
+        pn.end()
+        return px
+
         
+    @QtCore.pyqtSlot(bool)
     def setCollected(self, value):
         self.collected = value
-        #invalidate stuff here
+        self.markerPixmapDirty = True
+        self.labelDirty = True
         self.doUpdate()
 
     @QtCore.pyqtSlot(bool)
@@ -676,6 +679,40 @@ class CollectableMarker(MarkerBase):
     @QtCore.pyqtSlot()        
     def _slotPipValueUpdated(self):
         return
+
+    def _fillMarkerContextMenu_(self, event, menu):
+        @QtCore.pyqtSlot(bool)
+        def _markAsCollected(value):
+            if self.uid != None:
+                collectedcollectablesSettingsPath = 'percharacterdata/' + self.widget.pipPlayerName + '/collectedcollectables'
+                index = self.widget._app.settings.value(collectedcollectablesSettingsPath, None)
+                if index == None:
+                    index = []
+                if (value):
+                    if self.uid not in index:
+                        index.append(self.uid)
+                        self.widget._app.settings.setValue(collectedcollectablesSettingsPath, index)
+                else:
+                    if self.uid in index:
+                        index.remove(self.uid)
+                        self.widget._app.settings.setValue(collectedcollectablesSettingsPath, index)
+            self.setCollected(value)
+        ftaction = menu.addAction('Mark as Collected')
+        ftaction.toggled.connect(_markAsCollected)
+        ftaction.setCheckable(True)
+        ftaction.setChecked(self.collected)
+
+    def setSavedSettings(self):
+        collectedcollectablesSettingsPath = 'percharacterdata/' + self.widget.pipPlayerName + '/collectedcollectables'
+        index = self.widget._app.settings.value(collectedcollectablesSettingsPath, None)
+        if index == None:
+            index = []
+
+        if index and len(index) > 0:
+            if self.uid in index:
+                self.setCollected(True)
+
+        super().setSavedSettings()
 
 class MapGraphicsItem(QtCore.QObject):
     
@@ -1030,14 +1067,15 @@ class GlobalMapWidget(widgets.WidgetBase):
                 cmx = i.get('commonwealthx', None)
                 cmy = i.get('commonwealthy', None)
                 if cmx is not None and cmy is not None:
-                    m = CollectableMarker(self,self.controller.sharedResImageFactory, QtCore.Qt.red, icon=v.get('icon', 'Starfilled.svg'))
+                    m = CollectableMarker(i.get('uid'), self, self.controller.sharedResImageFactory, QtCore.Qt.red, icon=v.get('icon', 'Starfilled.svg'))
                     m.setLabel(textwrap.fill(i.get('name', ''), 30) + '\n' + textwrap.fill(i.get('description', ''), 30))
                     m.setMapPos(self.mapCoords.pip2map_x(float(cmx)), self.mapCoords.pip2map_y(float(cmy)))
                     m.filterSetVisible(chk.isChecked())
                     m.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, True)
+                    m.setSavedSettings()
                     self._connectMarker(m)
 
-                    self.collectableLocationItems[k][i.get('name', str(uuid.uuid4()))] = m
+                    self.collectableLocationItems[k][i.get('uid', str(uuid.uuid4()))] = m
         return
 
     @QtCore.pyqtSlot(bool)
@@ -1091,7 +1129,7 @@ class GlobalMapWidget(widgets.WidgetBase):
                 newDict[l.pipId] = marker
                 del self.pipMapLocationItems[l.pipId]
             else:
-                marker = LocationMarker(self, self.controller.imageFactory, self.controller.globalResImageFactory, self.mapColor,self.locMarkSize)
+                marker = LocationMarker(self, self.controller.imageFactory, self.controller.sharedResImageFactory, self.mapColor,self.locMarkSize)
 
                 self._connectMarker(marker)
 
