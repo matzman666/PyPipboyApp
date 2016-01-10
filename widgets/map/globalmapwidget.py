@@ -637,7 +637,7 @@ class PointofInterestMarker(MarkerBase):
         super().setSavedSettings()
 
 class CollectableMarker(MarkerBase):
-    def __init__(self, uid, widget, imageFactory, color, parent = None, icon='StarFilled.svg'):
+    def __init__(self, uid, widget, imageFactory, color, size, parent = None, icon='StarFilled.svg'):
         super().__init__(widget.mapScene, widget.mapView, parent)
         self.markerType = 6
         self.widget = widget
@@ -645,6 +645,7 @@ class CollectableMarker(MarkerBase):
         self.imageFilePath = os.path.join(icon)
         self.markerItem.setZValue(0)
         self.setColor(color,False)
+        self.setSize(size, False)
         self.setLabelFont(QtGui.QFont("Times", 8, QtGui.QFont.Bold), False)
         self.setLabel('Collectable Marker', False)
         self.filterVisibleFlag = True
@@ -657,7 +658,7 @@ class CollectableMarker(MarkerBase):
         return self.label
         
     def _getPixmap_(self):
-        p = self.imageFactory.getPixmap(self.imageFilePath, size=24, color=self.color)
+        p = self.imageFactory.getPixmap(self.imageFilePath, size=self.size, color=self.color)
 
         px = QtGui.QPixmap(p.width() + 10, p.height())
         px.fill(QtCore.Qt.transparent)
@@ -671,6 +672,11 @@ class CollectableMarker(MarkerBase):
             overlayYOffset += 8+2
         pn.end()
         return px
+        
+    @QtCore.pyqtSlot(int)
+    def setSize(self, size, update = True):
+        # We want it to be a little bit smaller than the other marker
+        super().setSize(size * 0.8, update)
 
         
     @QtCore.pyqtSlot(bool)
@@ -1077,7 +1083,7 @@ class GlobalMapWidget(widgets.WidgetBase):
                 cmx = i.get('commonwealthx', None)
                 cmy = i.get('commonwealthy', None)
                 if cmx is not None and cmy is not None:
-                    m = CollectableMarker(i.get('instanceformid'), self, self.controller.sharedResImageFactory, iconcolor, icon=v.get('icon', 'Starfilled.svg'))
+                    m = CollectableMarker(i.get('instanceformid'), self, self.controller.sharedResImageFactory, iconcolor, self.mapMarkerSize, icon=v.get('icon', 'Starfilled.svg'))
                     m.setLabel(textwrap.fill(i.get('name', ''), 30) + '\n' + textwrap.fill(i.get('description', ''), 30))
                     m.itemFormID = i.get('formid')
                     m.setMapPos(self.mapCoords.pip2map_x(float(cmx)), self.mapCoords.pip2map_y(float(cmy)))
