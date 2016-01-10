@@ -10,6 +10,7 @@ from PyQt5 import QtWidgets, QtCore, QtGui, uic, QtSvg
 from widgets.shared.graphics import ImageFactory
 from widgets import widgets
 from widgets.shared import settings
+from widgets.shared.characterdatamanager import CharacterDataManager
 from .marker import PipValueMarkerBase, MarkerBase
 from .editpoidialog import EditPOIDialog
 from .editnotedialog import EditNoteDialog
@@ -799,6 +800,9 @@ class GlobalMapWidget(widgets.WidgetBase):
     def init(self, app, datamanager):
         super().init(app, datamanager)
         self._app = app
+        self.characterDataManager = CharacterDataManager()
+        self.characterDataManager.init(app, datamanager)
+
         # Read maps config file
         try:
             configFile = open(os.path.join(self.basepath, 'res', 'globalmapsconfig.json'))
@@ -1492,7 +1496,6 @@ class GlobalMapWidget(widgets.WidgetBase):
     
 
     def iwcSetCollectableCollected(self, formid):
-            print ('in iwcColl, f:' + str(formid))
             for k in self.collectableLocationMarkers.keys():
                 for i,j in self.collectableLocationMarkers[k].items():
                     if int(j.itemFormID,16) == formid:
