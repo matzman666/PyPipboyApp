@@ -448,7 +448,7 @@ class LocationMarker(PipValueMarkerBase):
                 noteDlg = EditNoteDialog()
                 noteDlg.txtNote.setText(notestr)
                 noteDlg.lblLocation.setText(self.pipValue.child('Name').value())
-                noteDlg.chkCharacterOnly.setText(noteDlg.chkCharacterOnly.text() + '(' +self.widget.pipPlayerName +')')
+                noteDlg.chkCharacterOnly.setText(noteDlg.chkCharacterOnly.text() + '(' +self.widget.characterDataManager.pipPlayerName +')')
                 ok = noteDlg.exec_()
                 notestr = noteDlg.txtNote.text()
                 thisCharOnly = noteDlg.chkCharacterOnly.isChecked()
@@ -457,17 +457,17 @@ class LocationMarker(PipValueMarkerBase):
                 if (ok != 0):
                     noteSettingPath = 'globalmapwidget/locationmarkernotes/'
                     if thisCharOnly:
-                        noteSettingPath = noteSettingPath + self.widget.pipPlayerName +'/'
-                
+                        noteSettingPath = self.widget.characterDataManager.playerDataPath + '/locationmarkernotes/'
+
                     if (len(notestr) > 0):
                         self.widget._app.settings.setValue(noteSettingPath+self.uid, notestr)
                         self.setNote(notestr, True)
 
                         self.widget._app.settings.setValue('globalmapwidget/stickylabels2/'+self.uid, int(True))
                         self.setStickyLabel(True, True)
-                    else: 
+                    else:
                         self.widget._app.settings.beginGroup(noteSettingPath);
-                        self.widget._app.settings.remove(self.uid); 
+                        self.widget._app.settings.remove(self.uid);
                         self.widget._app.settings.endGroup();
                         self.setNote(notestr, True)
 
@@ -501,8 +501,9 @@ class LocationMarker(PipValueMarkerBase):
         
     def setSavedSettings(self):
         super().setSavedSettings()
-        if self.uid != None and self.widget.pipPlayerName != None:
-            self.setNote (self.widget._app.settings.value('globalmapwidget/locationmarkernotes/'+self.widget.pipPlayerName+'/'+self.uid, ''))
+        if self.uid != None and self.widget.characterDataManager.playerDataPath != None:
+
+            self.setNote (self.widget._app.settings.value(self.widget.characterDataManager.playerDataPath + '/locationmarkernotes/' + self.uid, ''))
         if self.uid != None and len(self.note) == 0:
             self.setNote (self.widget._app.settings.value('globalmapwidget/locationmarkernotes/'+self.uid, ''))
 
@@ -555,7 +556,7 @@ class PointofInterestMarker(MarkerBase):
             self.widget._logger.info ('markertodelete: ' +self.uid)
             poiSettingPath = 'globalmapwidget/pointsofinterest/' 
             if self.thisCharOnly:
-                poiSettingPath = poiSettingPath + self.widget.pipPlayerName +'/'
+                poiSettingPath = self.widget.characterDataManager.playerDataPath + '/pointsofinterest/'
 
             self.widget._app.settings.beginGroup(poiSettingPath);
             self.widget._app.settings.remove(self.uid); 
@@ -582,7 +583,7 @@ class PointofInterestMarker(MarkerBase):
             editpoiDialog = EditPOIDialog(self.widget, color=self.color)
             editpoiDialog.txtPOILabel.setText(self.label)
             editpoiDialog.setSelectedIcon(self.imageFilePath)
-            editpoiDialog.chkCharacterOnly.setText(editpoiDialog.chkCharacterOnly.text() + '(' +self.widget.pipPlayerName +')')
+            editpoiDialog.chkCharacterOnly.setText(editpoiDialog.chkCharacterOnly.text() + '(' +self.widget.characterDataManager.pipPlayerName +')')
             editpoiDialog.chkCharacterOnly.setChecked(self.thisCharOnly)
             editpoiDialog.chkCharacterOnly.setEnabled(False)
             ok = editpoiDialog.exec_()
@@ -594,8 +595,8 @@ class PointofInterestMarker(MarkerBase):
             if (ok != 0):
                 poiSettingPath = 'globalmapwidget/pointsofinterest/' 
                 if thisCharOnly:
-                    poiSettingPath = poiSettingPath + self.widget.pipPlayerName +'/'
-            
+                    poiSettingPath = self.widget.characterDataManager.playerDataPath + '/pointsofinterest/'
+
                 markerKey = self.uid
 
                 self.widget._app.settings.setValue(poiSettingPath+str(markerKey)+'/label', labelstr)
@@ -611,8 +612,8 @@ class PointofInterestMarker(MarkerBase):
     def setSavedSettings(self):
         poiSettingPath = 'globalmapwidget/pointsofinterest/'
         if self.thisCharOnly:
-            poiSettingPath = poiSettingPath + self.widget.pipPlayerName +'/'
-        
+            poiSettingPath = self.widget.characterDataManager.playerDataPath + '/pointsofinterest/'
+
         label = self.widget._app.settings.value(poiSettingPath+str(self.uid)+'/label', '')
         self.imageFilePath = self.widget._app.settings.value(poiSettingPath+str(self.uid)+'/icon', 'mapmarkerpoi_1.svg')
         worldx = float(self.widget._app.settings.value(poiSettingPath+str(self.uid)+'/worldx', 0.0))
@@ -686,7 +687,8 @@ class CollectableMarker(MarkerBase):
         @QtCore.pyqtSlot(bool)
         def _markAsCollected(value):
             if self.itemFormID != None:
-                collectedcollectablesSettingsPath = 'percharacterdata/' + self.widget.pipPlayerName + '/collectedcollectables'
+                collectedcollectablesSettingsPath =\
+                    self.widget.characterDataManager.playerDataPath + self.widget.characterDataManager.collectedcollectablesuffix
                 index = self.widget._app.settings.value(collectedcollectablesSettingsPath, None)
                 if index == None:
                     index = []
@@ -705,7 +707,8 @@ class CollectableMarker(MarkerBase):
         ftaction.setChecked(self.collected)
 
     def setSavedSettings(self):
-        collectedcollectablesSettingsPath = 'percharacterdata/' + self.widget.pipPlayerName + '/collectedcollectables'
+        collectedcollectablesSettingsPath =\
+            self.widget.characterDataManager.playerDataPath + self.widget.characterDataManager.collectedcollectablesuffix
         index = self.widget._app.settings.value(collectedcollectablesSettingsPath, None)
         if index == None:
             index = []
@@ -793,6 +796,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.setWidget(self.widget)
         self._logger = logging.getLogger('pypipboyapp.map.globalmap')
         self.mapZoomLevel = 1.0
+        self.characterDataManager = None
 
     def iwcSetup(self, app):
         app.iwcRegisterEndpoint('globalmapwidget', self)
@@ -944,8 +948,6 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.pipMapObject = None
         self.pipMapWorldObject = None
         self.pipColor = None
-        self.pipPlayerObject = None
-        self.pipPlayerName = None
         self.pipWorldQuests = None
         self.pipMapQuestsItems = dict()
         self.pipWorldLocations = None
@@ -1003,17 +1005,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         if self.pipMapObject:
             self.pipMapObject.registerValueUpdatedListener(self._onPipMapReset)
             self._onPipMapReset(None, None, None)
-        self.pipPlayerObject = rootObject.child('PlayerInfo')
-        if self.pipPlayerObject:
-            self.pipPlayerObject.registerValueUpdatedListener(self._onPipPlayerReset)
-            self._onPipPlayerReset(None, None, None)
 
-    def _onPipPlayerReset(self, caller, value, pathObjs):
-        if self.pipPlayerObject:
-            name = self.pipPlayerObject.child('PlayerName')
-            if name:
-                self.pipPlayerName = name.value()
-            
     def _onPipMapReset(self, caller, value, pathObjs):
         self.pipMapWorldObject = self.pipMapObject.child('World')
         if self.pipMapWorldObject:
@@ -1187,8 +1179,10 @@ class GlobalMapWidget(widgets.WidgetBase):
         for i in self.poiLocationItems:
             self.poiLocationItems[i].destroy()
             
-        poisettingPath = 'globalmapwidget/pointsofinterest/'
-        index = self._app.settings.value(poisettingPath+'index', None)
+        globalPoisettingPath = 'globalmapwidget/pointsofinterest/'
+        if self.characterDataManager.playerDataPath is not None:
+            playerPoiSettingPath = self.characterDataManager.playerDataPath + '/pointsofinterest/'
+        index = self._app.settings.value(globalPoisettingPath+'index', None)
         poiLocDict = dict()
         if index and len(index) > 0:
             for i in index:
@@ -1200,8 +1194,8 @@ class GlobalMapWidget(widgets.WidgetBase):
                 self._connectMarker(poimarker)
                 poiLocDict[str(i)] = poimarker
 
-        if self.pipPlayerName:
-            index = self._app.settings.value(poisettingPath+ self.pipPlayerName +'/index', None)
+        if playerPoiSettingPath:
+            index = self._app.settings.value(playerPoiSettingPath + 'index', None)
             if index and len(index) > 0:
                 for i in index:
                     poimarker = PointofInterestMarker(i,self,self.controller.sharedResImageFactory, self.mapColor)
@@ -1436,14 +1430,13 @@ class GlobalMapWidget(widgets.WidgetBase):
 
                         editpoiDialog = EditPOIDialog(self, color=self.mapColor)
                         editpoiDialog.txtPOILabel.setText(labelstr)
-                        editpoiDialog.chkCharacterOnly.setText(editpoiDialog.chkCharacterOnly.text() + '(' +self.pipPlayerName +')')
+                        editpoiDialog.chkCharacterOnly.setText(editpoiDialog.chkCharacterOnly.text() + '(' +self.characterDataManager.pipPlayerName +')')
                         ok = editpoiDialog.exec_()
                         labelstr = editpoiDialog.txtPOILabel.text()
                         editpoiDialog.show()
                         thisCharOnly = editpoiDialog.chkCharacterOnly.isChecked()
-                        
                         if (ok != 0):
-                            poimarker = PointofInterestMarker(uuid.uuid4(), self,self.controller.sharedResImageFactory, editpoiDialog.selectedColor, editpoiDialog.IconFile)
+                            poimarker = PointofInterestMarker(uuid.uuid4(), self,self.controller.sharedResImageFactory, editpoiDialog.selectedColor, size=24, iconfile=editpoiDialog.IconFile)
                             poimarker.setLabel(labelstr)
                             self._connectMarker(poimarker)
                             poimarker.setMapPos(self.mapCoords.pip2map_x(rx), self.mapCoords.pip2map_y(ry))
@@ -1457,7 +1450,7 @@ class GlobalMapWidget(widgets.WidgetBase):
                         
                             poiSettingPath = 'globalmapwidget/pointsofinterest/' 
                             if thisCharOnly:
-                                poiSettingPath = poiSettingPath + self.pipPlayerName +'/'
+                                poiSettingPath = self.characterDataManager.playerDataPath + '/pointsofinterest/'
 
                             index = self._app.settings.value(poiSettingPath+'index', None)
                             if index == None: 

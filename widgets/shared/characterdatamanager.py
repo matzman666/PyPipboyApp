@@ -17,6 +17,8 @@ class CharacterDataManager(QtCore.QObject):
         self.dataManager = None
         self.globalMap = None
         self._app = None
+        self.playerDataBasePath = None
+        self.playerDataPath = None
 
         self.collectableFormIDs = []
         inputfile = open(os.path.join('collectables-processed.json'))
@@ -31,6 +33,8 @@ class CharacterDataManager(QtCore.QObject):
     def init(self, app, datamanager):
         self.dataManager = datamanager
         self.dataManager.registerRootObjectListener(self._onPipRootObjectEvent)
+        self.playerDataBasePath = 'percharacterdata/'
+        self.collectedcollectablesuffix = '/collectedcollectables'
         self.globalMap = app.iwcGetEndpoint('globalmapwidget')
         self._app = app
 
@@ -48,8 +52,11 @@ class CharacterDataManager(QtCore.QObject):
     def _onPipPlayerReset(self, caller, value, pathObjs):
         if self.pipPlayerObject:
             name = self.pipPlayerObject.child('PlayerName')
-            if name:
+            if name is not None:
                 self.pipPlayerName = name.value()
+
+            if self.pipPlayerName is not None:
+                self.playerDataPath = self.playerDataBasePath + self.pipPlayerName
 
     def _onPipInventoryInfoUpdate(self, caller, value, pathObjs):
         self._signalInfoUpdated.emit()
@@ -67,12 +74,16 @@ class CharacterDataManager(QtCore.QObject):
             collectables = inventoryutils.inventoryGetItems(self.pipInventoryInfo, _filterFunc)
             if collectables is not None and self.pipPlayerName is not None:
                 for item in collectables:
-                    collectedcollectablesSettings = 'percharacterdata/' + self.pipPlayerName + '/collectedcollectables'
-                    index = self._app.settings.value(collectedcollectablesSettings, None)
+                    index = self._app.settings.value(self.playerDataPath + self.collectedcollectablesuffix, None)
                     if index is None:
                         index = []
 
                     if str(item.child('formID').value()) not in index:
                         index.append(item.child('formID').value())
-                        self._app.settings.setValue(collectedcollectablesSettings, index)
-                        self.globalMap.iwcSetCollectableCollected(item.child('formID').value())
+                        self._app.settings.setValue(self.playerDataPath + self.collectedcollectablesuffix, index)
+                        if self.globalMap is not None:
+                            self.globalMap.iwcSetCollectableCollected(item.child('formID').value())
+                        else:
+                            self._logger.error("No globalmap?")
+
+
