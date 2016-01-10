@@ -628,6 +628,45 @@ class PointofInterestMarker(MarkerBase):
         self.invalidateMarkerPixmap()
         super().setSavedSettings()
 
+class CollectableMarker(MarkerBase):
+    def __init__(self, widget, imageFactory, color, parent = None, icon='StarFilled.svg'):
+        super().__init__(widget.mapScene, widget.mapView, parent)
+        self.markerType = 6
+        self.widget = widget
+        self.imageFactory = imageFactory
+        self.imageFilePath = os.path.join(icon)
+        self.markerItem.setZValue(0)
+        self.setColor(color,False)
+        self.setLabelFont(QtGui.QFont("Times", 8, QtGui.QFont.Bold), False)
+        self.setLabel('Collectable Marker', False)
+        self.filterVisibleFlag = True
+        self.uid = "CollectableMarker"
+        self.collected = False
+        self.doUpdate()        
+
+    def _labelStr_(self):
+        return self.label
+        
+    def _getPixmap_(self):
+        return self.imageFactory.getPixmap(self.imageFilePath, size=24, color=self.color)
+        
+    def setCollected(self, value):
+        self.collected = value
+        #invalidate stuff here
+        self.doUpdate()
+
+    @QtCore.pyqtSlot(bool)
+    def filterSetVisible(self, value):
+        self.filterVisibleFlag = value
+        if not value:
+            self.setVisible(False)
+        elif value :
+            self.setVisible(value)
+            self.doUpdate()        
+    @QtCore.pyqtSlot()        
+    def _slotPipValueUpdated(self):
+        return
+
 class MapGraphicsItem(QtCore.QObject):
     
     class PixmapItem(QtWidgets.QGraphicsPixmapItem):
@@ -742,7 +781,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.mapItem.setMapFile(file, mapfile['colorable'], mapfile['nw'], mapfile['ne'], mapfile['sw'])
         self.signalSetZoomLevel.connect(self.mapItem.setZoomLevel)
         self.signalSetColor.connect(self.mapItem.setColor)
-
+        #Define ZOrder of different types of marker
         self.mapMarkerZIndexes = {}
         self.mapMarkerZIndexes[str(PlayerMarker)] = 100
         self.mapMarkerZIndexes[str(CustomMarker)] = 90
@@ -750,11 +789,9 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.mapMarkerZIndexes[str(PowerArmorMarker)] = 70
         self.mapMarkerZIndexes[str(PointofInterestMarker)] = 60
         self.mapMarkerZIndexes['LabelledLocationMarker'] = 50
-        #self.mapMarkerZIndexes[str(CollectableMarker)] = 40
+        self.mapMarkerZIndexes[str(CollectableMarker)] = 40
         self.mapMarkerZIndexes[str(LocationMarker)] = 30
         self.mapMarkerZIndexes[str(MarkerBase)] = 0
-        
-
         # Add player marker
         self.playerMarker = PlayerMarker(self,self.controller.imageFactory, self.mapColor)
         self._connectMarker(self.playerMarker)
@@ -855,11 +892,10 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.pipWorldLocations = None
         self.pipMapLocationItems = dict()
         self.poiLocationItems = dict()
+        self.colLocationItems = dict()
         self._signalPipWorldQuestsUpdated.connect(self._slotPipWorldQuestsUpdated)
         self._signalPipWorldLocationsUpdated.connect(self._slotPipWorldLocationsUpdated)
         self.datamanager.registerRootObjectListener(self._onRootObjectEvent)
-        
-        
 
     @QtCore.pyqtSlot(float, float, float)
     def saveZoom(self, zoom, mapposx, mapposy):
@@ -948,6 +984,30 @@ class GlobalMapWidget(widgets.WidgetBase):
             if self.pipWorldLocations:
                 self.pipWorldLocations.registerValueUpdatedListener(self._onPipWorldLocationsUpdated, 0)
                 self._signalPipWorldLocationsUpdated.emit()
+            
+    def loadMarkerForCollectables(self):
+        for i in self.colLocationItems:
+            self.colLocationItems[i].destroy()        
+
+        inputFile = open(os.path.join(self.basepath, 'res', 'collectables-processed.json'))
+        collectables = json.load(inputFile)
+        
+        for k, v in collectables.items():
+            for i in v.get('items', None):
+                self.colLocationItems[k] = {}
+                cmx = i.get('commonwealthx', None)
+                cmy = i.get('commonwealthy', None)
+                if cmx is not None and cmy is not None:
+                    m = CollectableMarker(self,self.controller.sharedResImageFactory, QtCore.Qt.red, icon=v.get('icon', 'Starfilled.svg'))
+                    m.setLabel(textwrap.fill(i.get('name', ''), 30) + '\n' + textwrap.fill(i.get('description', ''), 30))
+                    m.setMapPos(self.mapCoords.pip2map_x(float(cmx)), self.mapCoords.pip2map_y(float(cmy)))
+
+                    m.filterSetVisible(True)
+                    m.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, True)
+                    self._connectMarker(m)
+
+                    self.colLocationItems[k][i.get('name', str(uuid.uuid4()))] = m
+        return
 
     def _onPipWorldQuestsUpdated(self, caller, value, pathObjs):
         self._signalPipWorldQuestsUpdated.emit()
@@ -1062,6 +1122,8 @@ class GlobalMapWidget(widgets.WidgetBase):
                 
         self.pipMapLocationItems = newDict
         self.poiLocationItems = poiLocDict
+        
+        self.loadMarkerForCollectables()        
         
         self._signalPipWorldQuestsUpdated.emit()
 
