@@ -57,16 +57,41 @@ class WorkshopsWidget(widgets.WidgetBase):
         
         self.Widgets.workshopList.setModel(self.WorkshopListModel) # we need to call setModel() before selectionModel() (and never afterwards)
         self.Widgets.workshopList.selectionModel().currentChanged.connect(self.WorkshopListCurrentChanged)
-    
+        self.Widgets.workshopList.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.Widgets.workshopList.customContextMenuRequested.connect(self.workshopListMenuRequested)
     def init(self, app, dataManager):
         super().init(app, dataManager)
         
         self.DataManager = dataManager
         self.DataManager.registerRootObjectListener(self.DataManagerUpdated)
-        
+
+    @QtCore.pyqtSlot(QtCore.QPoint)
+    def workshopListMenuRequested(self, pos):
+        menu = QMenu(self)
+        index = self.Widgets.workshopList.indexAt(pos)
+        if (index.isValid()):
+            model = self.Widgets.workshopList.model()
+            modelIndex = model.index(index.row(), 0)
+            self.locationIndex = int(model.data(modelIndex))
+            location_name = self.WorkshopData.child(self.locationIndex).child("text").value()
+            addFastTravelAction = QAction('Fast Travel to ' + location_name , menu)
+            addFastTravelAction.triggered.connect(self._fastTravelTo)
+            menu.addAction(addFastTravelAction)
+        menu.exec(self.Widgets.workshopList.mapToGlobal(pos))
+        return
+
+    def _fastTravelTo(self):
+        mapMarkerID = self.WorkshopData.child(self.locationIndex).child("mapMarkerID").value()
+        pipWorldLocations = self.rootObject.child('Map').child('World').child('Locations')
+        if pipWorldLocations:
+            for k in pipWorldLocations.value():
+                if k.child('LocationMarkerFormId').value() == mapMarkerID:
+                    self.DataManager.rpcFastTravel(k)
+
     def DataManagerUpdated(self, rootObject):
-        self.WorkshopData = rootObject.child("Workshop")
-        self.ColorData = rootObject.child("Status").child("EffectColor")
+        self.rootObject = rootObject
+        self.WorkshopData = self.rootObject.child("Workshop")
+        self.ColorData = self.rootObject.child("Status").child("EffectColor")
         
         if self.WorkshopData:
             self.WorkshopData.registerValueUpdatedListener(self.WorkshopDataUpdated, 2)
@@ -114,7 +139,7 @@ class WorkshopsWidget(widgets.WidgetBase):
             if i.Widget == widget:
                 i.Enabled = state
                 i.Update()
-    
+
     @QtCore.pyqtSlot(QModelIndex, QModelIndex)
     def WorkshopListCurrentChanged(self, index, previous):
         NewIndex = self.WorkshopListModel.index(index.row(), 0)

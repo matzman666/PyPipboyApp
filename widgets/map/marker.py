@@ -70,7 +70,7 @@ class MarkerBase(QtCore.QObject):
         self.markerHooverActive = False
         self.note =''
         self.uid = None
-        
+        self.size = None
         self.signalDoUpdate.connect(self.doUpdate)
         
     def updateZIndex(self):
@@ -147,6 +147,7 @@ class MarkerBase(QtCore.QObject):
             if label:
                 if not self.labelItem:
                     self.labelItem = MarkerBase.LabelItem(self, label)
+                    self.labelItem.setZValue(self.markerItem.zValue()+1)
                     self.scene.addItem(self.labelItem)
                     self.labelItem.setAcceptHoverEvents(True)
                     if self.isVisible and (self.labelAlwaysVisible or self.stickyLabel):
@@ -174,7 +175,7 @@ class MarkerBase(QtCore.QObject):
             if self.labelItem:
                 mb = self.markerItem.sceneBoundingRect()
                 lp = (mb.bottomRight() + mb.bottomLeft())/2.0
-                lp += QtCore.QPointF(-self.labelItem.boundingRect().width()/2, 0)
+                lp += QtCore.QPointF(-self.labelItem.boundingRect().width()/2, 6)
                 self.labelItem.setPos(lp)
         
         self.updateZIndex()
@@ -230,7 +231,15 @@ class MarkerBase(QtCore.QObject):
         self.positionDirty = True
         if update:
             self.doUpdate()
-            
+
+    @QtCore.pyqtSlot(int)
+    def setSize(self, size, update = True):
+        self.size = size
+        self.markerPixmapDirty = True
+        self.positionDirty = True
+        if update:
+            self.doUpdate()
+
     @QtCore.pyqtSlot(float, float, float)
     def setMapPos(self, x, y, r = 0.0, update = True):
         self.mapPosX = x
