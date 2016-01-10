@@ -122,7 +122,7 @@ class PyPipboyApp(QtWidgets.QApplication):
         self._logger = logging.getLogger('pypipboyapp.main')
         
         pipboyAppIcon = QtGui.QIcon()
-        pipboyAppIcon.addFile(os.path.join('ui', 'res', 'PyPipBoyApp-Launcher.ico'))
+        pipboyAppIcon.addFile(os.path.join('ui', 'res', 'PyPipBoyApp-Launcher.png'))
         self.setWindowIcon(pipboyAppIcon)
         
         try:
