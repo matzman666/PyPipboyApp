@@ -1067,14 +1067,28 @@ class GlobalMapWidget(widgets.WidgetBase):
         inputFile = open(os.path.join('widgets', 'shared', 'res', 'collectables-processed.json'))
         collectables = json.load(inputFile)
 
+        # Need to delete old widgets first (or maybe reuse them?)
+        #for i in range(0, self.widget.CollectablesLayout.count()):
+        #    w = self.widget.CollectablesLayout.takeAt(0)
+        #    w.stateChanged.disconnect(self.chkcollectableTriggered)
+        def _findCollectibleCheckbox(objectName):
+            for i in range(0, self.widget.CollectablesLayout.count()):
+                w = self.widget.CollectablesLayout.itemAt(i)
+                if w.widget().objectName() == objectName:
+                    return w.widget()
+            return None
+            
         for k, v in collectables.items():
             self.collectableLocationMarkers[k] = {}
-            chk = QtWidgets.QCheckBox()
-            chk.setObjectName(k + '_CheckBox')
-            chk.setText(v.get('friendlyname', k))
-            chk.setChecked(bool(int(self._app.settings.value('globalmapwidget/show' + k, 0))))
-            chk.stateChanged.connect(self.chkcollectableTriggered)
-            self.widget.CollectablesLayout.addWidget(chk)
+            oname = k + '_CheckBox'
+            chk = _findCollectibleCheckbox(oname)
+            if not chk:
+                chk = QtWidgets.QCheckBox()
+                chk.setObjectName(oname)
+                chk.setText(v.get('friendlyname', k))
+                chk.setChecked(bool(int(self._app.settings.value('globalmapwidget/show' + k, 0))))
+                chk.stateChanged.connect(self.chkcollectableTriggered)
+                self.widget.CollectablesLayout.addWidget(chk)
 
             iconcolor = self.mapColor
             color = v.get('color', None)
