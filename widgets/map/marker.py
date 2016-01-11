@@ -180,6 +180,9 @@ class MarkerBase(QtCore.QObject):
         
         self.updateZIndex()
 
+    @QtCore.pyqtSlot()
+    def _rebuildOverlayIcons(self):
+        pass
                 
     @QtCore.pyqtSlot(QtGui.QColor)
     def setColor(self, color, update = True):
@@ -187,6 +190,7 @@ class MarkerBase(QtCore.QObject):
         self.markerPixmapDirty = True
         self.labelDirty = True
         if update:
+            self._rebuildOverlayIcons()
             self.doUpdate()
     
     @QtCore.pyqtSlot(str)
@@ -272,19 +276,6 @@ class MarkerBase(QtCore.QObject):
 
     def mapCenterOn(self):
         self.view.centerOn(self.mapPosX * self.zoomLevel, self.mapPosY * self.zoomLevel)
-
-    def colouriseIcon(self, img, colour):
-        size = img.size()
-        image = QtGui.QImage(QtCore.QSize(size.width()+1,size.height()+1), QtGui.QImage.Format_ARGB32_Premultiplied)
-        image.fill(QtCore.Qt.transparent)
-        p = QtGui.QPainter(image)
-        p.setCompositionMode(QtGui.QPainter.CompositionMode_SourceOver)
-        p.drawImage(QtCore.QRect(1,1,size.width(), size.height()), img)
-        p.setCompositionMode(QtGui.QPainter.CompositionMode_SourceAtop)
-        p.setBrush(colour)
-        p.drawRect(QtCore.QRect(0,0,size.width()+1,size.height()+1))
-        p.end()
-        return QtGui.QPixmap.fromImage(image)
 
 class PipValueMarkerBase(MarkerBase):
     _signalPipValueUpdated = QtCore.pyqtSignal()
