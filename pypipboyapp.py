@@ -119,6 +119,7 @@ class PyPipboyApp(QtWidgets.QApplication):
         self._connectHostMessageBox = None
         self._connectHostThread = None
         self._iwcEndpoints = dict()
+        self.widgetMenu = QtWidgets.QMenu()
         self._logger = logging.getLogger('pypipboyapp.main')
         
         pipboyAppIcon = QtGui.QIcon()
@@ -170,10 +171,9 @@ class PyPipboyApp(QtWidgets.QApplication):
         if savedState:
             self.mainWindow.restoreState(savedState)
         # Create widgets menu entry
-        widgetMenu = self.mainWindow.createPopupMenu()
-        widgetMenu.setTitle('Widgets')
+        self.widgetMenu.setTitle('Widgets')
         menuActions = self.mainWindow.menuBar().actions()
-        self.mainWindow.menuBar().insertMenu(menuActions[len(menuActions)-1], widgetMenu)
+        self.mainWindow.menuBar().insertMenu(menuActions[len(menuActions)-1], self.widgetMenu)
         # connect with main window
         self.mainWindow.actionConnect.triggered.connect(self.startAutoDiscovery)
         self.mainWindow.actionConnectTo.triggered.connect(self.showConnectToDialog)
@@ -583,46 +583,67 @@ class PyPipboyApp(QtWidgets.QApplication):
     # load widgets
     def _loadWidgets(self):
         self.widgets = list()
-        self.modulehandles = dict()        
+        self.modulehandles = dict()
+        menuCategoryMap = dict()
+        self.widgetMenuEntries = list()
         lastWidget = self.helpWidget
         for dir in os.listdir(self.PROGRAM_WIDGETS_DIR):
             dirpath = os.path.join(self.PROGRAM_WIDGETS_DIR, dir)
             if dir != 'shared' and not dir.startswith('__') and os.path.isdir(dirpath):
-                self._logger.debug('Tyring to load widget dir "' + dir + '"')
+                self._logger.debug('Tyring to load widget "' + dir + '"')
                 module = None
                 try:
                     module = importlib.import_module(self.PROGRAM_WIDGETS_DIR + '.' + dir + '.info')
                     info = getattr(module, 'ModuleInfo')
                     if info:
-                        self._logger.debug('Found info module')
-                        if info.LABEL in self.modulehandles:
-                            raise Exception('Module with same name already exists.')
-                        handle = ModuleHandle(self, dirpath)
-                        self.modulehandles[info.LABEL] = handle
-                        widgets = info.createWidgets(handle, self.mainWindow)
-                        if widgets:
-                            if not type(widgets) == list:
-                                nl = list()
-                                nl.append(widgets)
-                                widgets = nl
-                            i = 0
-                            for w in widgets:
-                                w.setObjectName(info.LABEL + '_' + str(i))
-                                self.mainWindow.addDockWidget(QtCore.Qt.TopDockWidgetArea, w)
-                                self.widgets.append(w)
-                                w.setVisible(False)
-                                if lastWidget:
-                                    self.mainWindow.tabifyDockWidget(lastWidget, w)
-                                lastWidget = w
-                                i += 1
-                            self._logger.info('Successfully loaded widget dir "' + dir + '"')
+                        if info.isEnabled():
+                            self._logger.debug('Found info module')
+                            if info.LABEL in self.modulehandles:
+                                raise Exception('Module with same name already exists.')
+                            handle = ModuleHandle(self, dirpath)
+                            self.modulehandles[info.LABEL] = handle
+                            widgets = info.createWidgets(handle, self.mainWindow)
+                            if widgets:
+                                if not type(widgets) == list:
+                                    nl = list()
+                                    nl.append(widgets)
+                                    widgets = nl
+                                i = 0
+                                for w in widgets:
+                                    w.setObjectName(info.LABEL + '_' + str(i))
+                                    self.mainWindow.addDockWidget(QtCore.Qt.TopDockWidgetArea, w)
+                                    self.widgets.append(w)
+                                    if w.getMenuCategory():
+                                        try:
+                                            m = menuCategoryMap[w.getMenuCategory()]
+                                            m.addAction(w.toggleViewAction())
+                                        except:
+                                            m = QtWidgets.QMenu(w.getMenuCategory())
+                                            menuCategoryMap[w.getMenuCategory()] = m
+                                            self.widgetMenuEntries.append(m)
+                                            m.addAction(w.toggleViewAction())
+                                    else:
+                                        self.widgetMenuEntries.append(w.toggleViewAction())
+                                    w.setVisible(False)
+                                    if lastWidget:
+                                        self.mainWindow.tabifyDockWidget(lastWidget, w)
+                                    lastWidget = w
+                                    i += 1
+                                self._logger.info('Successfully loaded widget "' + dir + '"')
+                            else:
+                                self._logger.warning('Could not load widget "' + dir + '": No widgets returned')
                         else:
-                            self._logger.warning('Could not load widget dir "' + dir + '": No widgets returned')
+                            self._logger.info('Widget "' + dir + '" is not enabled')
                     else:
-                        self._logger.warning('Could not load widget dir "' + dir + '": No Info')
+                        self._logger.warning('Could not load widget "' + dir + '": No Info')
                 except Exception as e:
-                    self._logger.warning('Could not load widget dir "' + dir + '": ' + str(e))
+                    self._logger.warning('Could not load widget "' + dir + '": ' + str(e))
                     traceback.print_exc(file=sys.stdout)
+        for e in self.widgetMenuEntries:
+            if type(e) == QtWidgets.QMenu:
+                self.widgetMenu.addMenu(e)
+            else:
+                self.widgetMenu.addAction(e)
     
     def iwcRegisterEndpoint(self, key, endpoint):
         self._iwcEndpoints[key] = endpoint
