@@ -513,7 +513,7 @@ class LocationMarker(PipValueMarkerBase):
             self.setNote (self.widget._app.settings.value('globalmapwidget/locationmarkernotes/'+self.uid, ''))
 
 class PointofInterestMarker(MarkerBase):
-    def __init__(self, uid, widget, imageFactory, color,size=24, iconfile='mapmarkerpoi_1.svg', parent = None):
+    def __init__(self, uid, widget, imageFactory, color, size=24, iconfile='mapmarkerpoi_1.svg', parent = None):
         super().__init__(widget.mapScene, widget.mapView, parent)
         self.markerType = 5
         self.widget = widget
@@ -1290,7 +1290,7 @@ class GlobalMapWidget(widgets.WidgetBase):
                         thisCharOnly = editpoiDialog.chkCharacterOnly.isChecked()
                         
                         if (ok != 0):
-                            poimarker = PointofInterestMarker(uuid.uuid4(), self,self.controller.sharedResImageFactory, editpoiDialog.selectedColor, editpoiDialog.IconFile)
+                            poimarker = PointofInterestMarker(uuid.uuid4(), self,self.controller.sharedResImageFactory, editpoiDialog.selectedColor,self.locMarkSize, editpoiDialog.IconFile)
                             poimarker.setLabel(labelstr)
                             self._connectMarker(poimarker)
                             poimarker.setMapPos(self.mapCoords.pip2map_x(rx), self.mapCoords.pip2map_y(ry))
