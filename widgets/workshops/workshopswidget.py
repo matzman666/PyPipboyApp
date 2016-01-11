@@ -5,23 +5,20 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 from widgets import widgets
 from widgets.shared.PipboyIcon import PipboyIcon
+from .workshopsmodel import WorkshopTableModel, SortProxyModel
+from widgets.shared import settings
 
 class WorkshopsWidget(widgets.WidgetBase):
-    WorkshopListSignal = QtCore.pyqtSignal()
     WorkshopInfoSignal = QtCore.pyqtSignal()
     ColorUpdateSignal = QtCore.pyqtSignal(QColor)
-    
-    WorkshopListModel = QStandardItemModel()
     
     Widgets = None
     
     DataManager = None
     WorkshopData = None
-    WorkshopInfoData = None
     ColorData = None
     
     Icons = None
-    SelectedWorkshopId = -1
         
     def __init__(self, mhandle, parent):
         super().__init__("Workshops", parent)
@@ -51,18 +48,36 @@ class WorkshopsWidget(widgets.WidgetBase):
                 i.Enabled = False
             i.Update()
         
-        self.WorkshopListSignal.connect(self.UpdateWorkshopList)
         self.WorkshopInfoSignal.connect(self.UpdateWorkshopInfo)
         self.ColorUpdateSignal.connect(self.UpdateIconColor)
         
-        self.Widgets.workshopList.setModel(self.WorkshopListModel) # we need to call setModel() before selectionModel() (and never afterwards)
+    def init(self, app, dataManager):
+        super().init(app, dataManager)
+        self.app = app
+        self.DataManager = dataManager
+        self.selectedWorkshop = None
+        self.workshopModel = WorkshopTableModel(self.Widgets.workshopList)
+        self.sortModel = SortProxyModel(app.settings, 'workshopsbrowser')
+        self.sortModel.setSourceModel(self.workshopModel)
+        self.Widgets.workshopList.setModel(self.sortModel) # we need to call setModel() before selectionModel() (and never afterwards)
         self.Widgets.workshopList.selectionModel().currentChanged.connect(self.WorkshopListCurrentChanged)
         self.Widgets.workshopList.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.Widgets.workshopList.customContextMenuRequested.connect(self.workshopListMenuRequested)
-    def init(self, app, dataManager):
-        super().init(app, dataManager)
-        
-        self.DataManager = dataManager
+        # Init Splitter
+        settings.setSplitterState(self.Widgets.splitter, self.app.settings.value('workshopsbrowser/splitterState', None))
+        self.Widgets.splitter.splitterMoved.connect(self._slotSplitterMoved)
+        # Init table header
+        self.tableHeader = self.Widgets.workshopList.horizontalHeader()
+        self.tableHeader.setSectionsMovable(True)
+        self.tableHeader.setStretchLastSection(True)
+        settings.setHeaderSectionSizes(self.tableHeader, self.app.settings.value('workshopsbrowser/HeaderSectionSizes', []))
+        settings.setHeaderSectionVisualIndices(self.tableHeader, self.app.settings.value('workshopsbrowser/HeaderSectionVisualIndices', []))
+        if self.sortModel.sortReversed:
+            self.Widgets.workshopList.sortByColumn(self.sortModel.sortColumn, QtCore.Qt.DescendingOrder)
+        else:
+            self.Widgets.workshopList.sortByColumn(self.sortModel.sortColumn, QtCore.Qt.AscendingOrder)
+        self.tableHeader.sectionResized.connect(self._slotTableSectionResized)
+        self.tableHeader.sectionMoved.connect(self._slotTableSectionMoved)
         self.DataManager.registerRootObjectListener(self.DataManagerUpdated)
         
     def getMenuCategory(self):
@@ -70,26 +85,21 @@ class WorkshopsWidget(widgets.WidgetBase):
 
     @QtCore.pyqtSlot(QtCore.QPoint)
     def workshopListMenuRequested(self, pos):
-        menu = QMenu(self)
-        index = self.Widgets.workshopList.indexAt(pos)
-        if (index.isValid()):
-            model = self.Widgets.workshopList.model()
-            modelIndex = model.index(index.row(), 0)
-            self.locationIndex = int(model.data(modelIndex))
-            location_name = self.WorkshopData.child(self.locationIndex).child("text").value()
+        if self.selectedWorkshop:
+            menu = QMenu(self)
+            def _fastTravelTo():
+                try:
+                    mapMarkerID = self.selectedWorkshop.child("mapMarkerID").value()
+                    for k in self.rootObject.child('Map').child('World').child('Locations').value():
+                        if k.child('LocationMarkerFormId').value() == mapMarkerID:
+                            self.DataManager.rpcFastTravel(k)
+                except:
+                    pass
+            location_name = self.selectedWorkshop.child("text").value()
             addFastTravelAction = QAction('Fast Travel to ' + location_name , menu)
-            addFastTravelAction.triggered.connect(self._fastTravelTo)
+            addFastTravelAction.triggered.connect(_fastTravelTo)
             menu.addAction(addFastTravelAction)
-        menu.exec(self.Widgets.workshopList.mapToGlobal(pos))
-        return
-
-    def _fastTravelTo(self):
-        mapMarkerID = self.WorkshopData.child(self.locationIndex).child("mapMarkerID").value()
-        pipWorldLocations = self.rootObject.child('Map').child('World').child('Locations')
-        if pipWorldLocations:
-            for k in pipWorldLocations.value():
-                if k.child('LocationMarkerFormId').value() == mapMarkerID:
-                    self.DataManager.rpcFastTravel(k)
+            menu.exec(self.Widgets.workshopList.mapToGlobal(pos))
 
     def DataManagerUpdated(self, rootObject):
         self.rootObject = rootObject
@@ -97,7 +107,7 @@ class WorkshopsWidget(widgets.WidgetBase):
         self.ColorData = self.rootObject.child("Status").child("EffectColor")
         
         if self.WorkshopData:
-            self.WorkshopData.registerValueUpdatedListener(self.WorkshopDataUpdated, 2)
+            self.workshopModel.setPipWorkshops(self.DataManager, self.WorkshopData)
         
         if self.ColorData:
             self.ColorData.registerValueUpdatedListener(self.ColorDataUpdated, 1)
@@ -107,14 +117,6 @@ class WorkshopsWidget(widgets.WidgetBase):
             B = self.ColorData.child(2).value() * 255
             
             self.ColorUpdateSignal.emit(QColor.fromRgb(R, G, B))
-
-        self.WorkshopListSignal.emit()
-        self.WorkshopInfoSignal.emit()
-    
-    def WorkshopDataUpdated(self, caller, value, pathObjs):
-        self.WorkshopListSignal.emit()
-    
-    def WorkshopInfoDataUpdated(self, caller, value, pathObjs):
         self.WorkshopInfoSignal.emit()
     
     def ColorDataUpdated(self, caller, value, pathObjs):
@@ -125,18 +127,6 @@ class WorkshopsWidget(widgets.WidgetBase):
             
             self.ColorUpdateSignal.emit(QColor.fromRgb(R, G, B))
     
-    def SetWorkshopId(self, workshopId):
-        self.SelectedWorkshopId = workshopId
-        
-        if self.WorkshopData:            
-            if self.WorkshopInfoData:
-                self.WorkshopInfoData.unregisterValueUpdatedListener(self.WorkshopInfoDataUpdated)
-            
-            self.WorkshopInfoData = self.WorkshopData.child(self.SelectedWorkshopId)
-            self.WorkshopInfoData.registerValueUpdatedListener(self.WorkshopInfoDataUpdated, 3)
-        
-        self.WorkshopInfoSignal.emit()
-    
     def SetWarningWidget(self, widget, state):
         for i in self.Icons:
             if i.Widget == widget:
@@ -145,74 +135,48 @@ class WorkshopsWidget(widgets.WidgetBase):
 
     @QtCore.pyqtSlot(QModelIndex, QModelIndex)
     def WorkshopListCurrentChanged(self, index, previous):
-        NewIndex = self.WorkshopListModel.index(index.row(), 0)
-        DataId = self.WorkshopListModel.data(NewIndex)
-        
-        if DataId:
-            self.SetWorkshopId(int(DataId))
+        tmp = self.workshopModel.getPipValue(self.sortModel.mapToSource(index).row())
+        if tmp:
+            self.selectedWorkshop = tmp
+            self.WorkshopInfoSignal.emit()
     
     @QtCore.pyqtSlot(QColor)
     def UpdateIconColor(self, iconColor):
         for i in self.Icons:
             i.Color = iconColor
             i.Update()
-    
-    @QtCore.pyqtSlot()
-    def UpdateWorkshopList(self):
-        self.WorkshopListModel.clear()
         
-        HighlightFont = QFont()
-        HighlightFont.setBold(True)
-        
-        if self.WorkshopData.childCount():
-            for i in range(0, self.WorkshopData.childCount()):
-                Owned = self.WorkshopData.child(i).child("owned").value()
-                Name = None
-                Rating = None
-                
-                if Owned:
-                    Name = self.WorkshopData.child(i).child("text").value()
-                    Rating = self.WorkshopData.child(i).child("rating").value()
-                    
-                    NameItem = QStandardItem(Name)
-                    
-                    if Rating <= -1:
-                        NameItem.setFont(HighlightFont)
-                    
-                    ListItem = [
-                        QStandardItem(str(i)),
-                        NameItem
-                    ]
-                    self.WorkshopListModel.appendRow(ListItem)
-                    
-            self.Widgets.workshopList.sortByColumn(1, Qt.AscendingOrder)
-            self.Widgets.workshopList.hideColumn(0)
+    @QtCore.pyqtSlot(int, int)
+    def _slotSplitterMoved(self, pos, index):
+        self.app.settings.setValue('workshopsbrowser/splitterState', settings.getSplitterState(self.Widgets.splitter))
             
-            if self.SelectedWorkshopId == -1:
-                ModelIndex = self.WorkshopListModel.index(0, 0)
-                DataId = self.WorkshopListModel.data(ModelIndex)
-                
-                if DataId:
-                    self.SetWorkshopId(int(DataId))
+    @QtCore.pyqtSlot(int, int, int)
+    def _slotTableSectionResized(self, logicalIndex, oldSize, newSize):
+        self.app.settings.setValue('workshopsbrowser/HeaderSectionSizes', settings.getHeaderSectionSizes(self.tableHeader))
+        
+    @QtCore.pyqtSlot(int, int, int)
+    def _slotTableSectionMoved(self, logicalIndex, oldVisualIndex, newVisualIndex):
+        self.app.settings.setValue('workshopsbrowser/HeaderSectionVisualIndices', settings.getHeaderSectionVisualIndices(self.tableHeader))
+       
     
     @QtCore.pyqtSlot()
     def UpdateWorkshopInfo(self):
-        if self.WorkshopData.childCount() and self.WorkshopInfoData:
-            Name = self.WorkshopData.child(self.SelectedWorkshopId).child("text").value()
-            PopulationValue = self.WorkshopInfoData.child("workshopData").child(0).child("Value").value()
-            PopulationRating = self.WorkshopInfoData.child("workshopData").child(0).child("rating").value()
-            FoodValue = self.WorkshopInfoData.child("workshopData").child(1).child("Value").value()
-            FoodRating = self.WorkshopInfoData.child("workshopData").child(1).child("rating").value()
-            WaterValue = self.WorkshopInfoData.child("workshopData").child(2).child("Value").value()
-            WaterRating = self.WorkshopInfoData.child("workshopData").child(2).child("rating").value()
-            PowerValue = self.WorkshopInfoData.child("workshopData").child(3).child("Value").value()
-            PowerRating = self.WorkshopInfoData.child("workshopData").child(3).child("rating").value()
-            DefenseValue = self.WorkshopInfoData.child("workshopData").child(4).child("Value").value()
-            DefenseRating = self.WorkshopInfoData.child("workshopData").child(4).child("rating").value()
-            BedsValue = self.WorkshopInfoData.child("workshopData").child(5).child("Value").value()
-            BedsRating = self.WorkshopInfoData.child("workshopData").child(5).child("rating").value()
-            HappinessValue = self.WorkshopInfoData.child("workshopData").child(6).child("Value").value()
-            HappinessRating = self.WorkshopInfoData.child("workshopData").child(6).child("rating").value()
+        if self.selectedWorkshop:
+            Name = self.selectedWorkshop.child("text").value()
+            PopulationValue = self.selectedWorkshop.child("workshopData").child(0).child("Value").value()
+            PopulationRating = self.selectedWorkshop.child("workshopData").child(0).child("rating").value()
+            FoodValue = self.selectedWorkshop.child("workshopData").child(1).child("Value").value()
+            FoodRating = self.selectedWorkshop.child("workshopData").child(1).child("rating").value()
+            WaterValue = self.selectedWorkshop.child("workshopData").child(2).child("Value").value()
+            WaterRating = self.selectedWorkshop.child("workshopData").child(2).child("rating").value()
+            PowerValue = self.selectedWorkshop.child("workshopData").child(3).child("Value").value()
+            PowerRating = self.selectedWorkshop.child("workshopData").child(3).child("rating").value()
+            DefenseValue = self.selectedWorkshop.child("workshopData").child(4).child("Value").value()
+            DefenseRating = self.selectedWorkshop.child("workshopData").child(4).child("rating").value()
+            BedsValue = self.selectedWorkshop.child("workshopData").child(5).child("Value").value()
+            BedsRating = self.selectedWorkshop.child("workshopData").child(5).child("rating").value()
+            HappinessValue = self.selectedWorkshop.child("workshopData").child(6).child("Value").value()
+            HappinessRating = self.selectedWorkshop.child("workshopData").child(6).child("rating").value()
             
             self.Widgets.labelLocation.setText(Name)
             self.Widgets.numberPeople.setText(str(PopulationValue))

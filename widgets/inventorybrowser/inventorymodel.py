@@ -43,7 +43,7 @@ class InventoryTableModel(QtCore.QAbstractTableModel):
         self._signalSortedIdsUpdate.connect(self._slotSortedIdsUpdate)
 
     def setPipInventory(self, datamanager, pipInventory):
-        #self.modelAboutToBeReset.emit()
+        self.modelAboutToBeReset.emit()
 
         self.pipInventory = pipInventory
         self.datamanager = datamanager
