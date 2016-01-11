@@ -24,7 +24,7 @@ class WorkshopsWidget(widgets.WidgetBase):
     SelectedWorkshopId = -1
         
     def __init__(self, mhandle, parent):
-        super().__init__("Workshops Browser", parent)
+        super().__init__("Workshops", parent)
         
         self.Widgets = uic.loadUi(os.path.join(mhandle.basepath, "ui", "workshopswidget.ui"))
         self.setWidget(self.Widgets)
@@ -64,6 +64,9 @@ class WorkshopsWidget(widgets.WidgetBase):
         
         self.DataManager = dataManager
         self.DataManager.registerRootObjectListener(self.DataManagerUpdated)
+        
+    def getMenuCategory(self):
+        return 'Map && Locations'
 
     @QtCore.pyqtSlot(QtCore.QPoint)
     def workshopListMenuRequested(self, pos):

@@ -65,6 +65,9 @@ class DoctorsBagWidget(widgets.WidgetBase):
         else:
             #self.showDrugs()
             self.widget.btnDrugs.click()
+        
+    def getMenuCategory(self):
+        return 'Inventory && Gear'
 
 
     def colouriseIcon(self, img, colour):

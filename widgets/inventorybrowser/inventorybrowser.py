@@ -53,6 +53,9 @@ class InventoryBrowserWidget(widgets.WidgetBase):
         self.dataManager = datamanager
         self.dataManager.registerRootObjectListener(self._onPipRootObjectEvent)
         
+    def getMenuCategory(self):
+        return 'Inventory && Gear'
+        
     def _addTab(self, title, modelClass, proxyClass):
         skeySizes = 'inventorybrowser/' + title + '/headerSectionSizes'
         skeyMoved = 'inventorybrowser/' + title + '/headerSectionVisualIndices'

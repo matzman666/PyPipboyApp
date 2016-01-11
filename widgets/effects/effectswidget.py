@@ -217,6 +217,9 @@ class EffectsWidget(widgets.WidgetBase):
         self.dataManager = datamanager
         self.dataManager.registerRootObjectListener(self._onPipRootObjectEvent)
         
+    def getMenuCategory(self):
+        return 'Player Status'
+        
         
     def _onPipRootObjectEvent(self, rootObject):
         self.pipStats = rootObject.child('Stats')

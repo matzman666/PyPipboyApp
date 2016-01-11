@@ -29,7 +29,7 @@ class PerksWidget(widgets.WidgetBase):
     
     # CLASS INIT
     def __init__(self, mhandle, parent):
-        super().__init__('Perk Browser', parent)
+        super().__init__('Perks', parent)
         self.Widgets = uic.loadUi(os.path.join(mhandle.basepath, 'ui', 'perkswidget.ui'))
         self.setWidget(self.Widgets)
         
@@ -53,6 +53,9 @@ class PerksWidget(widgets.WidgetBase):
         # Create a class level hook to the datamanager for updates and RPC methods
         self.DataManager = dataManager
         self.DataManager.registerRootObjectListener(self.DataManagerUpdated)
+        
+    def getMenuCategory(self):
+        return 'Player Status'
     
     # DATA MANAGER OBJECT HAS CHANGED AT SOME LEVEL
     def DataManagerUpdated(self, rootObject):
