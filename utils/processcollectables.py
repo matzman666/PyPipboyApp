@@ -207,7 +207,7 @@ with open(inputfile) as infile:
                 pass
             
             #collectables[itype]['items'].append(item['formid'])
-            collectables[itype]['items'][item['formid']] = item
+            collectables[itype]['items'][item['instanceid']] = item
 
 
 with open(outputfile, 'w') as outfile:

@@ -1141,33 +1141,35 @@ class GlobalMapWidget(widgets.WidgetBase):
 
     def _createCollectablesMarkers(self, collectableDefs):
         self._logger.info('creating CollectableMarkers')
-        for k in self.collectableLocationMarkers.keys():
-            for i,j in self.collectableLocationMarkers[k].items():
-                j.destroy()
+        for catkey in self.collectableLocationMarkers.keys():
+            for instanceID,collectableMarker in self.collectableLocationMarkers[catkey].items():
+                collectableMarker.destroy()
 
-        for k, v in collectableDefs.items():
-            self.collectableLocationMarkers[k] = {}
-            chk = self._findCollectibleCheckbox(k)
+        for catKey, catData in collectableDefs.items():
+            self.collectableLocationMarkers[catKey] = {}
+            chk = self._findCollectibleCheckbox(catKey)
             iconcolor = self.mapColor
-            color = v.get('color', None)
+            color = catData.get('color', None)
             if color is not None and len(color) == 3:
                 iconcolor = QtGui.QColor(int(color[0]), int(color[1]), int(color[2]))
 
-            for i in v.get('items', None):
-                cmx = i.get('commonwealthx', None)
-                cmy = i.get('commonwealthy', None)
-                if cmx is not None and cmy is not None:
-                    m = CollectableMarker(i.get('instanceformid'), self, self.controller.sharedResImageFactory, iconcolor, self.mapMarkerSize, icon=v.get('icon', 'Starfilled.svg'))
-                    m.setLabel(textwrap.fill(i.get('name', ''), 30) + '\n' + textwrap.fill(i.get('description', ''), 30))
-                    m.itemFormID = i.get('formid')
-                    m.setMapPos(self.mapCoords.pip2map_x(float(cmx)), self.mapCoords.pip2map_y(float(cmy)))
-                    if chk is not None:
-                        m.filterSetVisible(chk.isChecked())
-                    m.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, True)
-                    m.setSavedSettings()
-                    self._connectMarker(m)
+            items = catData.get('items', None)
+            if items is not None:
+                for instanceID, collectable in items.items():
+                    cmx = collectable.get('commonwealthx', None)
+                    cmy = collectable.get('commonwealthy', None)
+                    if cmx is not None and cmy is not None:
+                        m = CollectableMarker(instanceID, self, self.controller.sharedResImageFactory, iconcolor, self.mapMarkerSize, icon=catData.get('icon', 'Starfilled.svg'))
+                        m.setLabel(textwrap.fill(collectable.get('name', ''), 30) + '\n' + textwrap.fill(collectable.get('description', ''), 30))
+                        m.itemFormID = collectable.get('formid')
+                        m.setMapPos(self.mapCoords.pip2map_x(float(cmx)), self.mapCoords.pip2map_y(float(cmy)))
+                        if chk is not None:
+                            m.filterSetVisible(chk.isChecked())
+                        m.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, True)
+                        m.setSavedSettings()
+                        self._connectMarker(m)
 
-                    self.collectableLocationMarkers[k][i.get('instanceformid', str(uuid.uuid4()))] = m
+                        self.collectableLocationMarkers[catKey][instanceID] = m
         return
 
     @QtCore.pyqtSlot(bool)

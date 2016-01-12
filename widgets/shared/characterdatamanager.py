@@ -24,9 +24,11 @@ class CharacterDataManager(QtCore.QObject):
         inputfile = open(os.path.join('widgets', 'shared', 'res', 'collectables-processed.json'))
         collectables = json.load(inputfile)
 
-        for k, v in collectables.items():
-            for i in v.get('items', None):
-                self.collectableFormIDs.append(int(i.get('formid'), 16))
+        for category, data in collectables.items():
+            items = data.get('items', None)
+            if items is not None:
+                for instanceid, values in items.items():
+                    self.collectableFormIDs.append(int(values.get('formid'), 16))
 
         self._signalInfoUpdated.connect(self._slotInfoUpdated)
 
