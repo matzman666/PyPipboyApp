@@ -1266,6 +1266,8 @@ class GlobalMapWidget(widgets.WidgetBase):
         globalPoisettingPath = 'globalmapwidget/pointsofinterest/'
         if self.characterDataManager.playerDataPath is not None:
             playerPoiSettingPath = self.characterDataManager.playerDataPath + '/pointsofinterest/'
+        else:
+            playerPoiSettingPath = None # To avoid reference before assignment
         index = self._app.settings.value(globalPoisettingPath+'index', None)
         poiLocDict = dict()
         if index and len(index) > 0:
