@@ -793,4 +793,127 @@ class CatModsModel(InventoryTableModel):
 
     def _cmDropActionText(self, item, selected):
         return 'Drop Mod'
+    
+    
+    
+class ComponentsTableModel(QtCore.QAbstractTableModel):
+    _signalComponentsUpdate = QtCore.pyqtSignal(object)
+
+    def __init__(self, view, qparent = None):
+        super().__init__(qparent)
+        self.view = view
+        self.pipInventory = None
+        self.pipComponents = None
+        self.tabIsVisible = False
+        self.isDirty = False
+        self._components = []
+        self._signalComponentsUpdate.connect(self._slotComponentsUpdate)
+
+    def setPipInventory(self, datamanager, pipInventory):
+        self.modelAboutToBeReset.emit()
+        self.pipInventory = pipInventory
+        self.datamanager = datamanager
+        pipComponents = self.pipInventory.child('InvComponents')
+        if pipComponents:
+            self._components = pipComponents.value()
+            if self.pipComponents:
+                self.pipComponents.unregisterValueUpdatedListener(self._onPipComponentsUpdate)
+            self.pipComponents = pipComponents
+            self.pipComponents.registerValueUpdatedListener(self._onPipComponentsUpdate, 10)
+        else:
+            self._components = []
+        self.modelReset.emit()
+
+    def _onPipComponentsUpdate(self, caller, value, pathObjs):
+        self._signalComponentsUpdate.emit(caller)
+
+    @QtCore.pyqtSlot()
+    def _slotComponentsUpdate(self):
+        self.layoutAboutToBeChanged.emit()
+        self._components = self.pipComponents.value()
+        self.layoutChanged.emit()
+
+    def rowCount(self, parent = QtCore.QModelIndex()):
+        return len(self._components)
+
+    def columnCount(self, parent = QtCore.QModelIndex()):
+        return 4
+
+    def headerData(self, section, orientation, role = QtCore.Qt.DisplayRole):
+        if orientation == QtCore.Qt.Horizontal:
+            if role == QtCore.Qt.DisplayRole:
+                if section == 0:
+                    return 'Name'
+                elif section == 1:
+                    return 'Count'
+                elif section == 2:
+                    return 'T'
+                elif section == 3:
+                    return 'Items'
+        return None
+
+    def data(self, index, role = QtCore.Qt.DisplayRole):
+        return self._data(self._components[index.row()], index.column(), role)
+
+    def _data(self, component, column, role = QtCore.Qt.DisplayRole):
+        if role == QtCore.Qt.DisplayRole:
+            if column == 0:
+                return component.child('text').value()
+            elif column == 1:
+                return component.child('count').value()
+            elif column == 2:
+                if component.child('taggedForSearch').value():
+                    return '◼'
+                else:
+                    return ''
+            elif column == 3:
+                text = ''
+                isFirst = True
+                for item in component.child('componentOwners').value():
+                    if isFirst:
+                        isFirst = False
+                    else:
+                        text += ', '
+                    text += item.child('text').value()
+                return text
+        elif role == QtCore.Qt.TextAlignmentRole:
+            if column == 0:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignLeft
+            elif column == 1:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight
+            elif column == 2:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignCenter
+            elif column == 3:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignLeft
+        elif role == QtCore.Qt.FontRole:
+            if component.child('taggedForSearch').value():
+                font = QtGui.QFont()
+                font.setBold(True)
+                return font
+        return None
+
+    def getPipValue(self, row):
+        if len(self._components) > row:
+            return self._components[row]
+        else:
+            return None
+
+    def showItemContextMenu(self, datamanager, component, selected, pos, view):
+        menu = QtWidgets.QMenu(view)
+        if self._data(component, 2):
+            labelTxt = 'Un-tag for Search'
+        else:
+            labelTxt = 'Tag for Search'
+        def _toggleComponentFavorite():
+            datamanager.rpcToggleComponentFavorite(component)
+        action = menu.addAction(labelTxt)
+        action.triggered.connect(_toggleComponentFavorite)
+        menu.exec(view.mapToGlobal(pos))
+
+    def itemDoubleClicked(self, datamanager, component, view):
+        datamanager.rpcToggleComponentFavorite(component)
+
+    def tabVisibilityChanged(self, visible):
+        pass
+    
 
