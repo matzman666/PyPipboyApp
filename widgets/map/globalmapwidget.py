@@ -1021,6 +1021,9 @@ class GlobalMapWidget(widgets.WidgetBase):
         # Init Collectables
         self.showCollectables = {}
 
+        self.collectableDefs = self._loadCollectablesDefinitionsFromJson()
+        self._addCollectablesControls(self.collectableDefs)
+
         self._signalPipWorldQuestsUpdated.connect(self._slotPipWorldQuestsUpdated)
         self._signalPipWorldLocationsUpdated.connect(self._slotPipWorldLocationsUpdated)
         self.datamanager.registerRootObjectListener(self._onRootObjectEvent)
@@ -1109,39 +1112,42 @@ class GlobalMapWidget(widgets.WidgetBase):
                 self.pipWorldLocations.registerValueUpdatedListener(self._onPipWorldLocationsUpdated, 0)
                 self._signalPipWorldLocationsUpdated.emit()
 
-    def loadMarkerForCollectables(self):
 
+    def _findCollectibleCheckbox(self, collectableKey):
+        oname = collectableKey + '_CheckBox'
+        for i in range(0, self.widget.CollectablesLayout.count()):
+            w = self.widget.CollectablesLayout.itemAt(i)
+            if w.widget().objectName() == oname:
+                return w.widget()
+        return None
+
+    def _addCollectablesControls(self, collectables):
+        for k, v in collectables.items():
+            chk = self._findCollectibleCheckbox(k)
+            if chk is None:
+                oname = k + '_CheckBox'
+                chk = QtWidgets.QCheckBox()
+                chk.setObjectName(oname)
+                chk.setText(v.get('friendlyname', k))
+                chk.stateChanged.connect(self.chkcollectableTriggered)
+                chk.setChecked(bool(int(self._app.settings.value('globalmapwidget/show' + k, 0))))
+                self.widget.CollectablesLayout.addWidget(chk)
+
+    def _loadCollectablesDefinitionsFromJson(self):
+        self._logger.info('Loading CollectableMarkers from JSON')
+        inputFile = open(os.path.join('widgets', 'shared', 'res', 'collectables-processed.json'))
+        collectables = json.load(inputFile)
+        return collectables
+
+    def _createCollectablesMarkers(self, collectableDefs):
+        self._logger.info('creating CollectableMarkers')
         for k in self.collectableLocationMarkers.keys():
             for i,j in self.collectableLocationMarkers[k].items():
                 j.destroy()
 
-        self._logger.warn('Reloading CollectableMarkers')
-        inputFile = open(os.path.join('widgets', 'shared', 'res', 'collectables-processed.json'))
-        collectables = json.load(inputFile)
-
-        # Need to delete old widgets first (or maybe reuse them?)
-        #for i in range(0, self.widget.CollectablesLayout.count()):
-        #    w = self.widget.CollectablesLayout.takeAt(0)
-        #    w.stateChanged.disconnect(self.chkcollectableTriggered)
-        def _findCollectibleCheckbox(objectName):
-            for i in range(0, self.widget.CollectablesLayout.count()):
-                w = self.widget.CollectablesLayout.itemAt(i)
-                if w.widget().objectName() == objectName:
-                    return w.widget()
-            return None
-            
-        for k, v in collectables.items():
+        for k, v in collectableDefs.items():
             self.collectableLocationMarkers[k] = {}
-            oname = k + '_CheckBox'
-            chk = _findCollectibleCheckbox(oname)
-            if not chk:
-                chk = QtWidgets.QCheckBox()
-                chk.setObjectName(oname)
-                chk.setText(v.get('friendlyname', k))
-                chk.setChecked(bool(int(self._app.settings.value('globalmapwidget/show' + k, 0))))
-                chk.stateChanged.connect(self.chkcollectableTriggered)
-                self.widget.CollectablesLayout.addWidget(chk)
-
+            chk = self._findCollectibleCheckbox(k)
             iconcolor = self.mapColor
             color = v.get('color', None)
             if color is not None and len(color) == 3:
@@ -1155,7 +1161,8 @@ class GlobalMapWidget(widgets.WidgetBase):
                     m.setLabel(textwrap.fill(i.get('name', ''), 30) + '\n' + textwrap.fill(i.get('description', ''), 30))
                     m.itemFormID = i.get('formid')
                     m.setMapPos(self.mapCoords.pip2map_x(float(cmx)), self.mapCoords.pip2map_y(float(cmy)))
-                    m.filterSetVisible(chk.isChecked())
+                    if chk is not None:
+                        m.filterSetVisible(chk.isChecked())
                     m.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, True)
                     m.setSavedSettings()
                     self._connectMarker(m)
@@ -1296,7 +1303,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.pipMapLocationItems = newDict
         self.poiLocationItems = poiLocDict
         
-        self.loadMarkerForCollectables()
+        self._createCollectablesMarkers(self.collectableDefs)
         
         self._signalPipWorldQuestsUpdated.emit()
 
