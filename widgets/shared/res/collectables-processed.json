@@ -7,8 +7,8 @@
       "200",
       "255"
     ],
-    "items": {
-      "0x00184D99": {
+    "items": [
+      {
         "name": "Wasteland Survival Guide 01",
         "formid": "0x0008E75E",
         "instanceid": "0x00184D99",
@@ -22,7 +22,7 @@
         "commonwealthx": "-19305.326172",
         "commonwealthy": "-10381.467773"
       },
-      "0x0020E895": {
+      {
         "name": "Hot Rodder 02",
         "formid": "0x00185CBF",
         "instanceid": "0x0020E895",
@@ -36,7 +36,7 @@
         "commonwealthx": "-10313.022461",
         "commonwealthy": "-57930.703125"
       },
-      "0x00184DA4": {
+      {
         "name": "Wasteland Survival Guide 03",
         "formid": "0x00135F0D",
         "instanceid": "0x00184DA4",
@@ -50,7 +50,7 @@
         "commonwealthx": "-33509.851562",
         "commonwealthy": "-63159.183594"
       },
-      "0x00184D9A": {
+      {
         "name": "Astoundingly Awesome Tales 11",
         "formid": "0x0016969B",
         "instanceid": "0x00184D9A",
@@ -64,7 +64,7 @@
         "commonwealthx": "-33425.695312",
         "commonwealthy": "-51803.734375"
       },
-      "0x00184DAC": {
+      {
         "name": "Unstoppables 03",
         "formid": "0x00135F05",
         "instanceid": "0x00184DAC",
@@ -78,7 +78,7 @@
         "commonwealthx": "-48928.960938",
         "commonwealthy": "-43157.582031"
       },
-      "0x00184DB6": {
+      {
         "name": "Massachusetts Surgical Journal 06",
         "formid": "0x0008E750",
         "instanceid": "0x00184DB6",
@@ -92,7 +92,7 @@
         "commonwealthx": "-87372.382812",
         "commonwealthy": "-12834.045898"
       },
-      "0x00185CC3": {
+      {
         "name": "Live & Love 04",
         "formid": "0x00185CC2",
         "instanceid": "0x00185CC3",
@@ -106,7 +106,7 @@
         "commonwealthx": "-75367.210938",
         "commonwealthy": "-850.406494"
       },
-      "0x00185CB7": {
+      {
         "name": "Grognak the Barbarian 07",
         "formid": "0x0008E747",
         "instanceid": "0x00185CB7",
@@ -120,7 +120,7 @@
         "commonwealthx": "-67718.851562",
         "commonwealthy": "-37631.121094"
       },
-      "0x0023B4FC": {
+      {
         "name": "Astoundingly Awesome Tales 12",
         "formid": "0x001696A6",
         "instanceid": "0x0023B4FC",
@@ -134,7 +134,7 @@
         "commonwealthx": "-102319.203125",
         "commonwealthy": "-117033.351562"
       },
-      "0x001955B5": {
+      {
         "name": "Astoundingly Awesome Tales 03",
         "formid": "0x001696A0",
         "instanceid": "0x001955B5",
@@ -148,7 +148,7 @@
         "commonwealthx": "-10824.048828",
         "commonwealthy": "100249.742188"
       },
-      "0x00185CF1": {
+      {
         "name": "Total Hack 03",
         "formid": "0x00094736",
         "instanceid": "0x00185CF1",
@@ -162,7 +162,7 @@
         "commonwealthx": "-12100.384766",
         "commonwealthy": "67585.492187"
       },
-      "0x00185CD4": {
+      {
         "name": "Astoundingly Awesome Tales 01",
         "formid": "0x0016969F",
         "instanceid": "0x00185CD4",
@@ -176,7 +176,7 @@
         "commonwealthx": "-3832.421143",
         "commonwealthy": "77775.367188"
       },
-      "0x00185CBC": {
+      {
         "name": "Tales of a Junktown Jerky Vendor 05",
         "formid": "0x00092A67",
         "instanceid": "0x00185CBC",
@@ -190,7 +190,7 @@
         "commonwealthx": "-25412.550781",
         "commonwealthy": "47471.980469"
       },
-      "0x00185CE3": {
+      {
         "name": "Taboo Tattoos 05",
         "formid": "0x00185CE2",
         "instanceid": "0x00185CE3",
@@ -204,7 +204,7 @@
         "commonwealthx": "-45153.187500",
         "commonwealthy": "78674.710938"
       },
-      "0x0020E896": {
+      {
         "name": "Hot Rodder 03",
         "formid": "0x00185CD1",
         "instanceid": "0x0020E896",
@@ -218,7 +218,7 @@
         "commonwealthx": "-52595.839844",
         "commonwealthy": "98152.382812"
       },
-      "0x00185CCB": {
+      {
         "name": "Wasteland Survival Guide 08",
         "formid": "0x00185CCA",
         "instanceid": "0x00185CCB",
@@ -232,7 +232,7 @@
         "commonwealthx": "-87547.984375",
         "commonwealthy": "71235.617188"
       },
-      "0x00019A92": {
+      {
         "name": "Grognak the Barbarian 03",
         "formid": "0x0008E743",
         "instanceid": "0x00019A92",
@@ -246,7 +246,7 @@
         "commonwealthx": "-80190.265625",
         "commonwealthy": "91367.273438"
       },
-      "0x00185CD9": {
+      {
         "name": "Wasteland Survival Guide 09",
         "formid": "0x00185CD8",
         "instanceid": "0x00185CD9",
@@ -260,7 +260,7 @@
         "commonwealthx": "-89295.093750",
         "commonwealthy": "37252.851562"
       },
-      "0x00185CF0": {
+      {
         "name": "Grognak the Barbarian 01",
         "formid": "0x0008E741",
         "instanceid": "0x00185CF0",
@@ -274,7 +274,7 @@
         "commonwealthx": "-86073.320312",
         "commonwealthy": "64650.046875"
       },
-      "0x00185CDC": {
+      {
         "name": "Guns and Bullets 09",
         "formid": "0x00092A8E",
         "instanceid": "0x00185CDC",
@@ -288,7 +288,7 @@
         "commonwealthx": "48344.695312",
         "commonwealthy": "-46534.406250"
       },
-      "0x00049830": {
+      {
         "name": "Tales of a Junktown Jerky Vendor 08",
         "formid": "0x00092A6A",
         "instanceid": "0x00049830",
@@ -302,7 +302,7 @@
         "commonwealthx": "60824.523437",
         "commonwealthy": "-83926.835938"
       },
-      "0x0005226B": {
+      {
         "name": "Hot Rodder 01",
         "formid": "0x00180A24",
         "instanceid": "0x0005226B",
@@ -316,7 +316,7 @@
         "commonwealthx": "40855.359375",
         "commonwealthy": "-70788.281250"
       },
-      "0x00185CDB": {
+      {
         "name": "Grognak the Barbarian 06",
         "formid": "0x0008E746",
         "instanceid": "0x00185CDB",
@@ -330,7 +330,7 @@
         "commonwealthx": "12632.000000",
         "commonwealthy": "-16248.000000"
       },
-      "0x00184D8D": {
+      {
         "name": "Tales of a Junktown Jerky Vendor 01",
         "formid": "0x00092A63",
         "instanceid": "0x00184D8D",
@@ -344,7 +344,7 @@
         "commonwealthx": "3752.052979",
         "commonwealthy": "-44436.589844"
       },
-      "0x00185CD6": {
+      {
         "name": "Guns and Bullets 07",
         "formid": "0x00092A8C",
         "instanceid": "0x00185CD6",
@@ -358,7 +358,7 @@
         "commonwealthx": "13577.602539",
         "commonwealthy": "-45983.578125"
       },
-      "0x00249A5E": {
+      {
         "name": "Grognak the Barbarian 02",
         "formid": "0x0008E742",
         "instanceid": "0x00249A5E",
@@ -372,7 +372,7 @@
         "commonwealthx": "21798.210938",
         "commonwealthy": "-39654.261719"
       },
-      "0x00185CC9": {
+      {
         "name": "Guns and Bullets 06",
         "formid": "0x00092A8B",
         "instanceid": "0x00185CC9",
@@ -386,7 +386,7 @@
         "commonwealthx": "27799.361328",
         "commonwealthy": "-83798.476562"
       },
-      "0x00184DBE": {
+      {
         "name": "Grognak the Barbarian 09",
         "formid": "0x0008E749",
         "instanceid": "0x00184DBE",
@@ -400,7 +400,7 @@
         "commonwealthx": "7384.000000",
         "commonwealthy": "-75768.000000"
       },
-      "0x00184D9D": {
+      {
         "name": "Wasteland Survival Guide 02",
         "formid": "0x00135F0A",
         "instanceid": "0x00184D9D",
@@ -414,7 +414,7 @@
         "commonwealthx": "89600.546875",
         "commonwealthy": "70137.179688"
       },
-      "0x00185CB3": {
+      {
         "name": "U.S. Covert Operations Manual 07",
         "formid": "0x0008E73D",
         "instanceid": "0x00185CB3",
@@ -428,7 +428,7 @@
         "commonwealthx": "80874.718750",
         "commonwealthy": "15805.008789"
       },
-      "0x00185CB2": {
+      {
         "name": "Wasteland Survival Guide 04",
         "formid": "0x00135F0E",
         "instanceid": "0x00185CB2",
@@ -442,7 +442,7 @@
         "commonwealthx": "41621.691406",
         "commonwealthy": "91253.109375"
       },
-      "0x00185CCF": {
+      {
         "name": "U.S. Covert Operations Manual 09",
         "formid": "0x0008E73F",
         "instanceid": "0x00185CCF",
@@ -456,7 +456,7 @@
         "commonwealthx": "51978.769531",
         "commonwealthy": "37678.687500"
       },
-      "0x00185CCC": {
+      {
         "name": "Tesla Science 09",
         "formid": "0x00092A80",
         "instanceid": "0x00185CCC",
@@ -470,7 +470,7 @@
         "commonwealthx": "58112.179687",
         "commonwealthy": "38384.750000"
       },
-      "0x00184DA3": {
+      {
         "name": "Tumblers Today 01",
         "formid": "0x00092A6D",
         "instanceid": "0x00184DA3",
@@ -484,7 +484,7 @@
         "commonwealthx": "52526.808594",
         "commonwealthy": "11361.435547"
       },
-      "0x00185CCE": {
+      {
         "name": "Live & Love 05",
         "formid": "0x00185CCD",
         "instanceid": "0x00185CCE",
@@ -498,7 +498,7 @@
         "commonwealthx": "57840.593750",
         "commonwealthy": "30231.089844"
       },
-      "0x002301CF": {
+      {
         "name": "Live & Love 07",
         "formid": "0x001C2E26",
         "instanceid": "0x002301CF",
@@ -512,7 +512,7 @@
         "commonwealthx": "18180.544922",
         "commonwealthy": "14064.955078"
       },
-      "0x00185CC7": {
+      {
         "name": "Tumblers Today 05",
         "formid": "0x00092A72",
         "instanceid": "0x00185CC7",
@@ -526,7 +526,7 @@
         "commonwealthx": "8922.238281",
         "commonwealthy": "30551.841797"
       },
-      "0x00185CE8": {
+      {
         "name": "Grognak the Barbarian 10",
         "formid": "0x0008E74A",
         "instanceid": "0x00185CE8",
@@ -540,7 +540,7 @@
         "commonwealthx": "84232.062500",
         "commonwealthy": "73234.867188"
       },
-      "0x00185CA8": {
+      {
         "name": "Guns and Bullets 10",
         "formid": "0x00092A8F",
         "instanceid": "0x00185CA8",
@@ -554,7 +554,7 @@
         "commonwealthx": "4478.399902",
         "commonwealthy": "3577.000977"
       },
-      "0x00184DB8": {
+      {
         "name": "Picket Fences 02",
         "formid": "0x00184DB7",
         "instanceid": "0x00184DB8",
@@ -568,7 +568,7 @@
         "commonwealthx": "-24460.212891",
         "commonwealthy": "-34245.660156"
       },
-      "0x00185CB6": {
+      {
         "name": "Guns and Bullets 05",
         "formid": "0x00092A8A",
         "instanceid": "0x00185CB6",
@@ -582,7 +582,7 @@
         "commonwealthx": "94850.890625",
         "commonwealthy": "87000.765625"
       },
-      "0x00184D93": {
+      {
         "name": "Massachusetts Surgical Journal 05",
         "formid": "0x0008E74F",
         "instanceid": "0x00184D93",
@@ -596,7 +596,7 @@
         "commonwealthx": "18872.326172",
         "commonwealthy": "2371.161621"
       },
-      "0x00184D9F": {
+      {
         "name": "Unstoppables 02",
         "formid": "0x00135F04",
         "instanceid": "0x00184D9F",
@@ -610,7 +610,7 @@
         "commonwealthx": "12573.493164",
         "commonwealthy": "-30896.929687"
       },
-      "0x00184DBD": {
+      {
         "name": "Unstoppables 04",
         "formid": "0x00135F06",
         "instanceid": "0x00184DBD",
@@ -624,7 +624,7 @@
         "commonwealthx": "1247.603516",
         "commonwealthy": "-85463.398438"
       },
-      "0x00180A1C": {
+      {
         "name": "Massachusetts Surgical Journal 04",
         "formid": "0x0008E74E",
         "instanceid": "0x00180A1C",
@@ -638,7 +638,7 @@
         "commonwealthx": "52691.046875",
         "commonwealthy": "84543.484375"
       },
-      "0x00240CFD": {
+      {
         "name": "La Coiffe 05",
         "formid": "0x001C63ED",
         "instanceid": "0x00240CFD",
@@ -652,7 +652,7 @@
         "commonwealthx": "23639.406250",
         "commonwealthy": "10968.236328"
       },
-      "0x00184DC5": {
+      {
         "name": "Live & Love 03",
         "formid": "0x00184DC6",
         "instanceid": "0x00184DC5",
@@ -666,7 +666,7 @@
         "commonwealthx": "-39320.984375",
         "commonwealthy": "-56161.781250"
       },
-      "0x00185CBB": {
+      {
         "name": "Wasteland Survival Guide 05",
         "formid": "0x00185CBA",
         "instanceid": "0x00185CBB",
@@ -680,7 +680,7 @@
         "commonwealthx": "-64001.839844",
         "commonwealthy": "58737.261719"
       },
-      "0x0003ECEA": {
+      {
         "name": "Tumblers Today 03",
         "formid": "0x00092A70",
         "instanceid": "0x0003ECEA",
@@ -694,7 +694,7 @@
         "commonwealthx": "-6910.891602",
         "commonwealthy": "-62798.679687"
       },
-      "0x00184D8E": {
+      {
         "name": "Massachusetts Surgical Journal 01",
         "formid": "0x0008E74B",
         "instanceid": "0x00184D8E",
@@ -708,7 +708,7 @@
         "commonwealthx": "-2983.869141",
         "commonwealthy": "1041.886230"
       },
-      "0x00185CB5": {
+      {
         "name": "Tumblers Today 04",
         "formid": "0x00092A71",
         "instanceid": "0x00185CB5",
@@ -722,7 +722,7 @@
         "commonwealthx": "15371.948242",
         "commonwealthy": "58761.187500"
       },
-      "0x00184D9C": {
+      {
         "name": "Taboo Tattoos 01",
         "formid": "0x00184D9B",
         "instanceid": "0x00184D9C",
@@ -736,7 +736,7 @@
         "commonwealthx": "-6677.821777",
         "commonwealthy": "-33469.441406"
       },
-      "0x00184D89": {
+      {
         "name": "La Coiffe 01",
         "formid": "0x0009473E",
         "instanceid": "0x00184D89",
@@ -750,7 +750,7 @@
         "commonwealthx": "-13874.397461",
         "commonwealthy": "-60577.605469"
       },
-      "0x00185CDE": {
+      {
         "name": "Picket Fences 04",
         "formid": "0x00185CDD",
         "instanceid": "0x00185CDE",
@@ -764,7 +764,7 @@
         "commonwealthx": "12276.508789",
         "commonwealthy": "-23041.095703"
       },
-      "0x00185CC1": {
+      {
         "name": "U.S. Covert Operations Manual 08",
         "formid": "0x0008E73E",
         "instanceid": "0x00185CC1",
@@ -778,7 +778,7 @@
         "commonwealthx": "39209.769531",
         "commonwealthy": "39776.933594"
       },
-      "0x00185CE7": {
+      {
         "name": "U.S. Covert Operations Manual 10",
         "formid": "0x0008E740",
         "instanceid": "0x00185CE7",
@@ -792,7 +792,7 @@
         "commonwealthx": "-42054.503906",
         "commonwealthy": "92823.898438"
       },
-      "0x00048B74": {
+      {
         "name": "Astoundingly Awesome Tales 08",
         "formid": "0x0016969C",
         "instanceid": "0x00048B74",
@@ -806,7 +806,7 @@
         "commonwealthx": "68545.867187",
         "commonwealthy": "71800.078125"
       },
-      "0x00184DBF": {
+      {
         "name": "Massachusetts Surgical Journal 07",
         "formid": "0x0008E751",
         "instanceid": "0x00184DBF",
@@ -820,7 +820,7 @@
         "commonwealthx": "23141.402344",
         "commonwealthy": "54041.242187"
       },
-      "0x001C6241": {
+      {
         "name": "Wasteland Survival Guide 07",
         "formid": "0x00185CC4",
         "instanceid": "0x001C6241",
@@ -834,7 +834,7 @@
         "commonwealthx": "21221.492188",
         "commonwealthy": "67452.148437"
       },
-      "0x00184DB4": {
+      {
         "name": "Tesla Science 03",
         "formid": "0x00092A7A",
         "instanceid": "0x00184DB4",
@@ -848,7 +848,7 @@
         "commonwealthx": "-116853.796875",
         "commonwealthy": "-137324.718750"
       },
-      "0x00184DAA": {
+      {
         "name": "U.S. Covert Operations Manual 04",
         "formid": "0x0008E73A",
         "instanceid": "0x00184DAA",
@@ -862,7 +862,7 @@
         "commonwealthx": "-104764.875000",
         "commonwealthy": "-84169.718750"
       },
-      "0x002212FD": {
+      {
         "name": "Tesla Science 02",
         "formid": "0x00092A79",
         "instanceid": "0x002212FD",
@@ -876,7 +876,7 @@
         "commonwealthx": "37265.117188",
         "commonwealthy": "-36126.476562"
       },
-      "0x00185CEF": {
+      {
         "name": "Picket Fences 05",
         "formid": "0x00185CEE",
         "instanceid": "0x00185CEF",
@@ -890,7 +890,7 @@
         "commonwealthx": "-62720.000000",
         "commonwealthy": "-1216.000000"
       },
-      "0x00184D8F": {
+      {
         "name": "Astoundingly Awesome Tales 06",
         "formid": "0x0016969A",
         "instanceid": "0x00184D8F",
@@ -904,7 +904,7 @@
         "commonwealthx": "-102180.437500",
         "commonwealthy": "-15288.642578"
       },
-      "0x00184DC1": {
+      {
         "name": "Taboo Tattoos 03",
         "formid": "0x00184DC0",
         "instanceid": "0x00184DC1",
@@ -918,7 +918,7 @@
         "commonwealthx": "18256.273438",
         "commonwealthy": "27846.357422"
       },
-      "0x00180A1A": {
+      {
         "name": "Grognak the Barbarian 04",
         "formid": "0x0008E744",
         "instanceid": "0x00180A1A",
@@ -932,7 +932,7 @@
         "commonwealthx": "-34718.285156",
         "commonwealthy": "31615.992187"
       },
-      "0x00180A2B": {
+      {
         "name": "Tales of a Junktown Jerky Vendor 04",
         "formid": "0x00092A66",
         "instanceid": "0x00180A2B",
@@ -946,7 +946,7 @@
         "commonwealthx": "78878.164062",
         "commonwealthy": "56447.917969"
       },
-      "0x00185CC6": {
+      {
         "name": "Tesla Science 07",
         "formid": "0x00092A7E",
         "instanceid": "0x00185CC6",
@@ -960,7 +960,7 @@
         "commonwealthx": "7351.364746",
         "commonwealthy": "-12420.127930"
       },
-      "0x00185CB8": {
+      {
         "name": "Tesla Science 06",
         "formid": "0x00092A7D",
         "instanceid": "0x00185CB8",
@@ -974,7 +974,7 @@
         "commonwealthx": "26403.263672",
         "commonwealthy": "-57775.281250"
       },
-      "0x00180A26": {
+      {
         "name": "U.S. Covert Operations Manual 06",
         "formid": "0x0008E73C",
         "instanceid": "0x00180A26",
@@ -988,7 +988,7 @@
         "commonwealthx": "-87424.000000",
         "commonwealthy": "-5504.000000"
       },
-      "0x00249C80": {
+      {
         "name": "RobCo Fun 04",
         "formid": "0x00184DC4",
         "instanceid": "0x00249C80",
@@ -1002,7 +1002,7 @@
         "commonwealthx": "-87424.000000",
         "commonwealthy": "-5504.000000"
       },
-      "0x00185CE1": {
+      {
         "name": "Total Hack 02",
         "formid": "0x00094735",
         "instanceid": "0x00185CE1",
@@ -1016,7 +1016,7 @@
         "commonwealthx": "32402.125000",
         "commonwealthy": "-18087.716797"
       },
-      "0x00185CDF": {
+      {
         "name": "Tales of a Junktown Jerky Vendor 06",
         "formid": "0x00092A68",
         "instanceid": "0x00185CDF",
@@ -1030,7 +1030,7 @@
         "commonwealthx": "30719.191406",
         "commonwealthy": "-42562.480469"
       },
-      "0x00185CA5": {
+      {
         "name": "Grognak the Barbarian 08",
         "formid": "0x0008E748",
         "instanceid": "0x00185CA5",
@@ -1044,7 +1044,7 @@
         "commonwealthx": "-10607.348633",
         "commonwealthy": "-15509.751953"
       },
-      "0x0023B4FA": {
+      {
         "name": "Astoundingly Awesome Tales 02",
         "formid": "0x001696A7",
         "instanceid": "0x0023B4FA",
@@ -1058,7 +1058,7 @@
         "commonwealthx": "1285.525391",
         "commonwealthy": "-22169.765625"
       },
-      "0x00185CA7": {
+      {
         "name": "Astoundingly Awesome Tales 05",
         "formid": "0x001696A2",
         "instanceid": "0x00185CA7",
@@ -1070,7 +1070,7 @@
         "worldx": "12763.818359",
         "worldy": "1020.429016"
       },
-      "0x00185CBE": {
+      {
         "name": "Wasteland Survival Guide 06",
         "formid": "0x00185CBD",
         "instanceid": "0x00185CBE",
@@ -1084,7 +1084,7 @@
         "commonwealthx": "105490.914062",
         "commonwealthy": "25709.380859"
       },
-      "0x00184DAF": {
+      {
         "name": "Tales of a Junktown Jerky Vendor 02",
         "formid": "0x00092A64",
         "instanceid": "0x00184DAF",
@@ -1098,7 +1098,7 @@
         "commonwealthx": "32822.828125",
         "commonwealthy": "-32356.505859"
       },
-      "0x00180A3E": {
+      {
         "name": "Grognak the Barbarian 05",
         "formid": "0x0008E745",
         "instanceid": "0x00180A3E",
@@ -1112,7 +1112,7 @@
         "commonwealthx": "18709.947266",
         "commonwealthy": "62262.558594"
       },
-      "0x00185CB4": {
+      {
         "name": "Tesla Science 04",
         "formid": "0x00092A7B",
         "instanceid": "0x00185CB4",
@@ -1126,7 +1126,7 @@
         "commonwealthx": "82625.742188",
         "commonwealthy": "97892.296875"
       },
-      "0x001FB9FE": {
+      {
         "name": "Massachusetts Surgical Journal 09",
         "formid": "0x001D1F55",
         "instanceid": "0x001FB9FE",
@@ -1140,7 +1140,7 @@
         "commonwealthx": "89604.390625",
         "commonwealthy": "79046.476562"
       },
-      "0x00180A3C": {
+      {
         "name": "Astoundingly Awesome Tales 07",
         "formid": "0x001696A1",
         "instanceid": "0x00180A3C",
@@ -1154,7 +1154,7 @@
         "commonwealthx": "7919.56787109375",
         "commonwealthy": "-18175.1953125"
       },
-      "0x00184DA0": {
+      {
         "name": "U.S. Covert Operations Manual 02",
         "formid": "0x0008E738",
         "instanceid": "0x00184DA0",
@@ -1168,7 +1168,7 @@
         "commonwealthx": "26862.210937",
         "commonwealthy": "-4807.195312"
       },
-      "0x00180A37": {
+      {
         "name": "Picket Fences 03",
         "formid": "0x00180A36",
         "instanceid": "0x00180A37",
@@ -1182,7 +1182,7 @@
         "commonwealthx": "53568.000000",
         "commonwealthy": "59728.996094"
       },
-      "0x00184D94": {
+      {
         "name": "Massachusetts Surgical Journal 03",
         "formid": "0x0008E74D",
         "instanceid": "0x00184D94",
@@ -1196,7 +1196,7 @@
         "commonwealthx": "-25934.054687",
         "commonwealthy": "-2350.004883"
       },
-      "0x00180A2E": {
+      {
         "name": "Tesla Science 05",
         "formid": "0x00092A7C",
         "instanceid": "0x00180A2E",
@@ -1210,7 +1210,7 @@
         "commonwealthx": "18559.947266",
         "commonwealthy": "-7615.913574"
       },
-      "0x00180A29": {
+      {
         "name": "Taboo Tattoos 04",
         "formid": "0x00180A2A",
         "instanceid": "0x00180A29",
@@ -1224,7 +1224,7 @@
         "commonwealthx": "-37903.19921857",
         "commonwealthy": "-23820.890625"
       },
-      "0x001FB9FD": {
+      {
         "name": "Massachusetts Surgical Journal 08",
         "formid": "0x001D1F53",
         "instanceid": "0x001FB9FD",
@@ -1238,7 +1238,7 @@
         "commonwealthx": "11136.398438",
         "commonwealthy": "58151.246094"
       },
-      "0x00249C82": {
+      {
         "name": "RobCo Fun 02",
         "formid": "0x00184DB2",
         "instanceid": "0x00249C82",
@@ -1252,7 +1252,7 @@
         "commonwealthx": "21075.119140625",
         "commonwealthy": "-12150.7138671985"
       },
-      "0x00180A34": {
+      {
         "name": "Tesla Science 08",
         "formid": "0x00092A7F",
         "instanceid": "0x00180A34",
@@ -1266,7 +1266,7 @@
         "commonwealthx": "41402.605469",
         "commonwealthy": "-89968.507812"
       },
-      "0x00185CEA": {
+      {
         "name": "Tales of a Junktown Jerky Vendor 07",
         "formid": "0x00092A69",
         "instanceid": "0x00185CEA",
@@ -1280,7 +1280,7 @@
         "commonwealthx": "-73758.656250",
         "commonwealthy": "41816.605469"
       },
-      "0x00185CA6": {
+      {
         "name": "Unstoppables 05",
         "formid": "0x00135F07",
         "instanceid": "0x00185CA6",
@@ -1294,7 +1294,7 @@
         "commonwealthx": "7150.849121",
         "commonwealthy": "-19160.099609"
       },
-      "0x0023B4FB": {
+      {
         "name": "Astoundingly Awesome Tales 04",
         "formid": "0x0016969D",
         "instanceid": "0x0023B4FB",
@@ -1308,7 +1308,7 @@
         "commonwealthx": "7150.849121",
         "commonwealthy": "-19160.099609"
       },
-      "0x00180A20": {
+      {
         "name": "Guns and Bullets 04",
         "formid": "0x00092A89",
         "instanceid": "0x00180A20",
@@ -1322,7 +1322,7 @@
         "commonwealthx": "-13722.338867",
         "commonwealthy": "-76976.078125"
       },
-      "0x00249C7E": {
+      {
         "name": "RobCo Fun 01",
         "formid": "0x00184DA1",
         "instanceid": "0x00249C7E",
@@ -1336,7 +1336,7 @@
         "commonwealthx": "-56740.000000",
         "commonwealthy": "70144.000000"
       },
-      "0x00184DB0": {
+      {
         "name": "Guns and Bullets 03",
         "formid": "0x00092A88",
         "instanceid": "0x00184DB0",
@@ -1350,7 +1350,7 @@
         "commonwealthx": "-25604.531250",
         "commonwealthy": "3347.662598"
       },
-      "0x0005E5E4": {
+      {
         "name": "Grognak the Barbarian 01",
         "formid": "0x0008E741",
         "instanceid": "0x0005E5E4",
@@ -1362,7 +1362,7 @@
         "worldx": "4529.446289",
         "worldy": "1703.715576"
       },
-      "0x0005E5F1": {
+      {
         "name": "Grognak the Barbarian 10",
         "formid": "0x0008E74A",
         "instanceid": "0x0005E5F1",
@@ -1374,7 +1374,7 @@
         "worldx": "4536.864258",
         "worldy": "1686.463867"
       },
-      "0x0005E5F2": {
+      {
         "name": "Grognak the Barbarian 02",
         "formid": "0x0008E742",
         "instanceid": "0x0005E5F2",
@@ -1386,7 +1386,7 @@
         "worldx": "4521.194336",
         "worldy": "1735.464111"
       },
-      "0x0005E5F3": {
+      {
         "name": "Grognak the Barbarian 07",
         "formid": "0x0008E747",
         "instanceid": "0x0005E5F3",
@@ -1398,7 +1398,7 @@
         "worldx": "4549.139648",
         "worldy": "1736.314575"
       },
-      "0x0005E5F4": {
+      {
         "name": "Massachusetts Surgical Journal 03",
         "formid": "0x0008E74D",
         "instanceid": "0x0005E5F4",
@@ -1410,7 +1410,7 @@
         "worldx": "-4311.307617",
         "worldy": "314.703094"
       },
-      "0x0005E5F5": {
+      {
         "name": "Massachusetts Surgical Journal 07",
         "formid": "0x0008E751",
         "instanceid": "0x0005E5F5",
@@ -1422,7 +1422,7 @@
         "worldx": "-4320.550781",
         "worldy": "301.777527"
       },
-      "0x0005E5F6": {
+      {
         "name": "Tesla Science 05",
         "formid": "0x00092A7C",
         "instanceid": "0x0005E5F6",
@@ -1434,7 +1434,7 @@
         "worldx": "-4383.740723",
         "worldy": "273.804169"
       },
-      "0x00184D91": {
+      {
         "name": "Total Hack 01",
         "formid": "0x00094734",
         "instanceid": "0x00184D91",
@@ -1448,7 +1448,7 @@
         "commonwealthx": "-6569.662109",
         "commonwealthy": "23328.687500"
       },
-      "0x00249C7F": {
+      {
         "name": "Astoundingly Awesome Tales 14",
         "formid": "0x001696A4",
         "instanceid": "0x00249C7F",
@@ -1462,7 +1462,7 @@
         "commonwealthx": "45366.132812",
         "commonwealthy": "14880.149414"
       },
-      "0x00184D97": {
+      {
         "name": "Guns and Bullets 02",
         "formid": "0x00092A87",
         "instanceid": "0x00184D97",
@@ -1476,7 +1476,7 @@
         "commonwealthx": "-87424.000000",
         "commonwealthy": "-5504.000000"
       },
-      "0x00184DA8": {
+      {
         "name": "Live & Love 01",
         "formid": "0x00184DA7",
         "instanceid": "0x00184DA8",
@@ -1490,7 +1490,7 @@
         "commonwealthx": "28362.107422",
         "commonwealthy": "-5744.000000"
       },
-      "0x00184DA9": {
+      {
         "name": "U.S. Covert Operations Manual 03",
         "formid": "0x0008E739",
         "instanceid": "0x00184DA9",
@@ -1504,7 +1504,7 @@
         "commonwealthx": "-85615.468750",
         "commonwealthy": "23950.494141"
       },
-      "0x00185CAA": {
+      {
         "name": "Astoundingly Awesome Tales 13",
         "formid": "0x001696A3",
         "instanceid": "0x00185CAA",
@@ -1518,7 +1518,7 @@
         "commonwealthx": "-70880.687500",
         "commonwealthy": "-135478.890625"
       },
-      "0x00072F76": {
+      {
         "name": "Tales of a Junktown Jerky Vendor 03",
         "formid": "0x00092A65",
         "instanceid": "0x00072F76",
@@ -1532,7 +1532,7 @@
         "commonwealthx": "-34479.015625",
         "commonwealthy": "42113.667969"
       },
-      "0x0023B4FD": {
+      {
         "name": "Live & Love 06",
         "formid": "0x001C2E24",
         "instanceid": "0x0023B4FD",
@@ -1546,7 +1546,7 @@
         "commonwealthx": "20826.119140625",
         "commonwealthy": "-11904.7138671985"
       },
-      "0x00184D96": {
+      {
         "name": "Tesla Science 01",
         "formid": "0x00092A78",
         "instanceid": "0x00184D96",
@@ -1560,7 +1560,7 @@
         "commonwealthx": "-68736.000000",
         "commonwealthy": "18512.000000"
       },
-      "0x00184DAE": {
+      {
         "name": "U.S. Covert Operations Manual 05",
         "formid": "0x0008E73B",
         "instanceid": "0x00184DAE",
@@ -1574,7 +1574,7 @@
         "commonwealthx": "76984.000000",
         "commonwealthy": "-17472.000000"
       },
-      "0x001A4BF8": {
+      {
         "name": "Massachusetts Surgical Journal 02",
         "formid": "0x0008E74C",
         "instanceid": "0x001A4BF8",
@@ -1588,7 +1588,7 @@
         "commonwealthx": "-5189.582520",
         "commonwealthy": "-23248.958984"
       },
-      "0x00180A31": {
+      {
         "name": "Astoundingly Awesome Tales 10",
         "formid": "0x0016969E",
         "instanceid": "0x00180A31",
@@ -1602,7 +1602,7 @@
         "commonwealthx": "25755.792969",
         "commonwealthy": "2940.544189"
       },
-      "0x00184DA6": {
+      {
         "name": "Taboo Tattoos 02",
         "formid": "0x00184DA5",
         "instanceid": "0x00184DA6",
@@ -1616,7 +1616,7 @@
         "commonwealthx": "-61230.058594",
         "commonwealthy": "73237.226562"
       },
-      "0x00184DAB": {
+      {
         "name": "Tumblers Today 02",
         "formid": "0x00092A6F",
         "instanceid": "0x00184DAB",
@@ -1630,7 +1630,7 @@
         "commonwealthx": "-19314.328125",
         "commonwealthy": "-26845.488281"
       },
-      "0x00184DBA": {
+      {
         "name": "Live & Love 02",
         "formid": "0x00184DB9",
         "instanceid": "0x00184DBA",
@@ -1644,7 +1644,7 @@
         "commonwealthx": "-29073.003906",
         "commonwealthy": "13385.500000"
       },
-      "0x00249C81": {
+      {
         "name": "RobCo Fun 05",
         "formid": "0x001C1418",
         "instanceid": "0x00249C81",
@@ -1658,7 +1658,7 @@
         "commonwealthx": "-13664.327148",
         "commonwealthy": "-29759.445312"
       },
-      "0x00245D04": {
+      {
         "name": "Astoundingly Awesome Tales 09",
         "formid": "0x001696A5",
         "instanceid": "0x00245D04",
@@ -1672,7 +1672,7 @@
         "commonwealthx": "-16671.166016",
         "commonwealthy": "692.558716"
       },
-      "0x0023B4FE": {
+      {
         "name": "Live & Love 08",
         "formid": "0x001C2E28",
         "instanceid": "0x0023B4FE",
@@ -1686,7 +1686,7 @@
         "commonwealthx": "20675.119140625",
         "commonwealthy": "-11650.7138671985"
       },
-      "0x00184D98": {
+      {
         "name": "Unstoppables 01",
         "formid": "0x00135F03",
         "instanceid": "0x00184D98",
@@ -1700,7 +1700,7 @@
         "commonwealthx": "-4480.000000",
         "commonwealthy": "-62080.000000"
       },
-      "0x0023B4FF": {
+      {
         "name": "Live & Love 09",
         "formid": "0x001D1CD6",
         "instanceid": "0x0023B4FF",
@@ -1714,7 +1714,7 @@
         "commonwealthx": "-13664.327148",
         "commonwealthy": "-29759.445312"
       },
-      "0x00184D8C": {
+      {
         "name": "Picket Fences 01",
         "formid": "0x00184D8B",
         "instanceid": "0x00184D8C",
@@ -1728,7 +1728,7 @@
         "commonwealthx": "-40888.480469",
         "commonwealthy": "3715.822510"
       },
-      "0x00184D86": {
+      {
         "name": "Guns and Bullets 01",
         "formid": "0x00092A83",
         "instanceid": "0x00184D86",
@@ -1742,7 +1742,7 @@
         "commonwealthx": "10554.307617",
         "commonwealthy": "19001.015625"
       },
-      "0x00184D87": {
+      {
         "name": "U.S. Covert Operations Manual 01",
         "formid": "0x0008E737",
         "instanceid": "0x00184D87",
@@ -1756,7 +1756,7 @@
         "commonwealthx": "-46449.875000",
         "commonwealthy": "44206.582031"
       }
-    }
+    ]
   },
   "bobblehead": {
     "icon": "award.svg",
@@ -1766,8 +1766,8 @@
       "70",
       "70"
     ],
-    "items": {
-      "0x00180A23": {
+    "items": [
+      {
         "name": "Unarmed Bobblehead",
         "formid": "0x00178B64",
         "instanceid": "0x00180A23",
@@ -1778,7 +1778,7 @@
         "commonwealthx": "38802.812500",
         "commonwealthy": "-71473.398438"
       },
-      "0x00180A38": {
+      {
         "name": "Luck Bobblehead",
         "formid": "0x00178B5A",
         "instanceid": "0x00180A38",
@@ -1789,7 +1789,7 @@
         "commonwealthx": "78427.132812",
         "commonwealthy": "-72089.937500"
       },
-      "0x00180A42": {
+      {
         "name": "Agility Bobblehead",
         "formid": "0x00178B51",
         "instanceid": "0x00180A42",
@@ -1800,7 +1800,7 @@
         "commonwealthx": "56301.792969",
         "commonwealthy": "-83505.867188"
       },
-      "0x00180A43": {
+      {
         "name": "Melee Bobblehead",
         "formid": "0x00178B5C",
         "instanceid": "0x00180A43",
@@ -1811,7 +1811,7 @@
         "commonwealthx": "4085.367187",
         "commonwealthy": "-24822.070312"
       },
-      "0x00180A19": {
+      {
         "name": "Repair Bobblehead",
         "formid": "0x00178B5E",
         "instanceid": "0x00180A19",
@@ -1822,7 +1822,7 @@
         "commonwealthx": "-37873.273438",
         "commonwealthy": "31334.753906"
       },
-      "0x00180A1D": {
+      {
         "name": "Sneak Bobblehead",
         "formid": "0x00178B61",
         "instanceid": "0x00180A1D",
@@ -1836,7 +1836,7 @@
         "commonwealthx": "68545.867187",
         "commonwealthy": "71800.078125"
       },
-      "0x00180A3F": {
+      {
         "name": "Big Guns Bobblehead",
         "formid": "0x00178B53",
         "instanceid": "0x00180A3F",
@@ -1850,7 +1850,7 @@
         "commonwealthx": "-50143.316406",
         "commonwealthy": "-89927.445312"
       },
-      "0x00180A2C": {
+      {
         "name": "Barter Bobblehead",
         "formid": "0x00178B52",
         "instanceid": "0x00180A2C",
@@ -1864,7 +1864,7 @@
         "commonwealthx": "78878.164062",
         "commonwealthy": "56447.917969"
       },
-      "0x00180A27": {
+      {
         "name": "Energy Weapons Bobblehead",
         "formid": "0x00178B56",
         "instanceid": "0x00180A27",
@@ -1878,7 +1878,7 @@
         "commonwealthx": "-87424.000000",
         "commonwealthy": "-5504.000000"
       },
-      "0x00180A3D": {
+      {
         "name": "Science Bobblehead",
         "formid": "0x00178B5F",
         "instanceid": "0x00180A3D",
@@ -1892,7 +1892,7 @@
         "commonwealthx": "18709.947266",
         "commonwealthy": "62262.558594"
       },
-      "0x00180A3B": {
+      {
         "name": "Speech Bobblehead",
         "formid": "0x00178B62",
         "instanceid": "0x00180A3B",
@@ -1906,7 +1906,7 @@
         "commonwealthx": "8119.56787109375",
         "commonwealthy": "-17975.1953125"
       },
-      "0x00180A35": {
+      {
         "name": "Explosive Bobblehead",
         "formid": "0x00178B57",
         "instanceid": "0x00180A35",
@@ -1920,7 +1920,7 @@
         "commonwealthx": "53568.000000",
         "commonwealthy": "59728.996094"
       },
-      "0x00180A28": {
+      {
         "name": "Medicine Bobblehead",
         "formid": "0x00178B5B",
         "instanceid": "0x00180A28",
@@ -1934,7 +1934,7 @@
         "commonwealthx": "-37603.19921857",
         "commonwealthy": "-23620.890625"
       },
-      "0x00180A2D": {
+      {
         "name": "Strength Bobblehead",
         "formid": "0x00178B63",
         "instanceid": "0x00180A2D",
@@ -1948,7 +1948,7 @@
         "commonwealthx": "18559.947266",
         "commonwealthy": "-7615.913574"
       },
-      "0x00180A33": {
+      {
         "name": "Endurance Bobblehead",
         "formid": "0x00178B55",
         "instanceid": "0x00180A33",
@@ -1962,7 +1962,7 @@
         "commonwealthx": "41402.605469",
         "commonwealthy": "-89968.507812"
       },
-      "0x00180A1F": {
+      {
         "name": "Small Guns Bobblehead",
         "formid": "0x00178B60",
         "instanceid": "0x00180A1F",
@@ -1976,7 +1976,7 @@
         "commonwealthx": "-13722.338867",
         "commonwealthy": "-76976.078125"
       },
-      "0x00180A2F": {
+      {
         "name": "Perception Bobblehead",
         "formid": "0x00178B5D",
         "instanceid": "0x00180A2F",
@@ -1990,7 +1990,7 @@
         "commonwealthx": "-56740.000000",
         "commonwealthy": "70144.000000"
       },
-      "0x00180A17": {
+      {
         "name": "Intelligence Bobblehead",
         "formid": "0x00178B58",
         "instanceid": "0x00180A17",
@@ -2004,7 +2004,7 @@
         "commonwealthx": "-5189.582520",
         "commonwealthy": "-23248.958984"
       },
-      "0x00180A32": {
+      {
         "name": "Lock Picking Bobblehead",
         "formid": "0x00178B59",
         "instanceid": "0x00180A32",
@@ -2018,7 +2018,7 @@
         "commonwealthx": "25755.792969",
         "commonwealthy": "2940.544189"
       },
-      "0x00180A1B": {
+      {
         "name": "Charisma Bobblehead",
         "formid": "0x00178B54",
         "instanceid": "0x00180A1B",
@@ -2030,6 +2030,6 @@
         "worldx": "2091.050537",
         "worldy": "1470.155029"
       }
-    }
+    ]
   }
 }

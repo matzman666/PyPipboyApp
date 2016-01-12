@@ -1141,9 +1141,6 @@ class GlobalMapWidget(widgets.WidgetBase):
 
     def _createCollectablesMarkers(self, collectableDefs):
         self._logger.info('creating CollectableMarkers')
-        for catkey in self.collectableLocationMarkers.keys():
-            for instanceID,collectableMarker in self.collectableLocationMarkers[catkey].items():
-                collectableMarker.destroy()
 
         for catKey, catData in collectableDefs.items():
             self.collectableLocationMarkers[catKey] = {}
@@ -1153,23 +1150,33 @@ class GlobalMapWidget(widgets.WidgetBase):
             if color is not None and len(color) == 3:
                 iconcolor = QtGui.QColor(int(color[0]), int(color[1]), int(color[2]))
 
-            items = catData.get('items', None)
-            if items is not None:
-                for instanceID, collectable in items.items():
+            newDict = dict()
+
+            for collectable in catData.get('items'):
+                if collectable.get('instanceid', None) in self.collectableLocationMarkers[catKey].keys():
+                    marker = self.collectableLocationMarkers[catKey][collectable.get('instanceid', None)]
+                    self._logger.info ('reused marker '+ str(collectable.get('instanceid', None)))
+                    newDict[collectable.get('instanceid', None)] = marker
+                    del self.collectableLocationMarkers[catKey][collectable.get('instanceid', None)]
+                else:
                     cmx = collectable.get('commonwealthx', None)
                     cmy = collectable.get('commonwealthy', None)
                     if cmx is not None and cmy is not None:
-                        m = CollectableMarker(instanceID, self, self.controller.sharedResImageFactory, iconcolor, self.mapMarkerSize, icon=catData.get('icon', 'Starfilled.svg'))
-                        m.setLabel(textwrap.fill(collectable.get('name', ''), 30) + '\n' + textwrap.fill(collectable.get('description', ''), 30))
-                        m.itemFormID = collectable.get('formid')
-                        m.setMapPos(self.mapCoords.pip2map_x(float(cmx)), self.mapCoords.pip2map_y(float(cmy)))
+                        marker = CollectableMarker(collectable.get('instanceid', None), self, self.controller.sharedResImageFactory, iconcolor, self.mapMarkerSize, icon=catData.get('icon', 'Starfilled.svg'))
+                        marker.setLabel(textwrap.fill(collectable.get('name', ''), 30) + '\n' + textwrap.fill(collectable.get('description', ''), 30))
+                        marker.itemFormID = collectable.get('formid')
+                        marker.setMapPos(self.mapCoords.pip2map_x(float(cmx)), self.mapCoords.pip2map_y(float(cmy)))
                         if chk is not None:
-                            m.filterSetVisible(chk.isChecked())
-                        m.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, True)
-                        m.setSavedSettings()
-                        self._connectMarker(m)
+                            marker.filterSetVisible(chk.isChecked())
+                        marker.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, True)
+                        marker.setSavedSettings()
+                        self._connectMarker(marker)
+                        newDict[collectable.get('instanceid', None)] = marker
 
-                        self.collectableLocationMarkers[catKey][instanceID] = m
+            for instanceID, marker in self.collectableLocationMarkers[catKey].items():
+                marker.destroy()
+            self.collectableLocationMarkers[catKey] = newDict
+
         return
 
     @QtCore.pyqtSlot(bool)
@@ -1583,11 +1590,10 @@ class GlobalMapWidget(widgets.WidgetBase):
     
 
     def iwcSetCollectableCollected(self, formid):
-            for k in self.collectableLocationMarkers.keys():
-                for i,j in self.collectableLocationMarkers[k].items():
-                    if int(j.itemFormID,16) == formid:
-                        j.setCollected(True)
-
+        for catKey in self.collectableLocationMarkers.keys():
+            for instanceID, marker in self.collectableLocationMarkers[catKey].items():
+                if int(marker.itemFormID,16) == formid:
+                    marker.setCollected(True)
 
 
     def iwcCenterOnLocation(self, pipId):
@@ -1612,6 +1618,3 @@ class GlobalMapWidget(widgets.WidgetBase):
         
         if Quest:
             Quest.mapCenterOn()
-
-
-                            

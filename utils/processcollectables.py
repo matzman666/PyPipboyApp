@@ -79,7 +79,7 @@ with open(inputfile) as infile:
                     collectables[itype]['icon'] = 'book.svg'
                     collectables[itype]['friendlyname'] = 'Perk Magazines'
                     collectables[itype]['color'] = ["70","200","255" ]
-                collectables[itype]['items'] = OrderedDict()
+                collectables[itype]['items'] = []
                     
             item = OrderedDict()
 
@@ -206,9 +206,7 @@ with open(inputfile) as infile:
                 
                 pass
             
-            #collectables[itype]['items'].append(item['formid'])
-            collectables[itype]['items'][item['instanceid']] = item
-
+            collectables[itype]['items'].append(item)
 
 with open(outputfile, 'w') as outfile:
     json.dump(collectables, outfile)
