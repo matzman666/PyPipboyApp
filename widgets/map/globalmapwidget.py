@@ -217,6 +217,9 @@ class QuestMarker(PipValueMarkerBase):
     
 class LocationMarker(PipValueMarkerBase):
     artilleryRange = 97000
+    noteOverlayIcon = None
+    clearedOverlayIcon = None
+    workshopOverlayIcon = None
     
     def __init__(self, widget, imageFactory, imageFactory2, color, size, parent = None):
         super().__init__(widget.mapScene, widget.mapView, parent)
@@ -240,7 +243,24 @@ class LocationMarker(PipValueMarkerBase):
         self.filterVisibilityCheatFlag = False
         self.artilleryRangeCircle = None
         self.isOwnedWorkshop = False
+
+        if LocationMarker.noteOverlayIcon is None:
+            self._rebuildOverlayIcons()
+
+
         self.doUpdate()
+
+    @QtCore.pyqtSlot()
+    def _rebuildOverlayIcons(self):
+        self.widget._logger.info('LocationMarker: rebuilding overlay icons')
+        LocationMarker.noteOverlayIcon = self.imageFactory2.getImage('note8.png')
+        ImageFactory.colorizeImage(LocationMarker.noteOverlayIcon, self.color)
+        LocationMarker.clearedOverlayIcon = self.imageFactory2.getImage('tick8.png')
+        ImageFactory.colorizeImage(LocationMarker.clearedOverlayIcon, self.color)
+        LocationMarker.workshopOverlayIcon = self.imageFactory2.getImage('hammer8.png')
+        ImageFactory.colorizeImage(LocationMarker.workshopOverlayIcon, self.color)
+        super()._rebuildOverlayIcons()
+
 
     def updateZIndex(self):
         if hasattr(self.widget, 'mapMarkerZIndexes'):
@@ -328,16 +348,13 @@ class LocationMarker(PipValueMarkerBase):
         overlayXOffset = p.width() + 2
         overlayYOffset = 0
         if (len(self.note) > 0):
-            note = self.colouriseIcon(self.imageFactory2.getImage('note8.png'), self.color)
-            pn.drawPixmap(QtCore.QRect(overlayXOffset, overlayYOffset, 8, 8), note)
+            pn.drawImage(QtCore.QRect(overlayXOffset, overlayYOffset, 8, 8), LocationMarker.noteOverlayIcon)
             overlayYOffset += 8+2
         if (self.isOwnedWorkshop):
-            hammer = self.colouriseIcon(self.imageFactory2.getImage('hammer8.png'), self.color)
-            pn.drawPixmap(QtCore.QRect(overlayXOffset, overlayYOffset, 8, 8), hammer)
+            pn.drawImage(QtCore.QRect(overlayXOffset, overlayYOffset, 8, 8), LocationMarker.workshopOverlayIcon)
             overlayYOffset += 8+2
         if (self.cleared):
-            tick = self.colouriseIcon(self.imageFactory2.getImage('tick8.png'), self.color)
-            pn.drawPixmap(QtCore.QRect(overlayXOffset, overlayYOffset, 8, 8), tick)
+            pn.drawImage(QtCore.QRect(overlayXOffset, overlayYOffset, 8, 8), LocationMarker.clearedOverlayIcon)
             overlayYOffset += 8+2
         pn.end()
         return px
@@ -646,17 +663,42 @@ class CollectableMarker(MarkerBase):
         self.markerItem.setZValue(0)
         self.setColor(color,False)
         self.setSize(size, False)
+        if self.color is not None:
+            self.uncollectedColor = QtGui.QColor.fromRgb(self.color.red(), self.color.green(), self.color.blue())
+            self.collectedColor = self.color.darker(200)
         self.setLabelFont(QtGui.QFont("Times", 8, QtGui.QFont.Bold), False)
         self.setLabel('Collectable Marker', False)
         self.filterVisibleFlag = True
         self.uid = uid
         self.collected = False
         self.itemFormID = None
+        self.collectedOverlayIcon = None
+        self._rebuildOverlayIcons()
         self.doUpdate()
 
+    @QtCore.pyqtSlot()
+    def _rebuildOverlayIcons(self):
+        self.widget._logger.info('CollectableMarker: rebuilding overlay icons')
+        self.collectedOverlayIcon = self.imageFactory.getImage('tick8.png')
+        ImageFactory.colorizeImage(self.collectedOverlayIcon, self.collectedColor)
+        super()._rebuildOverlayIcons()
+
     def _labelStr_(self):
-        return self.label
-        
+        if(self.collected):
+            return self.label + '\n[Collected]'
+        else:
+            return self.label
+
+    def updateZIndex(self):
+        if hasattr(self.widget, 'mapMarkerZIndexes'):
+            if (self.collected):
+                if (self.markerItem):
+                    self.markerItem.setZValue(self.widget.mapMarkerZIndexes.get('CollectedCollectableMarker', 0))
+                if (self.labelItem):
+                    self.labelItem.setZValue(self.widget.mapMarkerZIndexes.get('CollectedCollectableMarker', 0)+1000)
+            else:
+                super().updateZIndex()
+
     def _getPixmap_(self):
         p = self.imageFactory.getPixmap(self.imageFilePath, size=self.size, color=self.color)
 
@@ -667,8 +709,7 @@ class CollectableMarker(MarkerBase):
         overlayXOffset = p.width() + 2
         overlayYOffset = 0
         if (self.collected):
-            tick = self.colouriseIcon(self.imageFactory.getImage('tick8.png'), self.color)
-            pn.drawPixmap(QtCore.QRect(overlayXOffset, overlayYOffset, 8, 8), tick)
+            pn.drawImage(QtCore.QRect(overlayXOffset, overlayYOffset, 8, 8), self.collectedOverlayIcon)
             overlayYOffset += 8+2
         pn.end()
         return px
@@ -682,6 +723,12 @@ class CollectableMarker(MarkerBase):
     @QtCore.pyqtSlot(bool)
     def setCollected(self, value):
         self.collected = value
+        if value:
+            if self.collectedColor is not None:
+                self.color = self.collectedColor
+        else:
+            if self.uncollectedColor is not None:
+                self.color = self.uncollectedColor
         self.markerPixmapDirty = True
         self.labelDirty = True
         self.doUpdate()
@@ -864,7 +911,9 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.mapMarkerZIndexes['LabelledLocationMarker'] = 50
         self.mapMarkerZIndexes[str(CollectableMarker)] = 40
         self.mapMarkerZIndexes[str(LocationMarker)] = 30
-        self.mapMarkerZIndexes[str(MarkerBase)] = 0
+        self.mapMarkerZIndexes[str(MarkerBase)] = 10
+        self.mapMarkerZIndexes['CollectedCollectableMarker'] = 0
+
         # Add player marker
         self.playerMarker = PlayerMarker(self,self.controller.imageFactory, self.mapColor, self.mapMarkerSize)
         self._connectMarker(self.playerMarker)
