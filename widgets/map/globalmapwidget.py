@@ -6,6 +6,7 @@ import json
 import logging
 import textwrap
 import uuid
+from collections import OrderedDict
 from PyQt5 import QtWidgets, QtCore, QtGui, uic, QtSvg
 from widgets.shared.graphics import ImageFactory
 from widgets import widgets
@@ -1035,7 +1036,7 @@ class GlobalMapWidget(widgets.WidgetBase):
     def _loadCollectablesDefinitionsFromJson(self):
         self._logger.info('Loading CollectableMarkers from JSON')
         inputFile = open(os.path.join('widgets', 'shared', 'res', 'collectables-processed.json'))
-        collectables = json.load(inputFile)
+        collectables = json.load(inputFile, object_pairs_hook=OrderedDict)
         return collectables
 
     @QtCore.pyqtSlot(float, float, float)
@@ -1122,9 +1123,12 @@ class GlobalMapWidget(widgets.WidgetBase):
     # TODO: add spin boxes to configure nearby range
     def _addCollectablesControls(self, collectabledefs):
         for k, v in collectabledefs.items():
-            groupName = k + '_Controls'
-            groupBox = self._findCollectibleControlGroup(groupName)
-            if groupBox is None:
+            btngrp = self._findCollectableButtonGroup(k + '_collectedRDO')
+
+            showCollected = self._app.settings.value('globalmapwidget/showcollected' + k, 0)
+            showUncollected = self._app.settings.value('globalmapwidget/showuncollected' + k, 0)
+
+            if btngrp is None:
                 groupBox = QtWidgets.QGroupBox()
                 groupBox.setTitle(v.get('friendlyname', k))
 
@@ -1143,10 +1147,11 @@ class GlobalMapWidget(widgets.WidgetBase):
                 collectedBtnGroup.setObjectName(k + '_collectedRDO')
                 print('created: ' + collectedBtnGroup.objectName())
                 collectedBtnGroup.addButton(alwaysShowCollected,1)
-                collectedBtnGroup.addButton(neverShowCollected,2)
-                collectedBtnGroup.addButton(nearShowCollected,3)
+                collectedBtnGroup.addButton(neverShowCollected,0)
+                collectedBtnGroup.addButton(nearShowCollected,2)
                 self.collectableBtnGroups.append(collectedBtnGroup)
                 collectedBtnGroup.buttonClicked[int].connect(self.collectedCollectableBtnGroupClicked)
+                collectedBtnGroup.button(showCollected).setChecked(True)
 
 
                 uncollectedLbl = QtWidgets.QLabel('Uncollected')
@@ -1163,10 +1168,11 @@ class GlobalMapWidget(widgets.WidgetBase):
                 uncollectedBtnGroup.setObjectName(k + '_uncollectedRDO')
                 print('created: ' + uncollectedBtnGroup.objectName())
                 uncollectedBtnGroup.addButton(alwaysShowUncollected,1)
-                uncollectedBtnGroup.addButton(neverShowUncollected,2)
-                uncollectedBtnGroup.addButton(nearShowUncollected,3)
+                uncollectedBtnGroup.addButton(neverShowUncollected,0)
+                uncollectedBtnGroup.addButton(nearShowUncollected,2)
                 self.collectableBtnGroups.append(uncollectedBtnGroup)
                 uncollectedBtnGroup.buttonClicked[int].connect(self.uncollectedCollectableBtnGroupClicked)
+                uncollectedBtnGroup.button(showUncollected).setChecked(True)
 
                 groupBoxLayout = QtWidgets.QHBoxLayout()
                 groupBoxLayout.addLayout(collectedLayout)
@@ -1174,21 +1180,12 @@ class GlobalMapWidget(widgets.WidgetBase):
                 groupBox.setLayout(groupBoxLayout)
                 self.widget.CollectablesLayout.addWidget(groupBox)
 
-
-    def _findCollectibleControlGroup(self, objectname):
-        for i in range(0, self.widget.CollectablesLayout.count()):
-            w = self.widget.CollectablesLayout.itemAt(i)
-            if w.widget().objectName() == objectname:
-                return w.widget()
-        return None
-
     def _findCollectableButtonGroup(self, objectname):
         for i in self.collectableBtnGroups:
             if i.objectName() == objectname:
                 return i
         return None
 
-    # TODO: load and wireup settings at startup
     # TODO: if mode 3 update range on playermovement
     @QtCore.pyqtSlot(int)
     def collectedCollectableBtnGroupClicked(self, val):
@@ -1200,13 +1197,13 @@ class GlobalMapWidget(widgets.WidgetBase):
                     for id, marker in self.collectableLocationMarkers[k].items():
                         if marker.collected:
                             marker.filterSetVisible(True)
-                elif btngrp.checkedId() == 2:
-                    self._app.settings.setValue('globalmapwidget/showcollected' + k, 2)
+                elif btngrp.checkedId() == 0:
+                    self._app.settings.setValue('globalmapwidget/showcollected' + k, 0)
                     for id, marker in self.collectableLocationMarkers[k].items():
                         if marker.collected:
                             marker.filterSetVisible(False)
-                elif btngrp.checkedId() == 3:
-                    self._app.settings.setValue('globalmapwidget/showcollected' + k, 3)
+                elif btngrp.checkedId() == 2:
+                    self._app.settings.setValue('globalmapwidget/showcollected' + k, 2)
                     for id, marker in self.collectableLocationMarkers[k].items():
                         if marker.collected:
                             marker.filterSetVisible(self.playerMarker.isWithinRangeOf(marker, 100))
@@ -1221,13 +1218,13 @@ class GlobalMapWidget(widgets.WidgetBase):
                     for instanceid, marker in self.collectableLocationMarkers[k].items():
                         if not marker.collected:
                             marker.filterSetVisible(True)
-                elif btngrp.checkedId() == 2:
-                    self._app.settings.setValue('globalmapwidget/showuncollected' + k, 2)
+                elif btngrp.checkedId() == 0:
+                    self._app.settings.setValue('globalmapwidget/showuncollected' + k, 0)
                     for instanceid, marker in self.collectableLocationMarkers[k].items():
                         if not marker.collected:
                             marker.filterSetVisible(False)
-                elif btngrp.checkedId() == 3:
-                    self._app.settings.setValue('globalmapwidget/showuncollected' + k, 3)
+                elif btngrp.checkedId() == 2:
+                    self._app.settings.setValue('globalmapwidget/showuncollected' + k, 2)
                     for instanceid, marker in self.collectableLocationMarkers[k].items():
                         if not marker.collected:
                             marker.filterSetVisible(self.playerMarker.isWithinRangeOf(marker, 100))
@@ -1266,7 +1263,6 @@ class GlobalMapWidget(widgets.WidgetBase):
 
         self._signalPipWorldQuestsUpdated.emit()
 
-    # TODO: wireup settings on creation
     def _createCollectablesMarkers(self, collectableDefs):
         self._logger.info('creating CollectableMarkers')
 
@@ -1278,6 +1274,10 @@ class GlobalMapWidget(widgets.WidgetBase):
                 iconcolor = QtGui.QColor(int(color[0]), int(color[1]), int(color[2]))
 
             newDict = dict()
+
+            showCollected = self._app.settings.value('globalmapwidget/showcollected' + catKey, 0)
+            showUncollected = self._app.settings.value('globalmapwidget/showuncollected' + catKey, 0)
+
 
             for collectable in catData.get('items'):
                 if collectable.get('instanceid', None) in self.collectableLocationMarkers[catKey].keys():
@@ -1296,6 +1296,22 @@ class GlobalMapWidget(widgets.WidgetBase):
                         marker.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, True)
                         marker.setSavedSettings()
                         self._connectMarker(marker)
+
+                        if marker.collected:
+                            if showCollected == 1:
+                                marker.filterSetVisible(True)
+                            elif showCollected == 2:
+                                pass
+                            else:
+                                marker.filterSetVisible(False)
+                        else:
+                            if showUncollected == 1:
+                                marker.filterSetVisible(True)
+                            elif showUncollected == 2:
+                                pass
+                            else:
+                                marker.filterSetVisible(False)
+
                         marker.filterSetVisible(True)
 
                         newDict[collectable.get('instanceid', None)] = marker
