@@ -1075,8 +1075,6 @@ class GlobalMapWidget(widgets.WidgetBase):
             self.signalLocationFilterSetVisible.disconnect(marker.filterSetVisible)
             self.signalLocationFilterVisibilityCheat.disconnect(marker.filterVisibilityCheat)
             
-            
-    
     def _onRootObjectEvent(self, rootObject):
         self.pipMapObject = rootObject.child('Map')
         if self.pipMapObject:
@@ -1120,8 +1118,9 @@ class GlobalMapWidget(widgets.WidgetBase):
                 self.pipWorldLocations.registerValueUpdatedListener(self._onPipWorldLocationsUpdated, 0)
                 self._signalPipWorldLocationsUpdated.emit()
 
-    # TODO: add spin boxes to configure nearby range
     def _addCollectablesControls(self, collectabledefs):
+        #todo: add spin boxes for nearby visibilty ranges
+        #todo: add checkbox for audible alert when nearby
         for k, v in collectabledefs.items():
             btngrp = self._findCollectableButtonGroup(k + '_collectedRDO')
 
@@ -1142,6 +1141,7 @@ class GlobalMapWidget(widgets.WidgetBase):
                 collectedLayout.addWidget(alwaysShowCollected)
                 collectedLayout.addWidget(neverShowCollected)
                 collectedLayout.addWidget(nearShowCollected)
+                collectedLayout.addStretch()
 
                 collectedBtnGroup = QtWidgets.QButtonGroup(self)
                 collectedBtnGroup.setObjectName(k + '_collectedRDO')
@@ -1158,11 +1158,14 @@ class GlobalMapWidget(widgets.WidgetBase):
                 alwaysShowUncollected = QtWidgets.QRadioButton('Always')
                 neverShowUncollected = QtWidgets.QRadioButton('Never')
                 nearShowUncollected = QtWidgets.QRadioButton('Nearby')
+                uncollectedaubiblealert = QtWidgets.QCheckBox('Audible\nAlert')
                 uncollectedLayout = QtWidgets.QVBoxLayout()
                 uncollectedLayout.addWidget(uncollectedLbl)
                 uncollectedLayout.addWidget(alwaysShowUncollected)
                 uncollectedLayout.addWidget(neverShowUncollected)
                 uncollectedLayout.addWidget(nearShowUncollected)
+                uncollectedLayout.addWidget(uncollectedaubiblealert)
+                uncollectedLayout.addStretch()
 
                 uncollectedBtnGroup = QtWidgets.QButtonGroup(self)
                 uncollectedBtnGroup.setObjectName(k + '_uncollectedRDO')
@@ -1175,8 +1178,8 @@ class GlobalMapWidget(widgets.WidgetBase):
                 uncollectedBtnGroup.button(showUncollected).setChecked(True)
 
                 groupBoxLayout = QtWidgets.QHBoxLayout()
-                groupBoxLayout.addLayout(collectedLayout)
                 groupBoxLayout.addLayout(uncollectedLayout)
+                groupBoxLayout.addLayout(collectedLayout)
                 groupBox.setLayout(groupBoxLayout)
                 self.widget.CollectablesLayout.addWidget(groupBox)
 
@@ -1186,7 +1189,6 @@ class GlobalMapWidget(widgets.WidgetBase):
                 return i
         return None
 
-    # TODO: if mode 3 update range on playermovement
     @QtCore.pyqtSlot(int)
     def collectedCollectableBtnGroupClicked(self, val):
         for k in self.collectableLocationMarkers.keys():
@@ -1301,18 +1303,16 @@ class GlobalMapWidget(widgets.WidgetBase):
                             if showCollected == 1:
                                 marker.filterSetVisible(True)
                             elif showCollected == 2:
-                                pass
+                                marker.filterSetVisible(self.playerMarker.isWithinRangeOf(marker, 100))
                             else:
                                 marker.filterSetVisible(False)
                         else:
                             if showUncollected == 1:
                                 marker.filterSetVisible(True)
                             elif showUncollected == 2:
-                                pass
+                                marker.filterSetVisible(self.playerMarker.isWithinRangeOf(marker, 100))
                             else:
                                 marker.filterSetVisible(False)
-
-                        marker.filterSetVisible(True)
 
                         newDict[collectable.get('instanceid', None)] = marker
 
@@ -1549,6 +1549,18 @@ class GlobalMapWidget(widgets.WidgetBase):
     def _slotPlayerMarkerPositionUpdated(self, x, y, r):
         if self.centerOnPlayerEnabled:
             self.playerMarker.mapCenterOn()
+
+        for catKey in self.collectableLocationMarkers.keys():
+            if self._app.settings.value('globalmapwidget/showcollected' + catKey, 0) == 2:
+                for k, marker in self.collectableLocationMarkers[catKey].items():
+                    if marker.collected:
+                        marker.filterSetVisible(self.playerMarker.isWithinRangeOf(marker, 100))
+            if self._app.settings.value('globalmapwidget/showuncollected' + catKey, 0) == 2:
+                for k, marker in self.collectableLocationMarkers[catKey].items():
+                    if not marker.collected:
+                        marker.filterSetVisible(self.playerMarker.isWithinRangeOf(marker, 100))
+
+
         
     @QtCore.pyqtSlot(bool)        
     def _slotMapColorAutoModeTriggered(self, value):
