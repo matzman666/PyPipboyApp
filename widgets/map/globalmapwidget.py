@@ -1022,6 +1022,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.showCollectables = {}
 
         self.collectableDefs = self._loadCollectablesDefinitionsFromJson()
+        self.collectableBtnGroups = []
         self._addCollectablesControls(self.collectableDefs)
 
         self._signalPipWorldQuestsUpdated.connect(self._slotPipWorldQuestsUpdated)
@@ -1030,6 +1031,12 @@ class GlobalMapWidget(widgets.WidgetBase):
         
     def getMenuCategory(self):
         return 'Map && Locations'
+
+    def _loadCollectablesDefinitionsFromJson(self):
+        self._logger.info('Loading CollectableMarkers from JSON')
+        inputFile = open(os.path.join('widgets', 'shared', 'res', 'collectables-processed.json'))
+        collectables = json.load(inputFile)
+        return collectables
 
     @QtCore.pyqtSlot(float, float, float)
     def saveZoom(self, zoom, mapposx, mapposy):
@@ -1112,48 +1119,118 @@ class GlobalMapWidget(widgets.WidgetBase):
                 self.pipWorldLocations.registerValueUpdatedListener(self._onPipWorldLocationsUpdated, 0)
                 self._signalPipWorldLocationsUpdated.emit()
 
+    # TODO: add spin boxes to configure nearby range
+    def _addCollectablesControls(self, collectabledefs):
+        for k, v in collectabledefs.items():
+            groupName = k + '_Controls'
+            groupBox = self._findCollectibleControlGroup(groupName)
+            if groupBox is None:
+                groupBox = QtWidgets.QGroupBox()
+                groupBox.setTitle(v.get('friendlyname', k))
 
-    def _findCollectibleCheckbox(self, collectableKey):
-        oname = collectableKey + '_CheckBox'
+                collectedLbl = QtWidgets.QLabel('Collected')
+                alwaysShowCollected = QtWidgets.QRadioButton('Always')
+                neverShowCollected = QtWidgets.QRadioButton('Never')
+                nearShowCollected = QtWidgets.QRadioButton('Nearby')
+
+                collectedLayout = QtWidgets.QVBoxLayout()
+                collectedLayout.addWidget(collectedLbl)
+                collectedLayout.addWidget(alwaysShowCollected)
+                collectedLayout.addWidget(neverShowCollected)
+                collectedLayout.addWidget(nearShowCollected)
+
+                collectedBtnGroup = QtWidgets.QButtonGroup(self)
+                collectedBtnGroup.setObjectName(k + '_collectedRDO')
+                print('created: ' + collectedBtnGroup.objectName())
+                collectedBtnGroup.addButton(alwaysShowCollected,1)
+                collectedBtnGroup.addButton(neverShowCollected,2)
+                collectedBtnGroup.addButton(nearShowCollected,3)
+                self.collectableBtnGroups.append(collectedBtnGroup)
+                collectedBtnGroup.buttonClicked[int].connect(self.collectedCollectableBtnGroupClicked)
+
+
+                uncollectedLbl = QtWidgets.QLabel('Uncollected')
+                alwaysShowUncollected = QtWidgets.QRadioButton('Always')
+                neverShowUncollected = QtWidgets.QRadioButton('Never')
+                nearShowUncollected = QtWidgets.QRadioButton('Nearby')
+                uncollectedLayout = QtWidgets.QVBoxLayout()
+                uncollectedLayout.addWidget(uncollectedLbl)
+                uncollectedLayout.addWidget(alwaysShowUncollected)
+                uncollectedLayout.addWidget(neverShowUncollected)
+                uncollectedLayout.addWidget(nearShowUncollected)
+
+                uncollectedBtnGroup = QtWidgets.QButtonGroup(self)
+                uncollectedBtnGroup.setObjectName(k + '_uncollectedRDO')
+                print('created: ' + uncollectedBtnGroup.objectName())
+                uncollectedBtnGroup.addButton(alwaysShowUncollected,1)
+                uncollectedBtnGroup.addButton(neverShowUncollected,2)
+                uncollectedBtnGroup.addButton(nearShowUncollected,3)
+                self.collectableBtnGroups.append(uncollectedBtnGroup)
+                uncollectedBtnGroup.buttonClicked[int].connect(self.uncollectedCollectableBtnGroupClicked)
+
+                groupBoxLayout = QtWidgets.QHBoxLayout()
+                groupBoxLayout.addLayout(collectedLayout)
+                groupBoxLayout.addLayout(uncollectedLayout)
+                groupBox.setLayout(groupBoxLayout)
+                self.widget.CollectablesLayout.addWidget(groupBox)
+
+
+    def _findCollectibleControlGroup(self, objectname):
         for i in range(0, self.widget.CollectablesLayout.count()):
             w = self.widget.CollectablesLayout.itemAt(i)
-            if w.widget().objectName() == oname:
+            if w.widget().objectName() == objectname:
                 return w.widget()
         return None
 
-    def _addCollectablesControls(self, collectables):
-        for k, v in collectables.items():
-            chk = self._findCollectibleCheckbox(k)
-            if chk is None:
-                oname = k + '_CheckBox'
-                chk = QtWidgets.QCheckBox()
-                chk.setObjectName(oname)
-                chk.setText(v.get('friendlyname', k))
-                chk.stateChanged.connect(self.chkcollectableTriggered)
-                chk.setChecked(bool(int(self._app.settings.value('globalmapwidget/show' + k, 0))))
-                self.widget.CollectablesLayout.addWidget(chk)
+    def _findCollectableButtonGroup(self, objectname):
+        for i in self.collectableBtnGroups:
+            if i.objectName() == objectname:
+                return i
+        return None
 
-    def _loadCollectablesDefinitionsFromJson(self):
-        self._logger.info('Loading CollectableMarkers from JSON')
-        inputFile = open(os.path.join('widgets', 'shared', 'res', 'collectables-processed.json'))
-        collectables = json.load(inputFile)
-        return collectables
-
-    @QtCore.pyqtSlot(bool)
-    def chkcollectableTriggered(self, value):
+    # TODO: load and wireup settings at startup
+    # TODO: if mode 3 update range on playermovement
+    @QtCore.pyqtSlot(int)
+    def collectedCollectableBtnGroupClicked(self, val):
         for k in self.collectableLocationMarkers.keys():
-            chk = self.widget.findChild(QtWidgets.QCheckBox, k + '_CheckBox')
+            btngrp = self._findCollectableButtonGroup(k + '_collectedRDO')
+            if btngrp is not None:
+                if btngrp.checkedId() == 1:
+                    self._app.settings.setValue('globalmapwidget/showcollected' + k, 1)
+                    for id, marker in self.collectableLocationMarkers[k].items():
+                        if marker.collected:
+                            marker.filterSetVisible(True)
+                elif btngrp.checkedId() == 2:
+                    self._app.settings.setValue('globalmapwidget/showcollected' + k, 2)
+                    for id, marker in self.collectableLocationMarkers[k].items():
+                        if marker.collected:
+                            marker.filterSetVisible(False)
+                elif btngrp.checkedId() == 3:
+                    self._app.settings.setValue('globalmapwidget/showcollected' + k, 3)
+                    for id, marker in self.collectableLocationMarkers[k].items():
+                        if marker.collected:
+                            marker.filterSetVisible(self.playerMarker.isWithinRangeOf(marker, 100))
 
-            if chk.isChecked():
-                self._app.settings.setValue('globalmapwidget/show' + k, 1)
-                self.showCollectables[k] = True
-                for i,j in self.collectableLocationMarkers[k].items():
-                    j.filterSetVisible(True)
-            else:
-                self._app.settings.setValue('globalmapwidget/show' + k, 0)
-                self.showCollectables[k] = False
-                for i,j in self.collectableLocationMarkers[k].items():
-                    j.filterSetVisible(False)
+    @QtCore.pyqtSlot(int)
+    def uncollectedCollectableBtnGroupClicked(self, val):
+        for k in self.collectableLocationMarkers.keys():
+            btngrp = self._findCollectableButtonGroup(k + '_uncollectedRDO')
+            if btngrp is not None:
+                if btngrp.checkedId() == 1:
+                    self._app.settings.setValue('globalmapwidget/showuncollected' + k, 1)
+                    for instanceid, marker in self.collectableLocationMarkers[k].items():
+                        if not marker.collected:
+                            marker.filterSetVisible(True)
+                elif btngrp.checkedId() == 2:
+                    self._app.settings.setValue('globalmapwidget/showuncollected' + k, 2)
+                    for instanceid, marker in self.collectableLocationMarkers[k].items():
+                        if not marker.collected:
+                            marker.filterSetVisible(False)
+                elif btngrp.checkedId() == 3:
+                    self._app.settings.setValue('globalmapwidget/showuncollected' + k, 3)
+                    for instanceid, marker in self.collectableLocationMarkers[k].items():
+                        if not marker.collected:
+                            marker.filterSetVisible(self.playerMarker.isWithinRangeOf(marker, 100))
 
     def _onPipWorldQuestsUpdated(self, caller, value, pathObjs):
         self._signalPipWorldQuestsUpdated.emit()
@@ -1189,12 +1266,12 @@ class GlobalMapWidget(widgets.WidgetBase):
 
         self._signalPipWorldQuestsUpdated.emit()
 
+    # TODO: wireup settings on creation
     def _createCollectablesMarkers(self, collectableDefs):
         self._logger.info('creating CollectableMarkers')
 
         for catKey, catData in collectableDefs.items():
             self.collectableLocationMarkers[catKey] = {}
-            chk = self._findCollectibleCheckbox(catKey)
             iconcolor = self.mapColor
             color = catData.get('color', None)
             if color is not None and len(color) == 3:
@@ -1216,11 +1293,11 @@ class GlobalMapWidget(widgets.WidgetBase):
                         marker.setLabel(textwrap.fill(collectable.get('name', ''), 30) + '\n' + textwrap.fill(collectable.get('description', ''), 30))
                         marker.itemFormID = collectable.get('formid')
                         marker.setMapPos(self.mapCoords.pip2map_x(float(cmx)), self.mapCoords.pip2map_y(float(cmy)))
-                        if chk is not None:
-                            marker.filterSetVisible(chk.isChecked())
                         marker.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, True)
                         marker.setSavedSettings()
                         self._connectMarker(marker)
+                        marker.filterSetVisible(True)
+
                         newDict[collectable.get('instanceid', None)] = marker
 
             for instanceID, marker in self.collectableLocationMarkers[catKey].items():
