@@ -1157,7 +1157,6 @@ class GlobalMapWidget(widgets.WidgetBase):
 
                 collectedBtnGroup = QtWidgets.QButtonGroup(self)
                 collectedBtnGroup.setObjectName('collectable_showcollected_' + k)
-                print('created: ' + collectedBtnGroup.objectName())
                 collectedBtnGroup.addButton(alwaysShowCollected,1)
                 collectedBtnGroup.addButton(neverShowCollected,0)
                 collectedBtnGroup.addButton(nearShowCollected,2)
@@ -1179,7 +1178,6 @@ class GlobalMapWidget(widgets.WidgetBase):
 
                 uncollectedBtnGroup = QtWidgets.QButtonGroup(self)
                 uncollectedBtnGroup.setObjectName('collectable_showuncollected_' + k)
-                print('created: ' + uncollectedBtnGroup.objectName())
                 uncollectedBtnGroup.addButton(alwaysShowUncollected,1)
                 uncollectedBtnGroup.addButton(neverShowUncollected,0)
                 uncollectedBtnGroup.addButton(nearShowUncollected,2)
@@ -1296,6 +1294,9 @@ class GlobalMapWidget(widgets.WidgetBase):
 
     def _createCollectablesMarkers(self, collectableDefs, reset=False):
         self._logger.info('creating CollectableMarkers')
+        if reset:
+            self.collectablesNearPlayer = []
+
 
         for catKey, catData in collectableDefs.items():
             if catKey not in self.collectableLocationMarkers.keys():
@@ -1471,7 +1472,6 @@ class GlobalMapWidget(widgets.WidgetBase):
             self.signalMarkerForcePipValueUpdate.emit()
 
             self._app.settings.setValue('globalmapwidget/selectedMapFile', self.selectedMapFile)
-            self.collectablesNearPlayer = []
             self._createCollectablesMarkers(self.collectableDefs, reset=True)
 
 
