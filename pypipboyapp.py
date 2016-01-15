@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-import os
+import os, platform
 import sys
 import json
 import importlib
@@ -92,7 +92,7 @@ class PyPipboyApp(QtWidgets.QApplication):
     _signalFinishedCheckVersion = QtCore.pyqtSignal(dict, bool, bool, str, bool)
     
     #constructor
-    def __init__(self, args):
+    def __init__(self, args, inifile):
         super().__init__(args)
 
         self.startedFromWin32Launcher = False;
@@ -104,7 +104,21 @@ class PyPipboyApp(QtWidgets.QApplication):
         # Prepare QSettings for application-wide use
         QtCore.QCoreApplication.setOrganizationName("PyPipboyApp")
         QtCore.QCoreApplication.setApplicationName("PyPipboyApp")
-        self.settings = QtCore.QSettings()
+        if inifile:
+            self.settings = QtCore.QSettings(inifile, QtCore.QSettings.IniFormat)
+        elif platform.system() == 'Windows':
+            self.settings = QtCore.QSettings(QtCore.QSettings.IniFormat, QtCore.QSettings.UserScope, "PyPipboyApp", "PyPipboyApp")
+            # If there are no settings, copy existing settings from registry
+            if len(self.settings.allKeys()) <= 0:
+                registrySettings = QtCore.QSettings(QtCore.QSettings.NativeFormat, QtCore.QSettings.UserScope, "PyPipboyApp", "PyPipboyApp")
+                for k in registrySettings.allKeys():
+                    self.settings.setValue(k, registrySettings.value(k))
+                    #registrySettings.remove(k)
+                #registrySettings.sync()
+        else: 
+            # Non-Windows OS already use the ini-format, they just use another file-extension. That's why we stick with nativeFormat.
+            self.settings = QtCore.QSettings(QtCore.QSettings.NativeFormat, QtCore.QSettings.UserScope, "PyPipboyApp", "PyPipboyApp")
+        
         # Init PyPipboy communication layer
         self.dataManager = PipboyDataManager()
         self.networkChannel = self.dataManager.networkchannel
@@ -164,9 +178,12 @@ class PyPipboyApp(QtWidgets.QApplication):
         self.mainWindow.addDockWidget(QtCore.Qt.TopDockWidgetArea, self.helpWidget)
         self._loadWidgets()
         # Restore saved window state
-        savedGeometry = self.settings.value('mainwindow/geometry')
-        if savedGeometry:
-            self.mainWindow.restoreGeometry(savedGeometry)
+        savedWindowSize = self.settings.value('mainwindow/windowSize', None)
+        if savedWindowSize:
+            self.mainWindow.resize(savedWindowSize)
+        savedWindowPos = self.settings.value('mainwindow/windowPos', None)
+        if savedWindowPos:
+            self.mainWindow.move(savedWindowPos)
         savedState = self.settings.value('mainwindow/windowstate')
         if savedState:
             self.mainWindow.restoreState(savedState)
@@ -402,7 +419,8 @@ class PyPipboyApp(QtWidgets.QApplication):
             self.relayController.stopRelayService()
             self.relayController.stopAutodiscoverService()
             # save state
-            self.settings.setValue('mainwindow/geometry', self.mainWindow.saveGeometry())
+            self.settings.setValue('mainwindow/windowSize', self.mainWindow.size())
+            self.settings.setValue('mainwindow/windowPos', self.mainWindow.pos())
             self.settings.setValue('mainwindow/windowstate', self.mainWindow.saveState())
             self.settings.sync()
             # quit
@@ -752,6 +770,7 @@ class PyPipboyApp(QtWidgets.QApplication):
 # Main entry point
 if __name__ == "__main__":
     stdlogfile = None
+    inifile = None
     i = 1
     while i < len(sys.argv):
         if sys.argv[i] == '--stdlog':
@@ -760,6 +779,12 @@ if __name__ == "__main__":
             else:
                 i += 1
                 stdlogfile = sys.argv[i]
+        elif sys.argv[i] == '--inifile':
+            if i == len(sys.argv) -1 :
+                logging.error('Missing argument for --inifile')
+            else:
+                i += 1
+                inifile = sys.argv[i]
         i += 1
     if stdlogfile != None:
         stdlog = open(stdlogfile, 'w')
@@ -785,5 +810,6 @@ if __name__ == "__main__":
     if 'nt' in os.name:
         from ctypes import windll
         windll.shell32.SetCurrentProcessExplicitAppUserModelID(u'matzman666.pypipboyapp')
-    pipboyApp = PyPipboyApp(sys.argv)
+    print('ini-file: ', inifile)
+    pipboyApp = PyPipboyApp(sys.argv, inifile)
     pipboyApp.run()
