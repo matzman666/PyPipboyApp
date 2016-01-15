@@ -149,7 +149,7 @@ class DoctorsBagWidget(widgets.WidgetBase):
     @QtCore.pyqtSlot()
     def _slotInfoUpdated(self):
         if self.widget.btnCustom.isChecked(): # self.viewMode == 'Custom':
-            self.updateDrugView(self.customItems)
+            self.updateDrugView(self.customItems, showitemswithzerocount=True)
         elif self.widget.btnDrugs.isChecked():
             self.updateDrugView(self.drugItems)
         elif self.widget.btnDrink.isChecked():
@@ -405,7 +405,7 @@ class DoctorsBagWidget(widgets.WidgetBase):
         return
     
     def showCustom(self):
-        self.updateDrugView(self.customItems)
+        self.updateDrugView(self.customItems, showitemswithzerocount=True)
         return
     
     def showAll(self):
@@ -449,57 +449,71 @@ class DoctorsBagWidget(widgets.WidgetBase):
                             text += ')'
                 else:
                     descCount += 1
-                    
+
         return text
-        
-    def updateDrugView(self, itemList):
+
+    def updateDrugView(self, itemList, showitemswithzerocount=False):
         self.drugmodel.clear()
- 
+
         if (self.pipInventoryInfo):
             def _filterFunc(item):
-                if (inventoryutils.itemHasAnyFilterCategory(item,inventoryutils.eItemFilterCategory.Aid)
-                        and (itemList == None or item.child('text').value().lower() in itemList)):
+                if (inventoryutils.itemHasAnyFilterCategory(item, inventoryutils.eItemFilterCategory.Aid)
+                        and (itemList is None or item.child('text').value().lower() in itemList)):
                     return True
                 else:
                     return False
+
             aidItems = inventoryutils.inventoryGetItems(self.pipInventoryInfo, _filterFunc)
-            if(not aidItems):
+            if (not aidItems):
                 return
             for i in aidItems:
-                tooltipstr = 'Left-click to use item\n'
-                if (self.widget.btnCustom.isChecked()):
-                    tooltipstr += 'Right-click to remove from custom list\n\n'
-                else:
-                    tooltipstr += 'Right-click to add to custom list\n\n'
-                
                 name = i.child('text').value()
                 count = str(i.child('count').value())
-                tooltipstr += self.getItemToolTip(i)
-                
-                item = [
-                    QStandardItem(name) , 
-                    QStandardItem(count)
-                ]
+                itemtooltip = self.getItemToolTip(i)
+                modelitem = self.createDrugModelItem(name, count, itemtooltip)
 
-                item[0].setToolTip(tooltipstr)
-                item[1].setToolTip(tooltipstr)
-                item[1].setData(QtCore.Qt.AlignCenter, QtCore.Qt.TextAlignmentRole)
-                
-                self.drugmodel.appendRow(item)
-                    
-            if (self.widget.btnCustom.isChecked() and self.drugmodel.rowCount() == 0 ):
-                    self.drugmodel.appendRow([QStandardItem(''), QStandardItem('Right click on items')])
-                    self.drugmodel.appendRow([QStandardItem(''), QStandardItem('in the other lists to ')])
-                    self.drugmodel.appendRow([QStandardItem(''), QStandardItem('add them to this list')])
-                    
-                    
+                self.drugmodel.appendRow(modelitem)
+
+            if showitemswithzerocount:
+                itemsinmodel = []
+                for row in range(0, self.drugmodel.rowCount()):
+                    itemsinmodel.append(self.drugmodel.item(row, 0).text().lower())
+                    print ('inmodel: ' + itemsinmodel[-1])
+
+                for item in itemList:
+                    if not item in itemsinmodel:
+                        modelitem = self.createDrugModelItem(item.capitalize(), '-', '')
+                        self.drugmodel.appendRow(modelitem)
+
+            if (self.widget.btnCustom.isChecked() and self.drugmodel.rowCount() == 0):
+                self.drugmodel.appendRow([QStandardItem(''), QStandardItem('Right click on items')])
+                self.drugmodel.appendRow([QStandardItem(''), QStandardItem('in the other lists to ')])
+                self.drugmodel.appendRow([QStandardItem(''), QStandardItem('add them to this list')])
+
+
             self.widget.drugView.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
             self.widget.drugView.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
             self.widget.drugView.verticalHeader().setStretchLastSection(False)
             self.widget.drugView.horizontalHeader().setStretchLastSection(True)
             self.widget.drugView.setModel(self.drugmodel)
-            
+
             self.widget.drugView.sortByColumn(0, QtCore.Qt.AscendingOrder)
+
+    def createDrugModelItem(self, name, count, itemtooltip):
+        tooltipstr = 'Left-click to use item\n'
+        if self.widget.btnCustom.isChecked():
+            tooltipstr += 'Right-click to remove from custom list\n\n'
+        else:
+            tooltipstr += 'Right-click to add to custom list\n\n'
+        tooltipstr += itemtooltip
+        item = [
+            QStandardItem(name),
+            QStandardItem(count)
+        ]
+        item[0].setToolTip(tooltipstr)
+        item[1].setToolTip(tooltipstr)
+        item[1].setData(QtCore.Qt.AlignCenter, QtCore.Qt.TextAlignmentRole)
+        return item
 
     def useItemByName(self, itemName):
         itemName = itemName.lower()
@@ -511,4 +525,7 @@ class DoctorsBagWidget(widgets.WidgetBase):
                 return False
         item = inventoryutils.inventoryGetItem(self.pipInventoryInfo, _filterFunc)
         if item:
-            self.dataManager.rpcUseItem(item)
+            try:
+                self.dataManager.rpcUseItem(item)
+            except Exception as e:
+                self._logger.error('DoctorsBag: Exception in rpc call: ' + str(e))
