@@ -1136,8 +1136,8 @@ class GlobalMapWidget(widgets.WidgetBase):
             showCollected = int(self._app.settings.value('globalmapwidget/collectable_showcollected_' + k, 0))
             showUncollected = int(self._app.settings.value('globalmapwidget/collectable_showuncollected_' + k, 0))
             alertUncollected = bool(int(self._app.settings.value('globalmapwidget/collectable_alertuncollected_' + k, 0)))
-            vrangeUncollected = int(self._app.settings.value('globalmapwidget/collectable_vrangeuncollected_' + k, 100))
-            arangeUncollected = int(self._app.settings.value('globalmapwidget/collectable_arangeuncollected_' + k, 50))
+            collectableVRange = int(self._app.settings.value('globalmapwidget/collectable_vrange_' + k, 100))
+            collectableARange = int(self._app.settings.value('globalmapwidget/collectable_arange_' + k, 50))
 
             if btngrp is None:
                 groupBox = QtWidgets.QGroupBox()
@@ -1187,10 +1187,10 @@ class GlobalMapWidget(widgets.WidgetBase):
 
                 uncollectedVisualRange = QtWidgets.QSpinBox()
                 uncollectedVisualRange.setPrefix('Visual Range ')
-                uncollectedVisualRange.setObjectName('collectable_vrangeuncollected_' + k)
+                uncollectedVisualRange.setObjectName('collectable_vrange_' + k)
                 uncollectedVisualRange.setRange(0, 500)
                 uncollectedVisualRange.setSingleStep(10)
-                uncollectedVisualRange.setValue(vrangeUncollected)
+                uncollectedVisualRange.setValue(collectableVRange)
                 uncollectedVisualRange.valueChanged[int].connect(self._vrangeCollectableUpdated)
 
 
@@ -1201,10 +1201,10 @@ class GlobalMapWidget(widgets.WidgetBase):
 
                 uncollectedAudibleRange = QtWidgets.QSpinBox()
                 uncollectedAudibleRange.setPrefix('Audible Range ')
-                uncollectedAudibleRange.setObjectName('collectable_arangeuncollected_' + k)
+                uncollectedAudibleRange.setObjectName('collectable_arange_' + k)
                 uncollectedAudibleRange.setRange(0, 500)
                 uncollectedAudibleRange.setSingleStep(10)
-                uncollectedAudibleRange.setValue(arangeUncollected)
+                uncollectedAudibleRange.setValue(collectableARange)
                 uncollectedAudibleRange.valueChanged[int].connect(self._arangeCollectableUpdated)
 
 
@@ -1570,18 +1570,17 @@ class GlobalMapWidget(widgets.WidgetBase):
 
     def updateCollectableVisibility(self, playAudibleAlerts=True):
         for catKey in self.collectableLocationMarkers.keys():
-            showAlwaysCollected = self._app.settings.value('globalmapwidget/collectable_showcollected_' + catKey, 0) == 1
-            showNeverCollected = self._app.settings.value('globalmapwidget/collectable_showcollected_' + catKey, 0) == 0
+            showAlwaysCollected = bool(int(self._app.settings.value('globalmapwidget/collectable_showcollected_' + catKey, 0)) == 1)
+            showNeverCollected = bool(int(self._app.settings.value('globalmapwidget/collectable_showcollected_' + catKey, 0)) == 0)
 
-            showAlwaysUncollected = self._app.settings.value('globalmapwidget/collectable_showuncollected_' + catKey, 0) == 1
-            showNeverUncollected = self._app.settings.value('globalmapwidget/collectable_showuncollected_' + catKey, 0) == 0
+            showAlwaysUncollected = bool(int(self._app.settings.value('globalmapwidget/collectable_showuncollected_' + catKey, 0)) == 1)
+            showNeverUncollected = bool(int(self._app.settings.value('globalmapwidget/collectable_showuncollected_' + catKey, 0)) == 0)
 
-            showNearCollected = self._app.settings.value('globalmapwidget/collectable_showcollected_' + catKey, 0) == 2
-            showNearUncollected = self._app.settings.value('globalmapwidget/collectable_showuncollected_' + catKey, 0) == 2
+            showNearCollected = bool(int(self._app.settings.value('globalmapwidget/collectable_showcollected_' + catKey, 0)) == 2)
+            showNearUncollected = bool(int(self._app.settings.value('globalmapwidget/collectable_showuncollected_' + catKey, 0)) == 2)
             alertnearuncollected = bool(int(self._app.settings.value('globalmapwidget/collectable_alertuncollected_' + catKey, 0)))
-            vrangeuncollected = int(self._app.settings.value('globalmapwidget/collectable_vrangeuncollected_' + catKey, 100))
-            arangeuncollected = int(self._app.settings.value('globalmapwidget/collectable_arangeuncollected_' + catKey, 50))
-
+            collectableVRange = int(self._app.settings.value('globalmapwidget/collectable_vrange_' + catKey, 100))
+            collectableARange = int(self._app.settings.value('globalmapwidget/collectable_arange_' + catKey, 50))
 
             for k, marker in self.collectableLocationMarkers[catKey].items():
                 if marker.collected:
@@ -1590,22 +1589,22 @@ class GlobalMapWidget(widgets.WidgetBase):
                     if showNeverCollected:
                         marker.filterSetVisible(False)
                     if showNearCollected:
-                        if self.playerMarker.isWithinRangeOf(marker, vrangeuncollected):
+                        if self.playerMarker.isWithinRangeOf(marker, collectableVRange):
                             marker.filterSetVisible(True)
                         else:
-                            marker.filterSetVisible(True)
+                            marker.filterSetVisible(False)
                 else:
                     if showAlwaysUncollected:
                         marker.filterSetVisible(True)
                     if showNeverUncollected:
                         marker.filterSetVisible(False)
                     if showNearUncollected:
-                        if self.playerMarker.isWithinRangeOf(marker, vrangeuncollected):
+                        if self.playerMarker.isWithinRangeOf(marker, collectableVRange):
                             marker.filterSetVisible(True)
                         else:
                             marker.filterSetVisible(False)
                     if alertnearuncollected:
-                        if self.playerMarker.isWithinRangeOf(marker, arangeuncollected):
+                        if self.playerMarker.isWithinRangeOf(marker, collectableARange):
                             if marker.uid not in self.collectablesNearPlayer:
                                 self.collectablesNearPlayer.append(marker.uid)
                                 if playAudibleAlerts and catKey in self.collectableNearSoundEffects.keys() and not self.collectableNearSoundEffects[catKey].isPlaying():
