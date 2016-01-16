@@ -1568,7 +1568,8 @@ class GlobalMapWidget(widgets.WidgetBase):
     def _slotPlayerMarkerPositionUpdated(self, x, y, r):
         if self.centerOnPlayerEnabled:
             self.playerMarker.mapCenterOn()
-            self.updateCollectableVisibility()
+
+        self.updateCollectableVisibility()
 
     def updateCollectableVisibility(self, playAudibleAlerts=True):
         for catKey in self.collectableLocationMarkers.keys():
