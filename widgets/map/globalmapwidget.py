@@ -1133,8 +1133,8 @@ class GlobalMapWidget(widgets.WidgetBase):
         for k, v in collectabledefs.items():
             btngrp = self._findCollectableButtonGroup('collectable_showcollected_' + k )
 
-            showCollected = self._app.settings.value('globalmapwidget/collectable_showcollected_' + k, 0)
-            showUncollected = self._app.settings.value('globalmapwidget/collectable_showuncollected_' + k, 0)
+            showCollected = int(self._app.settings.value('globalmapwidget/collectable_showcollected_' + k, 0))
+            showUncollected = int(self._app.settings.value('globalmapwidget/collectable_showuncollected_' + k, 0))
             alertUncollected = bool(int(self._app.settings.value('globalmapwidget/collectable_alertuncollected_' + k, 0)))
             vrangeUncollected = int(self._app.settings.value('globalmapwidget/collectable_vrangeuncollected_' + k, 100))
             arangeUncollected = int(self._app.settings.value('globalmapwidget/collectable_arangeuncollected_' + k, 50))
@@ -1472,7 +1472,9 @@ class GlobalMapWidget(widgets.WidgetBase):
             self.signalMarkerForcePipValueUpdate.emit()
 
             self._app.settings.setValue('globalmapwidget/selectedMapFile', self.selectedMapFile)
-            self._createCollectablesMarkers(self.collectableDefs, reset=True)
+            # Only create collectables markers when we have a map object
+            if self.pipMapObject:
+                self._createCollectablesMarkers(self.collectableDefs, reset=True)
 
 
     @QtCore.pyqtSlot(int)        

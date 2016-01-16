@@ -94,6 +94,7 @@ class PyPipboyApp(QtWidgets.QApplication):
     #constructor
     def __init__(self, args, inifile):
         super().__init__(args)
+        self._logger = logging.getLogger('pypipboyapp.main')
 
         self.startedFromWin32Launcher = False;
         
@@ -105,6 +106,7 @@ class PyPipboyApp(QtWidgets.QApplication):
         QtCore.QCoreApplication.setOrganizationName("PyPipboyApp")
         QtCore.QCoreApplication.setApplicationName("PyPipboyApp")
         if inifile:
+            self._logger.info('Using ini-file "', inifile, '".')
             self.settings = QtCore.QSettings(inifile, QtCore.QSettings.IniFormat)
         elif platform.system() == 'Windows':
             self.settings = QtCore.QSettings(QtCore.QSettings.IniFormat, QtCore.QSettings.UserScope, "PyPipboyApp", "PyPipboyApp")
@@ -134,7 +136,6 @@ class PyPipboyApp(QtWidgets.QApplication):
         self._connectHostThread = None
         self._iwcEndpoints = dict()
         self.widgetMenu = QtWidgets.QMenu()
-        self._logger = logging.getLogger('pypipboyapp.main')
         
         pipboyAppIcon = QtGui.QIcon()
         pipboyAppIcon.addFile(os.path.join('ui', 'res', 'PyPipBoyApp-Launcher.ico'))
@@ -810,6 +811,5 @@ if __name__ == "__main__":
     if 'nt' in os.name:
         from ctypes import windll
         windll.shell32.SetCurrentProcessExplicitAppUserModelID(u'matzman666.pypipboyapp')
-    print('ini-file: ', inifile)
     pipboyApp = PyPipboyApp(sys.argv, inifile)
     pipboyApp.run()
