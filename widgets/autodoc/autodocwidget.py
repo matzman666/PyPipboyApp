@@ -81,6 +81,8 @@ class AutoDocWidget(widgets.WidgetBase):
     # 2 - Being Irradiated
     RadState = 0
     Addicted = False
+    Aquaperson = False
+    InWater = False
     
     StimpakRadAwayFlag = False
     # Activates when you trigger the no heal case because of radiation.
@@ -206,7 +208,7 @@ class AutoDocWidget(widgets.WidgetBase):
             if self.HPPercent < self.Stimpak.Setting:
                 # Rad Away No Healing Trigger
                 if self.Stimpak.Active:
-                    if self.HPCur == self.HPLast:
+                    if (self.HPCur == self.HPLast) and (self.HPCur != self.HPMax):
                         if (self.RadAway.Num <= self.RadAway.Limit) or (self.RadAway.Num == 0):
                             if not self.StimpakRadAwayFlag:
                                 self.StimpakRadAwayFlag = True
@@ -379,6 +381,7 @@ class AutoDocWidget(widgets.WidgetBase):
         self.RadX.Active = False
         
         self.Addicted = False
+        self.InWater = False
         
         if self.RadState == 2:
             self.RadState = 1
@@ -396,8 +399,14 @@ class AutoDocWidget(widgets.WidgetBase):
                         for j in range(0, ActiveEffectsData.child(i).child("Effects").childCount()):
                             EffectName = ActiveEffectsData.child(i).child("Effects").child(j).child("Name").value()
                             
+                            if (EffectName == "Waterbreathing") and not self.Aquaperson:
+                                self.Aquaperson = True
+                                
                             if EffectName == "Rads":
-                                self.RadState = 2
+                                if ActiveEffectsData.child(i).child("Source").value() == "Water Radiation":
+                                    self.InWater = True
+                                else:
+                                    self.RadState = 2
                     
                     if TypeID == 49:
                         if ActiveEffectsData.child(i).child("Source").value() == "Alcohol Addiction":
@@ -426,6 +435,9 @@ class AutoDocWidget(widgets.WidgetBase):
                             if EffectName == "Rad Resist":
                                 if ActiveEffectsData.child(i).child("Effects").child(j).child("Value").value() > 0:
                                     self.RadX.Active = True
+        
+        if self.InWater and not self.Aquaperson:
+            self.RadState = 2
     
     def UpdateInventory(self):
         if self.InventoryData:
