@@ -78,9 +78,8 @@ class CharacterDataManager(QtCore.QObject):
                     index = self._app.settings.value(self.playerDataPath + self.collectedcollectablesuffix, None)
                     if index is None:
                         index = []
-
                     if str(item.child('formID').value()) not in index:
-                        index.append(item.child('formID').value())
+                        index.append(str(item.child('formID').value()))
                         self._app.settings.setValue(self.playerDataPath + self.collectedcollectablesuffix, index)
                         if self.globalMap is not None:
                             self.globalMap.iwcSetCollectableCollected(item.child('formID').value())
