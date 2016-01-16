@@ -179,12 +179,9 @@ class PyPipboyApp(QtWidgets.QApplication):
         self.mainWindow.addDockWidget(QtCore.Qt.TopDockWidgetArea, self.helpWidget)
         self._loadWidgets()
         # Restore saved window state
-        savedWindowSize = self.settings.value('mainwindow/windowSize', None)
-        if savedWindowSize:
-            self.mainWindow.resize(savedWindowSize)
-        savedWindowPos = self.settings.value('mainwindow/windowPos', None)
-        if savedWindowPos:
-            self.mainWindow.move(savedWindowPos)
+        savedGeometry = self.settings.value('mainwindow/geometry')
+        if savedGeometry:
+            self.mainWindow.restoreGeometry(savedGeometry)
         savedState = self.settings.value('mainwindow/windowstate')
         if savedState:
             self.mainWindow.restoreState(savedState)
@@ -420,8 +417,7 @@ class PyPipboyApp(QtWidgets.QApplication):
             self.relayController.stopRelayService()
             self.relayController.stopAutodiscoverService()
             # save state
-            self.settings.setValue('mainwindow/windowSize', self.mainWindow.size())
-            self.settings.setValue('mainwindow/windowPos', self.mainWindow.pos())
+            self.settings.setValue('mainwindow/geometry', self.mainWindow.saveGeometry())
             self.settings.setValue('mainwindow/windowstate', self.mainWindow.saveState())
             self.settings.sync()
             # quit

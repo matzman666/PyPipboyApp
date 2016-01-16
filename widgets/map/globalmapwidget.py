@@ -1579,8 +1579,8 @@ class GlobalMapWidget(widgets.WidgetBase):
             showNearCollected = self._app.settings.value('globalmapwidget/collectable_showcollected_' + catKey, 0) == 2
             showNearUncollected = self._app.settings.value('globalmapwidget/collectable_showuncollected_' + catKey, 0) == 2
             alertnearuncollected = bool(int(self._app.settings.value('globalmapwidget/collectable_alertuncollected_' + catKey, 0)))
-            vrangeuncollected = self._app.settings.value('globalmapwidget/collectable_vrangeuncollected_' + catKey, 100)
-            arangeuncollected = self._app.settings.value('globalmapwidget/collectable_arangeuncollected_' + catKey, 50)
+            vrangeuncollected = int(self._app.settings.value('globalmapwidget/collectable_vrangeuncollected_' + catKey, 100))
+            arangeuncollected = int(self._app.settings.value('globalmapwidget/collectable_arangeuncollected_' + catKey, 50))
 
 
             for k, marker in self.collectableLocationMarkers[catKey].items():
