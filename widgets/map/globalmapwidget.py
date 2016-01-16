@@ -1065,12 +1065,13 @@ class GlobalMapWidget(widgets.WidgetBase):
         
     def _connectMarker(self, marker):
         self.signalSetZoomLevel.connect(marker.setZoomLevel)
-        self.signalSetColor.connect(marker.setColor)
+        if marker.markerType != 5 and marker.markerType != 6: # POIs and Collectables
+            self.signalSetColor.connect(marker.setColor)
         self.signalSetStickyLabel.connect(marker.setStickyLabel)
         self.signalMarkerForcePipValueUpdate.connect(marker._slotPipValueUpdated)
         marker.signalMarkerDestroyed.connect(self._disconnectMarker)
         self.signalSetMarkerSize.connect(marker.setSize)
-        if marker.markerType == 4:
+        if marker.markerType == 4: # Locations
             self.signalLocationFilterSetVisible.connect(marker.filterSetVisible)
             self.signalLocationFilterVisibilityCheat.connect(marker.filterVisibilityCheat)
         
@@ -1079,10 +1080,11 @@ class GlobalMapWidget(widgets.WidgetBase):
         marker.signalMarkerDestroyed.disconnect(self._disconnectMarker)
         self.signalSetZoomLevel.disconnect(marker.setZoomLevel)
         self.signalSetStickyLabel.disconnect(marker.setStickyLabel)
-        self.signalSetColor.disconnect(marker.setColor)
+        if marker.markerType != 5 and marker.markerType != 6: # POIs and Collectables
+            self.signalSetColor.disconnect(marker.setColor)
         self.signalMarkerForcePipValueUpdate.disconnect(marker._slotPipValueUpdated)
         self.signalSetMarkerSize.disconnect(marker.setSize)
-        if marker.markerType == 4:
+        if marker.markerType == 4: # Locations
             self.signalLocationFilterSetVisible.disconnect(marker.filterSetVisible)
             self.signalLocationFilterVisibilityCheat.disconnect(marker.filterVisibilityCheat)
             
