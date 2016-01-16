@@ -6,7 +6,8 @@ import json
 import logging
 import textwrap
 import uuid
-from PyQt5 import QtWidgets, QtCore, QtGui, uic, QtSvg
+from collections import OrderedDict
+from PyQt5 import QtWidgets, QtCore, QtGui, uic, QtMultimedia
 from widgets.shared.graphics import ImageFactory
 from widgets import widgets
 from widgets.shared import settings
@@ -859,6 +860,9 @@ class GlobalMapWidget(widgets.WidgetBase):
         self._logger = logging.getLogger('pypipboyapp.map.globalmap')
         self.mapZoomLevel = 1.0
         self.characterDataManager = None
+        self.collectablesNearPlayer = []
+        self.collectableNearSoundEffects = {}
+
 
     def iwcSetup(self, app):
         app.iwcRegisterEndpoint('globalmapwidget', self)
@@ -1021,12 +1025,30 @@ class GlobalMapWidget(widgets.WidgetBase):
         # Init Collectables
         self.showCollectables = {}
 
+        self.collectableDefs = self._loadCollectablesDefinitionsFromJson()
+        self.collectableBtnGroups = []
+        self._addCollectablesControls(self.collectableDefs)
+
         self._signalPipWorldQuestsUpdated.connect(self._slotPipWorldQuestsUpdated)
         self._signalPipWorldLocationsUpdated.connect(self._slotPipWorldLocationsUpdated)
         self.datamanager.registerRootObjectListener(self._onRootObjectEvent)
         
     def getMenuCategory(self):
         return 'Map && Locations'
+
+    def _loadCollectablesDefinitionsFromJson(self):
+        self._logger.info('Loading CollectableMarkers from JSON')
+        inputFile = open(os.path.join('widgets', 'shared', 'res', 'collectables-processed.json'))
+        collectables = json.load(inputFile, object_pairs_hook=OrderedDict)
+
+        for k in collectables.keys():
+            self.collectableNearSoundEffects[k] = QtMultimedia.QSoundEffect()
+            self.collectableNearSoundEffects[k].setSource(QtCore.QUrl.fromLocalFile(os.path.join(self.basepath, 'res', k+'.wav')))
+            self.collectableNearSoundEffects[k].setVolume(0.25)
+            self.collectableNearSoundEffects[k].setLoopCount(1)
+
+
+        return collectables
 
     @QtCore.pyqtSlot(float, float, float)
     def saveZoom(self, zoom, mapposx, mapposy):
@@ -1064,8 +1086,6 @@ class GlobalMapWidget(widgets.WidgetBase):
             self.signalLocationFilterSetVisible.disconnect(marker.filterSetVisible)
             self.signalLocationFilterVisibilityCheat.disconnect(marker.filterVisibilityCheat)
             
-            
-    
     def _onRootObjectEvent(self, rootObject):
         self.pipMapObject = rootObject.child('Map')
         if self.pipMapObject:
@@ -1109,75 +1129,134 @@ class GlobalMapWidget(widgets.WidgetBase):
                 self.pipWorldLocations.registerValueUpdatedListener(self._onPipWorldLocationsUpdated, 0)
                 self._signalPipWorldLocationsUpdated.emit()
 
-    def loadMarkerForCollectables(self):
+    def _addCollectablesControls(self, collectabledefs):
+        for k, v in collectabledefs.items():
+            btngrp = self._findCollectableButtonGroup('collectable_showcollected_' + k )
 
-        for k in self.collectableLocationMarkers.keys():
-            for i,j in self.collectableLocationMarkers[k].items():
-                j.destroy()
+            showCollected = self._app.settings.value('globalmapwidget/collectable_showcollected_' + k, 0)
+            showUncollected = self._app.settings.value('globalmapwidget/collectable_showuncollected_' + k, 0)
+            alertUncollected = bool(int(self._app.settings.value('globalmapwidget/collectable_alertuncollected_' + k, 0)))
+            vrangeUncollected = int(self._app.settings.value('globalmapwidget/collectable_vrangeuncollected_' + k, 100))
+            arangeUncollected = int(self._app.settings.value('globalmapwidget/collectable_arangeuncollected_' + k, 50))
 
-        self._logger.warn('Reloading CollectableMarkers')
-        inputFile = open(os.path.join('widgets', 'shared', 'res', 'collectables-processed.json'))
-        collectables = json.load(inputFile)
+            if btngrp is None:
+                groupBox = QtWidgets.QGroupBox()
+                groupBox.setTitle(v.get('friendlyname', k))
 
-        # Need to delete old widgets first (or maybe reuse them?)
-        #for i in range(0, self.widget.CollectablesLayout.count()):
-        #    w = self.widget.CollectablesLayout.takeAt(0)
-        #    w.stateChanged.disconnect(self.chkcollectableTriggered)
-        def _findCollectibleCheckbox(objectName):
-            for i in range(0, self.widget.CollectablesLayout.count()):
-                w = self.widget.CollectablesLayout.itemAt(i)
-                if w.widget().objectName() == objectName:
-                    return w.widget()
-            return None
-            
-        for k, v in collectables.items():
-            self.collectableLocationMarkers[k] = {}
-            oname = k + '_CheckBox'
-            chk = _findCollectibleCheckbox(oname)
-            if not chk:
-                chk = QtWidgets.QCheckBox()
-                chk.setObjectName(oname)
-                chk.setText(v.get('friendlyname', k))
-                chk.setChecked(bool(int(self._app.settings.value('globalmapwidget/show' + k, 0))))
-                chk.stateChanged.connect(self.chkcollectableTriggered)
-                self.widget.CollectablesLayout.addWidget(chk)
+                collectedLbl = QtWidgets.QLabel('Collected')
+                alwaysShowCollected = QtWidgets.QRadioButton('Always')
+                neverShowCollected = QtWidgets.QRadioButton('Never')
+                nearShowCollected = QtWidgets.QRadioButton('Nearby')
 
-            iconcolor = self.mapColor
-            color = v.get('color', None)
-            if color is not None and len(color) == 3:
-                iconcolor = QtGui.QColor(int(color[0]), int(color[1]), int(color[2]))
+                collectedLayout = QtWidgets.QVBoxLayout()
+                collectedLayout.addWidget(collectedLbl)
+                collectedLayout.addWidget(alwaysShowCollected)
+                collectedLayout.addWidget(neverShowCollected)
+                collectedLayout.addWidget(nearShowCollected)
+                collectedLayout.addStretch()
 
-            for i in v.get('items', None):
-                cmx = i.get('commonwealthx', None)
-                cmy = i.get('commonwealthy', None)
-                if cmx is not None and cmy is not None:
-                    m = CollectableMarker(i.get('instanceformid'), self, self.controller.sharedResImageFactory, iconcolor, self.mapMarkerSize, icon=v.get('icon', 'Starfilled.svg'))
-                    m.setLabel(textwrap.fill(i.get('name', ''), 30) + '\n' + textwrap.fill(i.get('description', ''), 30))
-                    m.itemFormID = i.get('formid')
-                    m.setMapPos(self.mapCoords.pip2map_x(float(cmx)), self.mapCoords.pip2map_y(float(cmy)))
-                    m.filterSetVisible(chk.isChecked())
-                    m.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, True)
-                    m.setSavedSettings()
-                    self._connectMarker(m)
+                collectedBtnGroup = QtWidgets.QButtonGroup(self)
+                collectedBtnGroup.setObjectName('collectable_showcollected_' + k)
+                collectedBtnGroup.addButton(alwaysShowCollected,1)
+                collectedBtnGroup.addButton(neverShowCollected,0)
+                collectedBtnGroup.addButton(nearShowCollected,2)
+                self.collectableBtnGroups.append(collectedBtnGroup)
+                collectedBtnGroup.buttonClicked[int].connect(self._showCollectableBtnGroupClicked)
+                collectedBtnGroup.button(showCollected).setChecked(True)
 
-                    self.collectableLocationMarkers[k][i.get('instanceformid', str(uuid.uuid4()))] = m
-        return
 
-    @QtCore.pyqtSlot(bool)
-    def chkcollectableTriggered(self, value):
-        for k in self.collectableLocationMarkers.keys():
-            chk = self.widget.findChild(QtWidgets.QCheckBox, k + '_CheckBox')
+                uncollectedLbl = QtWidgets.QLabel('Uncollected')
+                alwaysShowUncollected = QtWidgets.QRadioButton('Always')
+                neverShowUncollected = QtWidgets.QRadioButton('Never')
+                nearShowUncollected = QtWidgets.QRadioButton('Nearby')
+                uncollectedLayout = QtWidgets.QVBoxLayout()
+                uncollectedLayout.addWidget(uncollectedLbl)
+                uncollectedLayout.addWidget(alwaysShowUncollected)
+                uncollectedLayout.addWidget(neverShowUncollected)
+                uncollectedLayout.addWidget(nearShowUncollected)
+                uncollectedLayout.addStretch()
 
-            if chk.isChecked():
-                self._app.settings.setValue('globalmapwidget/show' + k, 1)
-                self.showCollectables[k] = True
-                for i,j in self.collectableLocationMarkers[k].items():
-                    j.filterSetVisible(True)
-            else:
-                self._app.settings.setValue('globalmapwidget/show' + k, 0)
-                self.showCollectables[k] = False
-                for i,j in self.collectableLocationMarkers[k].items():
-                    j.filterSetVisible(False)
+                uncollectedBtnGroup = QtWidgets.QButtonGroup(self)
+                uncollectedBtnGroup.setObjectName('collectable_showuncollected_' + k)
+                uncollectedBtnGroup.addButton(alwaysShowUncollected,1)
+                uncollectedBtnGroup.addButton(neverShowUncollected,0)
+                uncollectedBtnGroup.addButton(nearShowUncollected,2)
+                self.collectableBtnGroups.append(uncollectedBtnGroup)
+                uncollectedBtnGroup.buttonClicked[int].connect(self._showCollectableBtnGroupClicked)
+                uncollectedBtnGroup.button(showUncollected).setChecked(True)
+
+                uncollectedVisualRange = QtWidgets.QSpinBox()
+                uncollectedVisualRange.setPrefix('Visual Range ')
+                uncollectedVisualRange.setObjectName('collectable_vrangeuncollected_' + k)
+                uncollectedVisualRange.setRange(0, 500)
+                uncollectedVisualRange.setSingleStep(10)
+                uncollectedVisualRange.setValue(vrangeUncollected)
+                uncollectedVisualRange.valueChanged[int].connect(self._vrangeCollectableUpdated)
+
+
+                uncollectedAubiblealert = QtWidgets.QCheckBox('Audible alert near uncollected')
+                uncollectedAubiblealert.setObjectName('collectable_alertuncollected_' + k)
+                uncollectedAubiblealert.setChecked(alertUncollected)
+                uncollectedAubiblealert.stateChanged.connect(self._audibleAlertCollectableStateChanged)
+
+                uncollectedAudibleRange = QtWidgets.QSpinBox()
+                uncollectedAudibleRange.setPrefix('Audible Range ')
+                uncollectedAudibleRange.setObjectName('collectable_arangeuncollected_' + k)
+                uncollectedAudibleRange.setRange(0, 500)
+                uncollectedAudibleRange.setSingleStep(10)
+                uncollectedAudibleRange.setValue(arangeUncollected)
+                uncollectedAudibleRange.valueChanged[int].connect(self._arangeCollectableUpdated)
+
+
+
+                groupBoxLayout = QtWidgets.QVBoxLayout()
+                groupBoxHLayout = QtWidgets.QHBoxLayout()
+                groupBoxHLayout.addLayout(uncollectedLayout)
+                groupBoxHLayout.addLayout(collectedLayout)
+                groupBoxLayout.addLayout(groupBoxHLayout)
+                groupBoxLayout.addWidget(uncollectedVisualRange)
+                groupBoxLayout.addWidget(uncollectedAubiblealert)
+                groupBoxLayout.addWidget(uncollectedAudibleRange)
+                groupBox.setLayout(groupBoxLayout)
+                self.widget.CollectablesLayout.addWidget(groupBox)
+
+    def _findCollectableButtonGroup(self, objectname):
+        for i in self.collectableBtnGroups:
+            if i.objectName() == objectname:
+                return i
+        return None
+
+    @QtCore.pyqtSlot(int)
+    def _arangeCollectableUpdated(self, val):
+        sender = self.sender()
+        sendername = str(sender.objectName())
+        self._logger.info(sendername + str(val))
+        self._app.settings.setValue('globalmapwidget/' + sendername, val)
+        self.updateCollectableVisibility()
+
+    @QtCore.pyqtSlot(int)
+    def _vrangeCollectableUpdated(self, val):
+        sender = self.sender()
+        sendername = str(sender.objectName())
+        self._logger.info(sendername + str(val))
+        self._app.settings.setValue('globalmapwidget/' + sendername, val)
+        self.updateCollectableVisibility(playAudibleAlerts=False)
+
+    @QtCore.pyqtSlot(int)
+    def _audibleAlertCollectableStateChanged(self, val):
+        sender = self.sender()
+        sendername = str(sender.objectName())
+        self._logger.info(sendername + str(val))
+        self._app.settings.setValue('globalmapwidget/' + sendername, val)
+        self.updateCollectableVisibility()
+
+    @QtCore.pyqtSlot(int)
+    def _showCollectableBtnGroupClicked(self, val):
+        sender = self.sender()
+        sendername = str(sender.objectName())
+        self._logger.info(sendername + str(val))
+        self._app.settings.setValue('globalmapwidget/' + sendername, val)
+        self.updateCollectableVisibility(playAudibleAlerts=False)
 
     def _onPipWorldQuestsUpdated(self, caller, value, pathObjs):
         self._signalPipWorldQuestsUpdated.emit()
@@ -1207,6 +1286,102 @@ class GlobalMapWidget(widgets.WidgetBase):
 
     @QtCore.pyqtSlot() 
     def _slotPipWorldLocationsUpdated(self):
+        self._createLocationMarkers()
+        self._createPOIMarkers()
+        self._createCollectablesMarkers(self.collectableDefs)
+
+        self._signalPipWorldQuestsUpdated.emit()
+
+    def _createCollectablesMarkers(self, collectableDefs, reset=False):
+        self._logger.info('creating CollectableMarkers')
+        if reset:
+            self.collectablesNearPlayer = []
+
+
+        for catKey, catData in collectableDefs.items():
+            if catKey not in self.collectableLocationMarkers.keys():
+                self.collectableLocationMarkers[catKey] = {}
+
+            iconcolor = self.mapColor
+            color = catData.get('color', None)
+            if color is not None and len(color) == 3:
+                iconcolor = QtGui.QColor(int(color[0]), int(color[1]), int(color[2]))
+
+            newDict = dict()
+
+            for collectable in catData.get('items'):
+                if collectable.get('instanceid', None) in self.collectableLocationMarkers[catKey].keys() and not reset:
+                    marker = self.collectableLocationMarkers[catKey][collectable.get('instanceid', None)]
+                    self._logger.info ('reused marker '+ str(collectable.get('instanceid', None)))
+                    newDict[collectable.get('instanceid', None)] = marker
+                    del self.collectableLocationMarkers[catKey][collectable.get('instanceid', None)]
+                else:
+                    cmx = collectable.get('commonwealthx', None)
+                    cmy = collectable.get('commonwealthy', None)
+                    if cmx is not None and cmy is not None:
+                        marker = CollectableMarker(collectable.get('instanceid', None), self, self.controller.sharedResImageFactory, iconcolor, self.mapMarkerSize, icon=catData.get('icon', 'Starfilled.svg'))
+                        marker.setLabel(textwrap.fill(collectable.get('name', ''), 30) + '\n' + textwrap.fill(collectable.get('description', ''), 30))
+                        marker.itemFormID = collectable.get('formid')
+                        marker.setMapPos(self.mapCoords.pip2map_x(float(cmx)), self.mapCoords.pip2map_y(float(cmy)))
+                        marker.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, True)
+                        marker.setSavedSettings()
+                        self._connectMarker(marker)
+
+                        newDict[collectable.get('instanceid', None)] = marker
+
+            for instanceID, marker in self.collectableLocationMarkers[catKey].items():
+                marker.destroy()
+            self.collectableLocationMarkers[catKey] = newDict
+            self.updateCollectableVisibility(playAudibleAlerts=False)
+
+        return
+
+    def _createPOIMarkers(self):
+        poiLocDict = dict()
+
+        globalPoisettingPath = 'globalmapwidget/pointsofinterest/'
+        index = self._app.settings.value(globalPoisettingPath+'index', None)
+        if index and len(index) > 0:
+            for i in index:
+                if str(i) in self.poiLocationItems.keys():
+                    marker = self.poiLocationItems[str(i)]
+                    poiLocDict[str(i)] = marker
+                    del self.poiLocationItems[str(i)]
+                else:
+                    marker = PointofInterestMarker(i,self,self.controller.sharedResImageFactory, self.mapColor, self.mapMarkerSize)
+                    marker.thisCharOnly = False
+                    marker.setSavedSettings()
+                    marker.filterSetVisible(True)
+                    marker.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, True)
+                    self._connectMarker(marker)
+                    poiLocDict[str(i)] = marker
+
+        if self.characterDataManager.playerDataPath is not None:
+            playerPoiSettingPath = self.characterDataManager.playerDataPath + '/pointsofinterest/'
+        else:
+            playerPoiSettingPath = None # To avoid reference before assignment
+        if playerPoiSettingPath:
+            index = self._app.settings.value(playerPoiSettingPath + 'index', None)
+            if index and len(index) > 0:
+                for i in index:
+                    if str(i) in self.poiLocationItems.keys():
+                        marker = self.poiLocationItems[str(i)]
+                        poiLocDict[str(i)] = marker
+                        del self.poiLocationItems[str(i)]
+                    else:
+                        marker = PointofInterestMarker(i,self,self.controller.sharedResImageFactory, self.mapColor, self.mapMarkerSize)
+                        marker.thisCharOnly = True
+                        marker.setSavedSettings()
+                        marker.filterSetVisible(True)
+                        marker.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, True)
+                        self._connectMarker(marker)
+                        poiLocDict[str(i)] = marker
+
+        for i in self.poiLocationItems:
+            self.poiLocationItems[i].destroy()
+        self.poiLocationItems = poiLocDict
+
+    def _createLocationMarkers(self):
         newDict = dict()
         for l in self.pipWorldLocations.value():
             if l.pipId in self.pipMapLocationItems:
@@ -1214,91 +1389,54 @@ class GlobalMapWidget(widgets.WidgetBase):
                 newDict[l.pipId] = marker
                 del self.pipMapLocationItems[l.pipId]
             else:
-                marker = LocationMarker(self, self.controller.imageFactory, self.controller.sharedResImageFactory, self.mapColor,self.mapMarkerSize)
+                marker = LocationMarker(self, self.controller.imageFactory, self.controller.sharedResImageFactory,
+                                        self.mapColor, self.mapMarkerSize)
                 self._connectMarker(marker)
                 marker.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, False)
                 marker.filterSetVisible(self.locationFilterEnableFlag, False)
                 marker.filterVisibilityCheat(self.locationVisibilityCheatFlag, False)
                 marker.setPipValue(l, self.datamanager, self.mapCoords)
                 marker.setStickyLabel(self.stickyLabelsEnabled, False)
-                marker.setSize(self.mapMarkerSize,False)
+                marker.setSize(self.mapMarkerSize, False)
                 marker.setSavedSettings()
 
-                #convert old coord indexed notes and stickies to new uid indexed from
-                #and remove old entries - remove this block in vNext (0.9?)
+                # convert old coord indexed notes and stickies to new uid indexed from
+                # and remove old entries - remove this block in vNext (0.9?)
                 if (marker.uid != None):
                     rx = l.child('X').value()
                     ry = l.child('Y').value()
 
                     if not marker.stickyLabel:
-                        oldsavedsticky =  bool(int(self._app.settings.value('globalmapwidget/stickylabels/'+str(rx)+','+str(ry), 0)))
+                        oldsavedsticky = bool(
+                            int(self._app.settings.value('globalmapwidget/stickylabels/' + str(rx) + ',' + str(ry), 0)))
                         if oldsavedsticky:
                             marker.setStickyLabel(oldsavedsticky, True)
-                            self._app.settings.setValue('globalmapwidget/stickylabels2/'+marker.uid, 1)
-                            self._app.settings.remove('globalmapwidget/stickylabels/'+str(rx)+','+str(ry))
-                    
-                    if (len(marker.note) == 0):
-                        marker.setNote (self._app.settings.value('globalmapwidget/locationnotes/'+str(rx)+','+str(ry), ''))
-                        if (len(marker.note) > 0):
-                            self._app.settings.setValue('globalmapwidget/locationmarkernotes/'+marker.uid, marker.note)
-                            self._app.settings.remove('globalmapwidget/locationnotes/'+str(rx)+','+str(ry))
+                            self._app.settings.setValue('globalmapwidget/stickylabels2/' + marker.uid, 1)
+                            self._app.settings.remove('globalmapwidget/stickylabels/' + str(rx) + ',' + str(ry))
 
+                    if (len(marker.note) == 0):
+                        marker.setNote(
+                            self._app.settings.value('globalmapwidget/locationnotes/' + str(rx) + ',' + str(ry), ''))
+                        if (len(marker.note) > 0):
+                            self._app.settings.setValue('globalmapwidget/locationmarkernotes/' + marker.uid,
+                                                        marker.note)
+                            self._app.settings.remove('globalmapwidget/locationnotes/' + str(rx) + ',' + str(ry))
 
                 self._app.settings.beginGroup("globalmapwidget/locationnotes");
-                if len(self._app.settings.childKeys()) == 0 :
-                    self._app.settings.remove(''); 
+                if len(self._app.settings.childKeys()) == 0:
+                    self._app.settings.remove('');
                 self._app.settings.endGroup();
 
                 self._app.settings.beginGroup("globalmapwidget/stickylabels");
-                if len(self._app.settings.childKeys()) == 0 :
-                    self._app.settings.remove(''); 
+                if len(self._app.settings.childKeys()) == 0:
+                    self._app.settings.remove('');
                 self._app.settings.endGroup();
-                #end convert and clean up - remove this block in vNext (0.9?)
-                        
-                        
+                # end convert and clean up - remove this block in vNext (0.9?)
+
                 newDict[l.pipId] = marker
         for i in self.pipMapLocationItems:
             self.pipMapLocationItems[i].destroy()
-
-        for i in self.poiLocationItems:
-            self.poiLocationItems[i].destroy()
-            
-        globalPoisettingPath = 'globalmapwidget/pointsofinterest/'
-        if self.characterDataManager.playerDataPath is not None:
-            playerPoiSettingPath = self.characterDataManager.playerDataPath + '/pointsofinterest/'
-        else:
-            playerPoiSettingPath = None # To avoid reference before assignment
-        index = self._app.settings.value(globalPoisettingPath+'index', None)
-        poiLocDict = dict()
-        if index and len(index) > 0:
-            for i in index:
-                poimarker = PointofInterestMarker(i,self,self.controller.sharedResImageFactory, self.mapColor, self.mapMarkerSize)
-                poimarker.thisCharOnly = False
-                poimarker.setSavedSettings()
-                poimarker.filterSetVisible(True)
-                poimarker.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, True)
-                self._connectMarker(poimarker)
-                poiLocDict[str(i)] = poimarker
-
-        if playerPoiSettingPath:
-            index = self._app.settings.value(playerPoiSettingPath + 'index', None)
-            if index and len(index) > 0:
-                for i in index:
-                    poimarker = PointofInterestMarker(i,self,self.controller.sharedResImageFactory, self.mapColor, self.mapMarkerSize)
-                    poimarker.thisCharOnly = True
-                    poimarker.setSavedSettings()
-                    poimarker.filterSetVisible(True)
-                    poimarker.setZoomLevel(self.mapZoomLevel, 0.0, 0.0, True)
-                    self._connectMarker(poimarker)
-                    poiLocDict[str(i)] = poimarker
-
-                
         self.pipMapLocationItems = newDict
-        self.poiLocationItems = poiLocDict
-        
-        self.loadMarkerForCollectables()
-        
-        self._signalPipWorldQuestsUpdated.emit()
 
     @QtCore.pyqtSlot()        
     def _slotMapColorSelectionTriggered(self):
@@ -1332,8 +1470,9 @@ class GlobalMapWidget(widgets.WidgetBase):
                 else:
                     self._logger.warn('No "Extents" record found. Map coordinates may be off')
             self.signalMarkerForcePipValueUpdate.emit()
-            self._app.settings.setValue('globalmapwidget/selectedMapFile', self.selectedMapFile)
 
+            self._app.settings.setValue('globalmapwidget/selectedMapFile', self.selectedMapFile)
+            self._createCollectablesMarkers(self.collectableDefs, reset=True)
 
 
     @QtCore.pyqtSlot(int)        
@@ -1425,8 +1564,56 @@ class GlobalMapWidget(widgets.WidgetBase):
     def _slotPlayerMarkerPositionUpdated(self, x, y, r):
         if self.centerOnPlayerEnabled:
             self.playerMarker.mapCenterOn()
-        
-    @QtCore.pyqtSlot(bool)        
+            self.updateCollectableVisibility()
+
+    def updateCollectableVisibility(self, playAudibleAlerts=True):
+        for catKey in self.collectableLocationMarkers.keys():
+            showAlwaysCollected = self._app.settings.value('globalmapwidget/collectable_showcollected_' + catKey, 0) == 1
+            showNeverCollected = self._app.settings.value('globalmapwidget/collectable_showcollected_' + catKey, 0) == 0
+
+            showAlwaysUncollected = self._app.settings.value('globalmapwidget/collectable_showuncollected_' + catKey, 0) == 1
+            showNeverUncollected = self._app.settings.value('globalmapwidget/collectable_showuncollected_' + catKey, 0) == 0
+
+            showNearCollected = self._app.settings.value('globalmapwidget/collectable_showcollected_' + catKey, 0) == 2
+            showNearUncollected = self._app.settings.value('globalmapwidget/collectable_showuncollected_' + catKey, 0) == 2
+            alertnearuncollected = bool(int(self._app.settings.value('globalmapwidget/collectable_alertuncollected_' + catKey, 0)))
+            vrangeuncollected = self._app.settings.value('globalmapwidget/collectable_vrangeuncollected_' + catKey, 100)
+            arangeuncollected = self._app.settings.value('globalmapwidget/collectable_arangeuncollected_' + catKey, 50)
+
+
+            for k, marker in self.collectableLocationMarkers[catKey].items():
+                if marker.collected:
+                    if showAlwaysCollected:
+                        marker.filterSetVisible(True)
+                    if showNeverCollected:
+                        marker.filterSetVisible(False)
+                    if showNearCollected:
+                        if self.playerMarker.isWithinRangeOf(marker, vrangeuncollected):
+                            marker.filterSetVisible(True)
+                        else:
+                            marker.filterSetVisible(True)
+                else:
+                    if showAlwaysUncollected:
+                        marker.filterSetVisible(True)
+                    if showNeverUncollected:
+                        marker.filterSetVisible(False)
+                    if showNearUncollected:
+                        if self.playerMarker.isWithinRangeOf(marker, vrangeuncollected):
+                            marker.filterSetVisible(True)
+                        else:
+                            marker.filterSetVisible(False)
+                    if alertnearuncollected:
+                        if self.playerMarker.isWithinRangeOf(marker, arangeuncollected):
+                            if marker.uid not in self.collectablesNearPlayer:
+                                self.collectablesNearPlayer.append(marker.uid)
+                                if playAudibleAlerts and catKey in self.collectableNearSoundEffects.keys() and not self.collectableNearSoundEffects[catKey].isPlaying():
+                                    self.collectableNearSoundEffects[catKey].play()
+                        else:
+                            if marker.uid in self.collectablesNearPlayer:
+                                self.collectablesNearPlayer.remove(marker.uid)
+
+
+    @QtCore.pyqtSlot(bool)
     def _slotMapColorAutoModeTriggered(self, value):
         self._app.settings.setValue('globalmapwidget/autoColour', int(value))
         if self.pipMapObject:
@@ -1574,11 +1761,10 @@ class GlobalMapWidget(widgets.WidgetBase):
     
 
     def iwcSetCollectableCollected(self, formid):
-            for k in self.collectableLocationMarkers.keys():
-                for i,j in self.collectableLocationMarkers[k].items():
-                    if int(j.itemFormID,16) == formid:
-                        j.setCollected(True)
-
+        for catKey in self.collectableLocationMarkers.keys():
+            for instanceID, marker in self.collectableLocationMarkers[catKey].items():
+                if int(marker.itemFormID,16) == formid:
+                    marker.setCollected(True)
 
 
     def iwcCenterOnLocation(self, pipId):
@@ -1603,6 +1789,3 @@ class GlobalMapWidget(widgets.WidgetBase):
         
         if Quest:
             Quest.mapCenterOn()
-
-
-                            

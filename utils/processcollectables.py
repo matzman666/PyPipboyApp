@@ -208,7 +208,6 @@ with open(inputfile) as infile:
             
             collectables[itype]['items'].append(item)
 
-
 with open(outputfile, 'w') as outfile:
     json.dump(collectables, outfile)
 

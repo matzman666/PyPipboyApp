@@ -276,6 +276,13 @@ class MarkerBase(QtCore.QObject):
     def mapCenterOn(self):
         self.view.centerOn(self.mapPosX * self.zoomLevel, self.mapPosY * self.zoomLevel)
 
+    def isWithinRangeOf(self, target, distance):
+        if (target.mapPosX - distance < self.mapPosX < target.mapPosX + distance
+                and target.mapPosY - distance < self.mapPosY < target.mapPosY + distance):
+            return True
+        else:
+            return False
+
 class PipValueMarkerBase(MarkerBase):
     _signalPipValueUpdated = QtCore.pyqtSignal()
     
