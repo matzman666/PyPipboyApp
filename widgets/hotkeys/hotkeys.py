@@ -179,7 +179,7 @@ class HotkeyWidget(widgets.WidgetBase):
                 return
             for apparel in apparels:        
                 if (apparel.child('equipState').value() > 0):
-                    selectedSlot.append(item.apparel('text').value())
+                    selectedSlot.append(apparel.child('text').value())
                     
             self._logger.debug('saveEquippedApparelToSlot: saving: ' + str(selectedSlot))
             settingPath = 'hotkeyswidget/apparelslots/'
@@ -383,13 +383,13 @@ class HotkeyWidget(widgets.WidgetBase):
     
         for index in range (0,100):
             settingPath = 'hotkeyswidget/keys/'+str(index)+'/'
-            keycode = self._app.settings.value(settingPath+'keycode', None)
-            if(not keycode):
+            keycode = int(self._app.settings.value(settingPath+'keycode', 0))
+            if(keycode == 0):
                 break
             
-            control = self._app.settings.value(settingPath+'control', False)
-            alt = self._app.settings.value(settingPath+'alt', False)
-            shift = self._app.settings.value(settingPath+'shift', False)
+            control = bool(int(self._app.settings.value(settingPath+'control', 0)))
+            alt = bool(int(self._app.settings.value(settingPath+'alt', 0)))
+            shift = bool(int(self._app.settings.value(settingPath+'shift', 0)))
             params = self._app.settings.value(settingPath+'params', None)
             actionkey = self._app.settings.value(settingPath+'action', None)
             
