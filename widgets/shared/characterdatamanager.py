@@ -73,17 +73,18 @@ class CharacterDataManager(QtCore.QObject):
                     return False
 
             collectables = inventoryutils.inventoryGetItems(self.pipInventoryInfo, _filterFunc)
+            index = self._app.settings.value(self.playerDataPath + self.collectedcollectablesuffix, None)
+            if index is None:
+                index = []
             if collectables is not None and self.pipPlayerName is not None:
                 for item in collectables:
-                    index = self._app.settings.value(self.playerDataPath + self.collectedcollectablesuffix, None)
-                    if index is None:
-                        index = []
                     if str(item.child('formID').value()) not in index:
                         index.append(str(item.child('formID').value()))
                         self._app.settings.setValue(self.playerDataPath + self.collectedcollectablesuffix, index)
-                        if self.globalMap is not None:
-                            self.globalMap.iwcSetCollectableCollected(item.child('formID').value())
-                        else:
-                            self._logger.error("No globalmap?")
+
+                if self.globalMap is not None:
+                    self.globalMap.iwcSetCollectablesCollectedState(index)
+                else:
+                    self._logger.error("No globalmap?")
 
 

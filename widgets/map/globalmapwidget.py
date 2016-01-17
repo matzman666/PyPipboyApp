@@ -1087,7 +1087,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         if marker.markerType == 4: # Locations
             self.signalLocationFilterSetVisible.disconnect(marker.filterSetVisible)
             self.signalLocationFilterVisibilityCheat.disconnect(marker.filterVisibilityCheat)
-            
+
     def _onRootObjectEvent(self, rootObject):
         self.pipMapObject = rootObject.child('Map')
         if self.pipMapObject:
@@ -1762,13 +1762,17 @@ class GlobalMapWidget(widgets.WidgetBase):
                     self.datamanager.rpcSetCustomMarker(self.mapCoords.map2pip_x(markerPos.x()), self.mapCoords.map2pip_y(markerPos.y()))
                 return True
         return False
-    
 
-    def iwcSetCollectableCollected(self, formid):
+    def iwcSetCollectablesCollectedState(self, listFormids):
         for catKey in self.collectableLocationMarkers.keys():
             for instanceID, marker in self.collectableLocationMarkers[catKey].items():
-                if int(marker.itemFormID,16) == formid:
+                if str(int(marker.itemFormID,16)) in listFormids:
                     marker.setCollected(True)
+                else:
+                    marker.setCollected(False)
+
+        self.updateCollectableVisibility(playAudibleAlerts=False)
+
 
 
     def iwcCenterOnLocation(self, pipId):
