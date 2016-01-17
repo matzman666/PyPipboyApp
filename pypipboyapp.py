@@ -515,7 +515,7 @@ class PyPipboyApp(QtWidgets.QApplication):
     def startVersionCheck(self, verbose = False):
         def _checkVersion():
             try:
-                rawData = urllib.request.urlopen('https://raw.githubusercontent.com/matzman666/PyPipboyApp/master/VERSION').read().decode()
+                rawData = urllib.request.urlopen('https://raw.githubusercontent.com/matzman666/PyPipboyApp/versionCheck/VERSION').read().decode()
                 versionData = json.loads(rawData)
                 major = versionData['major']
                 minor = versionData['minor']
