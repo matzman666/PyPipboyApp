@@ -17,27 +17,22 @@ class CharacterDataManager(QtCore.QObject):
         self.dataManager = None
         self.globalMap = None
         self._app = None
-        self.playerDataBasePath = None
         self.playerDataPath = None
-
+        self.playerDataBasePath = 'percharacterdata/'
+        self.collectedcollectablesuffix = '/collectedcollectables'
         self.collectableFormIDs = []
-        inputfile = open(os.path.join('widgets', 'shared', 'res', 'collectables-processed.json'))
-        collectables = json.load(inputfile)
-
-        for catKey, catData in collectables.items():
-            for collectable in catData.get('items'):
-                #self._logger.info(collectable.get('formid'))
-                self.collectableFormIDs.append(int(collectable.get('formid'), 16))
 
         self._signalInfoUpdated.connect(self._slotInfoUpdated)
 
-    def init(self, app, datamanager):
+    def init(self, app, datamanager, collectableDefs):
         self.dataManager = datamanager
         self.dataManager.registerRootObjectListener(self._onPipRootObjectEvent)
-        self.playerDataBasePath = 'percharacterdata/'
-        self.collectedcollectablesuffix = '/collectedcollectables'
         self.globalMap = app.iwcGetEndpoint('globalmapwidget')
         self._app = app
+
+        for catKey, catData in collectableDefs.items():
+            for collectable in catData.get('items'):
+                self.collectableFormIDs.append(int(collectable.get('formid'), 16))
 
     def _onPipRootObjectEvent(self, rootObject):
         self.pipInventoryInfo = rootObject.child('Inventory')
@@ -64,7 +59,7 @@ class CharacterDataManager(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def _slotInfoUpdated(self):
-        if self.pipInventoryInfo:
+        if self.pipInventoryInfo and self.playerDataPath is not None:
             def _filterFunc(i):
                 if (inventoryutils.itemHasAnyFilterCategory(i, inventoryutils.eItemFilterCategory.Misc) and
                         (self.collectableFormIDs is not None and i.child('formID').value() in self.collectableFormIDs)):
