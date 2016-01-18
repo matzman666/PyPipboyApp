@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 
-import os
+import os, platform
 import sys
 import json
 import importlib
@@ -76,8 +76,8 @@ class PyPipboyApp(QtWidgets.QApplication):
     PROGRAM_VERSION_REV = 0
     PROGRAM_VERSION_SUFFIX = 'unknown'
     #PROGRAM_ABOUT_TEXT = 'ToDo: About Text'
-    PROGRAM_ABOUT_LICENSE = 'GPL 3.0<br><br>Contains Graphical Assets owned by Bethesda and subject to their terms of service'
-    PROGRAM_ABOUT_AUTHORS = '<li>matzman666</li><li>akamal</li><li>killean</li>'
+    PROGRAM_ABOUT_LICENSE = 'GPL 3.0<br><br>Contains Graphical Assets owned by Bethesda and subject to their terms of service.'
+    PROGRAM_ABOUT_AUTHORS = '<li>matzman666</li><li>akamal</li><li>killean</li><li>gwhittey</li>'
     PROGRAM_WIDGETS_DIR = 'widgets'
     PROGRAM_STYLES_DIR = 'styles'
     
@@ -92,8 +92,9 @@ class PyPipboyApp(QtWidgets.QApplication):
     _signalFinishedCheckVersion = QtCore.pyqtSignal(dict, bool, bool, str, bool)
     
     #constructor
-    def __init__(self, args):
+    def __init__(self, args, inifile):
         super().__init__(args)
+        self._logger = logging.getLogger('pypipboyapp.main')
 
         self.startedFromWin32Launcher = False;
         
@@ -104,7 +105,22 @@ class PyPipboyApp(QtWidgets.QApplication):
         # Prepare QSettings for application-wide use
         QtCore.QCoreApplication.setOrganizationName("PyPipboyApp")
         QtCore.QCoreApplication.setApplicationName("PyPipboyApp")
-        self.settings = QtCore.QSettings()
+        if inifile:
+            self._logger.info('Using ini-file "' + str(inifile) + '".')
+            self.settings = QtCore.QSettings(inifile, QtCore.QSettings.IniFormat)
+        elif platform.system() == 'Windows':
+            self.settings = QtCore.QSettings(QtCore.QSettings.IniFormat, QtCore.QSettings.UserScope, "PyPipboyApp", "PyPipboyApp")
+            # If there are no settings, copy existing settings from registry
+            if len(self.settings.allKeys()) <= 0:
+                registrySettings = QtCore.QSettings(QtCore.QSettings.NativeFormat, QtCore.QSettings.UserScope, "PyPipboyApp", "PyPipboyApp")
+                for k in registrySettings.allKeys():
+                    self.settings.setValue(k, registrySettings.value(k))
+                    #registrySettings.remove(k)
+                #registrySettings.sync()
+        else: 
+            # Non-Windows OS already use the ini-format, they just use another file-extension. That's why we stick with nativeFormat.
+            self.settings = QtCore.QSettings(QtCore.QSettings.NativeFormat, QtCore.QSettings.UserScope, "PyPipboyApp", "PyPipboyApp")
+        
         # Init PyPipboy communication layer
         self.dataManager = PipboyDataManager()
         self.networkChannel = self.dataManager.networkchannel
@@ -119,7 +135,7 @@ class PyPipboyApp(QtWidgets.QApplication):
         self._connectHostMessageBox = None
         self._connectHostThread = None
         self._iwcEndpoints = dict()
-        self._logger = logging.getLogger('pypipboyapp.main')
+        self.widgetMenu = QtWidgets.QMenu()
         
         pipboyAppIcon = QtGui.QIcon()
         pipboyAppIcon.addFile(os.path.join('ui', 'res', 'PyPipBoyApp-Launcher.ico'))
@@ -170,10 +186,9 @@ class PyPipboyApp(QtWidgets.QApplication):
         if savedState:
             self.mainWindow.restoreState(savedState)
         # Create widgets menu entry
-        widgetMenu = self.mainWindow.createPopupMenu()
-        widgetMenu.setTitle('Widgets')
+        self.widgetMenu.setTitle('Widgets')
         menuActions = self.mainWindow.menuBar().actions()
-        self.mainWindow.menuBar().insertMenu(menuActions[len(menuActions)-1], widgetMenu)
+        self.mainWindow.menuBar().insertMenu(menuActions[len(menuActions)-1], self.widgetMenu)
         # connect with main window
         self.mainWindow.actionConnect.triggered.connect(self.startAutoDiscovery)
         self.mainWindow.actionConnectTo.triggered.connect(self.showConnectToDialog)
@@ -500,7 +515,7 @@ class PyPipboyApp(QtWidgets.QApplication):
     def startVersionCheck(self, verbose = False):
         def _checkVersion():
             try:
-                rawData = urllib.request.urlopen('https://raw.githubusercontent.com/matzman666/PyPipboyApp/master/VERSION').read().decode()
+                rawData = urllib.request.urlopen('https://raw.githubusercontent.com/matzman666/PyPipboyApp/versionCheck/VERSION').read().decode()
                 versionData = json.loads(rawData)
                 major = versionData['major']
                 minor = versionData['minor']
@@ -583,46 +598,67 @@ class PyPipboyApp(QtWidgets.QApplication):
     # load widgets
     def _loadWidgets(self):
         self.widgets = list()
-        self.modulehandles = dict()        
+        self.modulehandles = dict()
+        menuCategoryMap = dict()
+        self.widgetMenuEntries = list()
         lastWidget = self.helpWidget
         for dir in os.listdir(self.PROGRAM_WIDGETS_DIR):
             dirpath = os.path.join(self.PROGRAM_WIDGETS_DIR, dir)
             if dir != 'shared' and not dir.startswith('__') and os.path.isdir(dirpath):
-                self._logger.debug('Tyring to load widget dir "' + dir + '"')
+                self._logger.debug('Tyring to load widget "' + dir + '"')
                 module = None
                 try:
                     module = importlib.import_module(self.PROGRAM_WIDGETS_DIR + '.' + dir + '.info')
                     info = getattr(module, 'ModuleInfo')
                     if info:
-                        self._logger.debug('Found info module')
-                        if info.LABEL in self.modulehandles:
-                            raise Exception('Module with same name already exists.')
-                        handle = ModuleHandle(self, dirpath)
-                        self.modulehandles[info.LABEL] = handle
-                        widgets = info.createWidgets(handle, self.mainWindow)
-                        if widgets:
-                            if not type(widgets) == list:
-                                nl = list()
-                                nl.append(widgets)
-                                widgets = nl
-                            i = 0
-                            for w in widgets:
-                                w.setObjectName(info.LABEL + '_' + str(i))
-                                self.mainWindow.addDockWidget(QtCore.Qt.TopDockWidgetArea, w)
-                                self.widgets.append(w)
-                                w.setVisible(False)
-                                if lastWidget:
-                                    self.mainWindow.tabifyDockWidget(lastWidget, w)
-                                lastWidget = w
-                                i += 1
-                            self._logger.info('Successfully loaded widget dir "' + dir + '"')
+                        if info.isEnabled():
+                            self._logger.debug('Found info module')
+                            if info.LABEL in self.modulehandles:
+                                raise Exception('Module with same name already exists.')
+                            handle = ModuleHandle(self, dirpath)
+                            self.modulehandles[info.LABEL] = handle
+                            widgets = info.createWidgets(handle, self.mainWindow)
+                            if widgets:
+                                if not type(widgets) == list:
+                                    nl = list()
+                                    nl.append(widgets)
+                                    widgets = nl
+                                i = 0
+                                for w in widgets:
+                                    w.setObjectName(info.LABEL + '_' + str(i))
+                                    self.mainWindow.addDockWidget(QtCore.Qt.TopDockWidgetArea, w)
+                                    self.widgets.append(w)
+                                    if w.getMenuCategory():
+                                        try:
+                                            m = menuCategoryMap[w.getMenuCategory()]
+                                            m.addAction(w.toggleViewAction())
+                                        except:
+                                            m = QtWidgets.QMenu(w.getMenuCategory())
+                                            menuCategoryMap[w.getMenuCategory()] = m
+                                            self.widgetMenuEntries.append(m)
+                                            m.addAction(w.toggleViewAction())
+                                    else:
+                                        self.widgetMenuEntries.append(w.toggleViewAction())
+                                    w.setVisible(False)
+                                    if lastWidget:
+                                        self.mainWindow.tabifyDockWidget(lastWidget, w)
+                                    lastWidget = w
+                                    i += 1
+                                self._logger.info('Successfully loaded widget "' + dir + '"')
+                            else:
+                                self._logger.warning('Could not load widget "' + dir + '": No widgets returned')
                         else:
-                            self._logger.warning('Could not load widget dir "' + dir + '": No widgets returned')
+                            self._logger.info('Widget "' + dir + '" is not enabled')
                     else:
-                        self._logger.warning('Could not load widget dir "' + dir + '": No Info')
+                        self._logger.warning('Could not load widget "' + dir + '": No Info')
                 except Exception as e:
-                    self._logger.warning('Could not load widget dir "' + dir + '": ' + str(e))
+                    self._logger.warning('Could not load widget "' + dir + '": ' + str(e))
                     traceback.print_exc(file=sys.stdout)
+        for e in self.widgetMenuEntries:
+            if type(e) == QtWidgets.QMenu:
+                self.widgetMenu.addMenu(e)
+            else:
+                self.widgetMenu.addAction(e)
     
     def iwcRegisterEndpoint(self, key, endpoint):
         self._iwcEndpoints[key] = endpoint
@@ -731,6 +767,7 @@ class PyPipboyApp(QtWidgets.QApplication):
 # Main entry point
 if __name__ == "__main__":
     stdlogfile = None
+    inifile = None
     i = 1
     while i < len(sys.argv):
         if sys.argv[i] == '--stdlog':
@@ -739,6 +776,12 @@ if __name__ == "__main__":
             else:
                 i += 1
                 stdlogfile = sys.argv[i]
+        elif sys.argv[i] == '--inifile':
+            if i == len(sys.argv) -1 :
+                logging.error('Missing argument for --inifile')
+            else:
+                i += 1
+                inifile = sys.argv[i]
         i += 1
     if stdlogfile != None:
         stdlog = open(stdlogfile, 'w')
@@ -764,5 +807,5 @@ if __name__ == "__main__":
     if 'nt' in os.name:
         from ctypes import windll
         windll.shell32.SetCurrentProcessExplicitAppUserModelID(u'matzman666.pypipboyapp')
-    pipboyApp = PyPipboyApp(sys.argv)
+    pipboyApp = PyPipboyApp(sys.argv, inifile)
     pipboyApp.run()

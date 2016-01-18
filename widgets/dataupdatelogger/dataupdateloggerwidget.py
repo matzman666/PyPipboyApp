@@ -26,6 +26,9 @@ class DataUpdateLoggerWidget(widgets.WidgetBase):
         self.dataManager = datamanager
         self.networkchannel = datamanager.networkchannel
         
+    def getMenuCategory(self):
+        return 'Development'
+        
     
     @QtCore.pyqtSlot(str)
     def _slotPrintToLog(self, msg):

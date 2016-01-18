@@ -70,8 +70,15 @@ class MarkerBase(QtCore.QObject):
         self.markerHooverActive = False
         self.note =''
         self.uid = None
+        self.size = None
         self.signalDoUpdate.connect(self.doUpdate)
         
+    def updateZIndex(self):
+        if hasattr(self.widget, 'mapMarkerZIndexes'):
+            if (self.markerItem):
+                self.markerItem.setZValue(self.widget.mapMarkerZIndexes.get(str(type(self)), 0))
+            if (self.labelItem):
+                self.labelItem.setZValue(self.widget.mapMarkerZIndexes.get(str(type(self)), 0)+1000)
         
     def _markerHoverEnterEvent_(self, event):
         if self.labelItem and not self.labelAlwaysVisible and not self.stickyLabel:
@@ -167,10 +174,14 @@ class MarkerBase(QtCore.QObject):
             if self.labelItem:
                 mb = self.markerItem.sceneBoundingRect()
                 lp = (mb.bottomRight() + mb.bottomLeft())/2.0
-                lp += QtCore.QPointF(-self.labelItem.boundingRect().width()/2, 0)
+                lp += QtCore.QPointF(-self.labelItem.boundingRect().width()/2, 6)
                 self.labelItem.setPos(lp)
+        
+        self.updateZIndex()
 
-
+    @QtCore.pyqtSlot()
+    def _rebuildOverlayIcons(self):
+        pass
                 
     @QtCore.pyqtSlot(QtGui.QColor)
     def setColor(self, color, update = True):
@@ -178,6 +189,7 @@ class MarkerBase(QtCore.QObject):
         self.markerPixmapDirty = True
         self.labelDirty = True
         if update:
+            self._rebuildOverlayIcons()
             self.doUpdate()
     
     @QtCore.pyqtSlot(str)
@@ -222,7 +234,15 @@ class MarkerBase(QtCore.QObject):
         self.positionDirty = True
         if update:
             self.doUpdate()
-            
+
+    @QtCore.pyqtSlot(int)
+    def setSize(self, size, update = True):
+        self.size = size
+        self.markerPixmapDirty = True
+        self.positionDirty = True
+        if update:
+            self.doUpdate()
+
     @QtCore.pyqtSlot(float, float, float)
     def setMapPos(self, x, y, r = 0.0, update = True):
         self.mapPosX = x
@@ -256,7 +276,12 @@ class MarkerBase(QtCore.QObject):
     def mapCenterOn(self):
         self.view.centerOn(self.mapPosX * self.zoomLevel, self.mapPosY * self.zoomLevel)
 
-
+    def isWithinRangeOf(self, target, distance):
+        if (target.mapPosX - distance < self.mapPosX < target.mapPosX + distance
+                and target.mapPosY - distance < self.mapPosY < target.mapPosY + distance):
+            return True
+        else:
+            return False
 
 class PipValueMarkerBase(MarkerBase):
     _signalPipValueUpdated = QtCore.pyqtSignal()

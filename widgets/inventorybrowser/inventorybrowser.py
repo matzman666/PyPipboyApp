@@ -35,7 +35,8 @@ class InventoryBrowserWidget(widgets.WidgetBase):
                      ('Ammo', CatAmmoModel, SortProxyModel),
                      ('Books', CatBooksModel, SortProxyModel),
                      ('Holotapes', CatHolotapeModel, SortProxyModel),
-                     ('Keys', CatKeysModel, SortProxyModel) ]:
+                     ('Keys', CatKeysModel, SortProxyModel),
+                     ('Components', ComponentsTableModel, SortProxyModel)  ]:
             tab = self._addTab(cat[0], cat[1], cat[2])
             self.tabs.append(tab)
             self.models.append(tab.tableView.model().sourceModel())
@@ -52,6 +53,9 @@ class InventoryBrowserWidget(widgets.WidgetBase):
         self.widget.filterEdit.textChanged.connect(self._slotFilterTextChanged)
         self.dataManager = datamanager
         self.dataManager.registerRootObjectListener(self._onPipRootObjectEvent)
+        
+    def getMenuCategory(self):
+        return 'Inventory && Gear'
         
     def _addTab(self, title, modelClass, proxyClass):
         skeySizes = 'inventorybrowser/' + title + '/headerSectionSizes'
@@ -167,7 +171,7 @@ class InventoryBrowserWidget(widgets.WidgetBase):
                     for i in prop.value():
                         _createTreeItem(prop.value()[i], str(i), ti)
                 else:
-                    if k in ['formID']:
+                    if k in ['formID', 'componentFormID']:
                         value = hex(prop.value())
                     else:
                         value = str(prop.value())

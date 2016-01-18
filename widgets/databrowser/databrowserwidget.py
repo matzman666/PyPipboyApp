@@ -166,6 +166,9 @@ class DataBrowserWidget(widgets.WidgetBase):
         settings.setHeaderSectionVisualIndices(self.treeHeader, self.app.settings.value('databrowserwidget/headerSectionVisualIndices', []))
         self.treeHeader.sectionResized.connect(self._slotTreeSectionResized)
         self.treeHeader.sectionMoved.connect(self._slotTreeSectionMoved)
+        
+    def getMenuCategory(self):
+        return 'Development'
 
         
     @QtCore.pyqtSlot(QtCore.QPoint)

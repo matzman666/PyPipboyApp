@@ -3,7 +3,7 @@
 
 # PyPipboyApp
 
-PyPipboyApp is a platform independent and extensible unofficial Fallout 4 Pipboy Companion App written in Python3 using PyQt5 and [PyPipboy](https://github.com/matzman666/PyPipboy). Using a plugin mechanism it can be extendet with additional widgets and styles.
+PyPipboyApp is a platform independent and extensible unofficial Fallout 4 Pipboy Companion App written in Python3 using PyQt5 and [PyPipboy](https://github.com/matzman666/PyPipboy). It runs on Windows, Linux and Mac. Using a plugin mechanism it can be extendet with additional widgets and styles.
 
 # Motivation
 
@@ -15,6 +15,14 @@ Currently implemented features are:
  - Uses [PyPipboy](https://github.com/matzman666/PyPipboy) for the communication layer.
  - Widgets plugin mechanism.
  - Runtime support for Qt style sheets.
+ - User-defined POI markers on the global map.
+ - Allows to save notes per location/POI marker.
+ - Support for keeping track of collectibles (Magazines and Bobble-Heads).
+ - Resizable map markers.
+ - Hotkey support on Windows.
+ - Support for chaining several application instances together (relay mode).
+ - Data import/export.
+ - Automatic version check.
  - Currently available widgets:
    - Data Browser
    - Data Update Logger
@@ -29,6 +37,13 @@ Currently implemented features are:
    - Radio
    - Location Browser
    - Quests (by killeand)
+   - Perks (by killeand)
+   - workshops (by killeand)
+   - Player Status and Statistics (by killeand)
+   - Doctor's Bag (by akamal)
+   - Inventory Browser
+   - Auto Doc (by killeand)
+   - Ammo Count (by gwhittey23)
 
 # Screenshots
 

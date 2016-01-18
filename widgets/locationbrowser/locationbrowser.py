@@ -223,6 +223,9 @@ class LocationBrowserWidget(widgets.WidgetBase):
         self.dataManager = datamanager
         self.dataManager.registerRootObjectListener(self._onPipRootObjectEvent)
         
+    def getMenuCategory(self):
+        return 'Map && Locations'
+        
     @QtCore.pyqtSlot(QtCore.QPoint)
     def _slotLocationTableContextMenu(self, pos):
         index = self.widget.locationView.selectionModel().currentIndex()

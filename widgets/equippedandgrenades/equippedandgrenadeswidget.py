@@ -51,6 +51,9 @@ class EquippedAndGrenadesWidget(widgets.WidgetBase):
         #self.widget.lblPdmgIcon.setPixmap(self.pDmgIcon)
 
         self._slotColorUpdated(self.iconColor)
+        
+    def getMenuCategory(self):
+        return 'Inventory && Gear'
 
     def colouriseIcon(self, img, colour):
         size = img.size()

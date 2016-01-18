@@ -2,7 +2,16 @@
 from PyQt5 import QtWidgets
 
 class ModuleInfoBase(object):
-    pass
+    LABEL = None
+    NAME = None
+    
+    @staticmethod
+    def isEnabled():
+        return True
+    
+    @staticmethod
+    def createWidgets(handle, parent):
+        return None
 
 class ModuleHandle(object):
     def __init__(self, application, basepath):
@@ -18,4 +27,7 @@ class WidgetBase(QtWidgets.QDockWidget):
         
     def init(self, framework, datamanager):
         pass
+    
+    def getMenuCategory(self):
+        return None
 

@@ -169,6 +169,9 @@ class LocalMapWidget(widgets.WidgetBase):
         self.datamanager.registerRootObjectListener(self._onRootObjectEvent)
         self.dataManager.registerLocalMapListener(self._onLocalMapUpdate)
         self._signalMapUpdate.connect(self._slotMapUpdate)
+        
+    def getMenuCategory(self):
+        return 'Map && Locations'
 
     @QtCore.pyqtSlot(float, float, float)
     def saveZoom(self, zoom, mapposx, mapposy):

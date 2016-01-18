@@ -6,6 +6,10 @@ class ModuleInfo(widgets.ModuleInfoBase):
     
     LABEL = 'hotkeyswidget'
     NAME = 'Hotkeys'
+    
+    @staticmethod
+    def isEnabled():
+        return platform.system() == 'Windows'
 
     @staticmethod
     def createWidgets(handle, parent):

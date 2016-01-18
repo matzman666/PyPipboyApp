@@ -42,6 +42,9 @@ class PlayerConditionWidget(widgets.WidgetBase):
         self.statsBodyItem = self.statsScene.addPixmap(bodyPixmap)
         self.statsBodyItem.setPos(-bodyPixmap.width()/2, 42)
         
+    def getMenuCategory(self):
+        return 'Player Status'
+        
     def _onPipRootObjectEvent(self, rootObject):
         self.pipStats = rootObject.child('Stats')
         if self.pipStats:

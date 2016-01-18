@@ -55,6 +55,9 @@ class StatsWidget(widgets.WidgetBase):
         # Create a class level hook to the datamanager for updates and RPC methods
         self.DataManager = dataManager
         self.DataManager.registerRootObjectListener(self.DataManagerUpdated)
+        
+    def getMenuCategory(self):
+        return 'Player Status'
     
     # DATA MANAGER OBJECT HAS CHANGED AT SOME LEVEL
     def DataManagerUpdated(self, rootObject):

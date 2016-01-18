@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
-import datetime
 import os
 from PyQt5 import QtGui, QtWidgets, QtCore, uic
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
-from pypipboy.types import eValueType
+from widgets.shared.graphics import ImageFactory
 from .. import widgets
 from pypipboy import inventoryutils
 
 import logging
+
 
 class DoctorsBagWidget(widgets.WidgetBase):
     _signalInfoUpdated = QtCore.pyqtSignal()
@@ -18,13 +18,13 @@ class DoctorsBagWidget(widgets.WidgetBase):
     def __init__(self, mhandle, parent):
         super().__init__('Doctor\'s Bag', parent)
         self.widget = uic.loadUi(os.path.join(mhandle.basepath, 'ui', 'doctorsbagwidget.ui'))
+        self.imageFactory = ImageFactory(os.path.join(mhandle.basepath, 'res'))
         self._logger = logging.getLogger('pypipboyapp.doctorsbagwidget')
         self.setWidget(self.widget)
+        self.foreColor = QtGui.QColor.fromRgb(0,255,0)
         self.pipColour = None
         self.pipInventoryInfo = None
-        self.foreColor = QtGui.QColor.fromRgb(0,255,0)
 
-        
         self._signalInfoUpdated.connect(self._slotInfoUpdated)
         self._signalColorUpdated.connect(self._slotColorUpdated)
 
@@ -32,7 +32,18 @@ class DoctorsBagWidget(widgets.WidgetBase):
         super().init(app, datamanager)
         self.dataManager = datamanager
         self.dataManager.registerRootObjectListener(self._onPipRootObjectEvent)
+
         self._app = app
+        self.customIcon = self.imageFactory.getImage('aid-custom.png')
+        self.customIconA = self.imageFactory.getImage('aid-custom.png')
+        self.drugsIcon = self.imageFactory.getImage('aid-drugs.png')
+        self.drugsIconA = self.imageFactory.getImage('aid-drugs.png')
+        self.drinkIcon = self.imageFactory.getImage('aid-drink.png')
+        self.drinkIconA = self.imageFactory.getImage('aid-drink.png')
+        self.foodIcon = self.imageFactory.getImage('aid-food.png')
+        self.foodIconA = self.imageFactory.getImage('aid-food.png')
+        self.allIcon = self.imageFactory.getImage('aid-all.png')
+        self.allIconA = self.imageFactory.getImage('aid-all.png')
 
         #self.viewMode = 'All'
         self.drugItems = []
@@ -65,21 +76,10 @@ class DoctorsBagWidget(widgets.WidgetBase):
         else:
             #self.showDrugs()
             self.widget.btnDrugs.click()
-
-
-    def colouriseIcon(self, img, colour):
-        size = img.size()
-        image = QImage(QtCore.QSize(size.width()+1,size.height()+1), QImage.Format_ARGB32_Premultiplied)
-        image.fill(QtCore.Qt.transparent)
-        p = QPainter(image)
-        p.setCompositionMode(QPainter.CompositionMode_SourceOver)
-        p.drawImage(QtCore.QRect(1,1,size.width(), size.height()), img)
-        p.setCompositionMode(QPainter.CompositionMode_SourceAtop)
-        p.setBrush(colour)
-        p.drawRect(QtCore.QRect(0,0,size.width()+1,size.height()+1))
-        p.end()
-        return QPixmap.fromImage(image)        
         
+    def getMenuCategory(self):
+        return 'Inventory && Gear'
+
     def _onPipRootObjectEvent(self, rootObject):
         self.pipInventoryInfo = rootObject.child('Inventory')
         if self.pipInventoryInfo:
@@ -89,7 +89,7 @@ class DoctorsBagWidget(widgets.WidgetBase):
         self.pipColor = rootObject.child('Status').child('EffectColor')
         self.pipColor.registerValueUpdatedListener(self._onPipColorChanged, 1)
         self._onPipColorChanged(None, None, None)
-        
+
     def _onPipColorChanged(self, caller, value, pathObjs):
         if self.pipColor:
             r = self.pipColor.child(0).value() * 255
@@ -104,44 +104,52 @@ class DoctorsBagWidget(widgets.WidgetBase):
 
     @QtCore.pyqtSlot(QtGui.QColor)
     def _slotColorUpdated(self, color):
-        customIcon = QIcon(self.colouriseIcon(QImage(os.path.join("ui", "res", "aid-custom.png")), self.foreColor))
-        customIcon.addPixmap(self.colouriseIcon(QImage(os.path.join("ui", "res", "aid-custom.png")), QtCore.Qt.black), QIcon.Active)
-        customIcon.addPixmap(self.colouriseIcon(QImage(os.path.join("ui", "res", "aid-custom.png")), QtCore.Qt.black), QIcon.Normal, QIcon.On)
-        self.widget.btnCustom.setIcon(customIcon)   
+        ImageFactory.colorizeImage(self.customIcon, QtCore.Qt.black)
+        ImageFactory.colorizeImage(self.customIconA, self.foreColor)
+        customIcon = QIcon(QPixmap.fromImage(self.customIcon))
+        customIcon.addPixmap(QPixmap.fromImage(self.customIconA), QIcon.Active)
+        customIcon.addPixmap(QPixmap.fromImage(self.customIconA), QIcon.Normal, QIcon.On)
+        self.widget.btnCustom.setIcon(customIcon)
         self.widget.btnCustom.setText('')
 
-        drugsIcon = QIcon(self.colouriseIcon(QImage(os.path.join("ui", "res", "aid-drugs.png")), self.foreColor))
-        drugsIcon.addPixmap(self.colouriseIcon(QImage(os.path.join("ui", "res", "aid-drugs.png")), QtCore.Qt.black), QIcon.Active)
-        drugsIcon.addPixmap(self.colouriseIcon(QImage(os.path.join("ui", "res", "aid-drugs.png")), QtCore.Qt.black), QIcon.Normal, QIcon.On)
-        self.widget.btnDrugs.setIcon(drugsIcon)   
+
+        ImageFactory.colorizeImage(self.drugsIcon, QtCore.Qt.black)
+        ImageFactory.colorizeImage(self.drugsIconA, self.foreColor)
+        drugsIcon = QIcon(QPixmap.fromImage(self.drugsIcon))
+        drugsIcon.addPixmap(QPixmap.fromImage(self.drugsIconA), QIcon.Active)
+        drugsIcon.addPixmap(QPixmap.fromImage(self.drugsIconA), QIcon.Normal, QIcon.On)
+        self.widget.btnDrugs.setIcon(drugsIcon)
         self.widget.btnDrugs.setText('')
 
-        drinkIcon = QIcon(self.colouriseIcon(QImage(os.path.join("ui", "res", "aid-drink.png")), self.foreColor))
-        drinkIcon.addPixmap(self.colouriseIcon(QImage(os.path.join("ui", "res", "aid-drink.png")), QtCore.Qt.black), QIcon.Active)
-        drinkIcon.addPixmap(self.colouriseIcon(QImage(os.path.join("ui", "res", "aid-drink.png")), QtCore.Qt.black),QIcon.Normal, QIcon.On)
-        self.widget.btnDrink.setIcon(drinkIcon)   
+        ImageFactory.colorizeImage(self.drinkIcon, QtCore.Qt.black)
+        ImageFactory.colorizeImage(self.drinkIconA, self.foreColor)
+        drinkIcon = QIcon(QPixmap.fromImage(self.drinkIcon))
+        drinkIcon.addPixmap(QPixmap.fromImage(self.drinkIconA), QIcon.Active)
+        drinkIcon.addPixmap(QPixmap.fromImage(self.drinkIconA), QIcon.Normal, QIcon.On)
+        self.widget.btnDrink.setIcon(drinkIcon)
         self.widget.btnDrink.setText('')
 
-        foodIcon = QIcon(self.colouriseIcon(QImage(os.path.join("ui", "res", "aid-food.png")), self.foreColor))
-        foodIcon.addPixmap(self.colouriseIcon(QImage(os.path.join("ui", "res", "aid-food.png")), QtCore.Qt.black), QIcon.Active)
-        foodIcon.addPixmap(self.colouriseIcon(QImage(os.path.join("ui", "res", "aid-food.png")), QtCore.Qt.black), QIcon.Normal, QIcon.On)
-        self.widget.btnFood.setIcon(foodIcon)   
+        ImageFactory.colorizeImage(self.foodIcon, QtCore.Qt.black)
+        ImageFactory.colorizeImage(self.foodIconA, self.foreColor)
+        foodIcon = QIcon(QPixmap.fromImage(self.foodIcon))
+        foodIcon.addPixmap(QPixmap.fromImage(self.foodIconA), QIcon.Active)
+        foodIcon.addPixmap(QPixmap.fromImage(self.foodIconA), QIcon.Normal, QIcon.On)
+        self.widget.btnFood.setIcon(foodIcon)
         self.widget.btnFood.setText('')
 
-        allIcon = QIcon(self.colouriseIcon(QImage(os.path.join("ui", "res", "aid-all.png")), self.foreColor))
-        allIcon.addPixmap(self.colouriseIcon(QImage(os.path.join("ui", "res", "aid-all.png")), QtCore.Qt.black), QIcon.Active)
-        allIcon.addPixmap(self.colouriseIcon(QImage(os.path.join("ui", "res", "aid-all.png")), QtCore.Qt.black), QIcon.Normal, QIcon.On)
+        ImageFactory.colorizeImage(self.allIcon, QtCore.Qt.black)
+        ImageFactory.colorizeImage(self.allIconA, self.foreColor)
+        allIcon = QIcon(QPixmap.fromImage(self.allIcon))
+        allIcon.addPixmap(QPixmap.fromImage(self.allIconA), QIcon.Active)
+        allIcon.addPixmap(QPixmap.fromImage(self.allIconA), QIcon.Normal, QIcon.On)
         self.widget.btnAll.setIcon(allIcon)   
         self.widget.btnAll.setText('')
-
-
-
         return
         
     @QtCore.pyqtSlot()
     def _slotInfoUpdated(self):
         if self.widget.btnCustom.isChecked(): # self.viewMode == 'Custom':
-            self.updateDrugView(self.customItems)
+            self.updateDrugView(self.customItems, showitemswithzerocount=True)
         elif self.widget.btnDrugs.isChecked():
             self.updateDrugView(self.drugItems)
         elif self.widget.btnDrink.isChecked():
@@ -397,7 +405,7 @@ class DoctorsBagWidget(widgets.WidgetBase):
         return
     
     def showCustom(self):
-        self.updateDrugView(self.customItems)
+        self.updateDrugView(self.customItems, showitemswithzerocount=True)
         return
     
     def showAll(self):
@@ -441,57 +449,70 @@ class DoctorsBagWidget(widgets.WidgetBase):
                             text += ')'
                 else:
                     descCount += 1
-                    
+
         return text
-        
-    def updateDrugView(self, itemList):
+
+    def updateDrugView(self, itemList, showitemswithzerocount=False):
         self.drugmodel.clear()
- 
+
         if (self.pipInventoryInfo):
             def _filterFunc(item):
-                if (inventoryutils.itemHasAnyFilterCategory(item,inventoryutils.eItemFilterCategory.Aid)
-                        and (itemList == None or item.child('text').value().lower() in itemList)):
+                if (inventoryutils.itemHasAnyFilterCategory(item, inventoryutils.eItemFilterCategory.Aid)
+                        and (itemList is None or item.child('text').value().lower() in itemList)):
                     return True
                 else:
                     return False
+
             aidItems = inventoryutils.inventoryGetItems(self.pipInventoryInfo, _filterFunc)
-            if(not aidItems):
+            if (not aidItems):
                 return
             for i in aidItems:
-                tooltipstr = 'Left-click to use item\n'
-                if (self.widget.btnCustom.isChecked()):
-                    tooltipstr += 'Right-click to remove from custom list\n\n'
-                else:
-                    tooltipstr += 'Right-click to add to custom list\n\n'
-                
                 name = i.child('text').value()
                 count = str(i.child('count').value())
-                tooltipstr += self.getItemToolTip(i)
-                
-                item = [
-                    QStandardItem(name) , 
-                    QStandardItem(count)
-                ]
+                itemtooltip = self.getItemToolTip(i)
+                modelitem = self.createDrugModelItem(name, count, itemtooltip)
 
-                item[0].setToolTip(tooltipstr)
-                item[1].setToolTip(tooltipstr)
-                item[1].setData(QtCore.Qt.AlignCenter, QtCore.Qt.TextAlignmentRole)
-                
-                self.drugmodel.appendRow(item)
-                    
-            if (self.widget.btnCustom.isChecked() and self.drugmodel.rowCount() == 0 ):
-                    self.drugmodel.appendRow([QStandardItem(''), QStandardItem('Right click on items')])
-                    self.drugmodel.appendRow([QStandardItem(''), QStandardItem('in the other lists to ')])
-                    self.drugmodel.appendRow([QStandardItem(''), QStandardItem('add them to this list')])
-                    
-                    
+                self.drugmodel.appendRow(modelitem)
+
+            if showitemswithzerocount:
+                itemsinmodel = []
+                for row in range(0, self.drugmodel.rowCount()):
+                    itemsinmodel.append(self.drugmodel.item(row, 0).text().lower())
+
+                for item in itemList:
+                    if not item in itemsinmodel:
+                        modelitem = self.createDrugModelItem(item.capitalize(), '-', '')
+                        self.drugmodel.appendRow(modelitem)
+
+            if (self.widget.btnCustom.isChecked() and self.drugmodel.rowCount() == 0):
+                self.drugmodel.appendRow([QStandardItem(''), QStandardItem('Right click on items')])
+                self.drugmodel.appendRow([QStandardItem(''), QStandardItem('in the other lists to ')])
+                self.drugmodel.appendRow([QStandardItem(''), QStandardItem('add them to this list')])
+
+
             self.widget.drugView.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
             self.widget.drugView.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
             self.widget.drugView.verticalHeader().setStretchLastSection(False)
             self.widget.drugView.horizontalHeader().setStretchLastSection(True)
             self.widget.drugView.setModel(self.drugmodel)
-            
+
             self.widget.drugView.sortByColumn(0, QtCore.Qt.AscendingOrder)
+
+    def createDrugModelItem(self, name, count, itemtooltip):
+        tooltipstr = 'Left-click to use item\n'
+        if self.widget.btnCustom.isChecked():
+            tooltipstr += 'Right-click to remove from custom list\n\n'
+        else:
+            tooltipstr += 'Right-click to add to custom list\n\n'
+        tooltipstr += itemtooltip
+        item = [
+            QStandardItem(name),
+            QStandardItem(count)
+        ]
+        item[0].setToolTip(tooltipstr)
+        item[1].setToolTip(tooltipstr)
+        item[1].setData(QtCore.Qt.AlignCenter, QtCore.Qt.TextAlignmentRole)
+        return item
 
     def useItemByName(self, itemName):
         itemName = itemName.lower()
@@ -503,4 +524,7 @@ class DoctorsBagWidget(widgets.WidgetBase):
                 return False
         item = inventoryutils.inventoryGetItem(self.pipInventoryInfo, _filterFunc)
         if item:
-            self.dataManager.rpcUseItem(item)
+            try:
+                self.dataManager.rpcUseItem(item)
+            except Exception as e:
+                self._logger.error('DoctorsBag: Exception in rpc call: ' + str(e))

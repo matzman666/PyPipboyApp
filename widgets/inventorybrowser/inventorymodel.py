@@ -30,7 +30,7 @@ itemApparelPaperDollSections = [
 class InventoryTableModel(QtCore.QAbstractTableModel):
     _signalItemUpdate = QtCore.pyqtSignal(object)
     _signalSortedIdsUpdate = QtCore.pyqtSignal()
-    
+
     def __init__(self, view, qparent = None):
         super().__init__(qparent)
         self.view = view
@@ -41,11 +41,13 @@ class InventoryTableModel(QtCore.QAbstractTableModel):
         self._items = []
         self._signalItemUpdate.connect(self._slotItemUpdate)
         self._signalSortedIdsUpdate.connect(self._slotSortedIdsUpdate)
-    
+
     def setPipInventory(self, datamanager, pipInventory):
-        #self.modelAboutToBeReset.emit()
+        self.modelAboutToBeReset.emit()
+
         self.pipInventory = pipInventory
         self.datamanager = datamanager
+
         for i in self._items:
             i.unregisterValueUpdatedListener(self._onPipItemUpdate)
         self._items.clear()
@@ -58,13 +60,13 @@ class InventoryTableModel(QtCore.QAbstractTableModel):
             for item in self._items:
                 item.registerValueUpdatedListener(self._onPipItemUpdate)
         self.modelReset.emit()
-        
+
     def _acceptItem(self, item):
         return True
-        
+
     def _onPipItemUpdate(self, caller, value, pathObjs):
         self._signalItemUpdate.emit(caller)
-        
+
     @QtCore.pyqtSlot(object)
     def _slotItemUpdate(self, item):
         try:
@@ -72,13 +74,13 @@ class InventoryTableModel(QtCore.QAbstractTableModel):
             self.dataChanged.emit(self.index(t, 0), self.index(t, self.rowCount()))
         except:
             pass
-    
+
     def _onPipSortedIdsUpdate(self, caller, value, pathObjs):
         if self.tabIsVisible:
             self._signalSortedIdsUpdate.emit()
         else:
             self.isDirty = True
-        
+
     @QtCore.pyqtSlot()
     def _slotSortedIdsUpdate(self):
         self.layoutAboutToBeChanged.emit()
@@ -89,13 +91,13 @@ class InventoryTableModel(QtCore.QAbstractTableModel):
         for item in self._items:
             item.registerValueUpdatedListener(self._onPipItemUpdate)
         self.layoutChanged.emit()
-        
+
     def rowCount(self, parent = QtCore.QModelIndex()):
         return len(self._items)
-        
+
     def columnCount(self, parent = QtCore.QModelIndex()):
         return 5
-    
+
     def headerData(self, section, orientation, role = QtCore.Qt.DisplayRole):
         if orientation == QtCore.Qt.Horizontal:
             if role == QtCore.Qt.DisplayRole:
@@ -110,10 +112,10 @@ class InventoryTableModel(QtCore.QAbstractTableModel):
                 elif section == 4:
                     return 'Val/Wt'
         return None
-    
+
     def data(self, index, role = QtCore.Qt.DisplayRole):
         return self._data(self._items[index.row()], index.column(), role)
-        
+
     def _data(self, item, column, role = QtCore.Qt.DisplayRole):
         if role == QtCore.Qt.DisplayRole:
             if column == 0:
@@ -121,15 +123,15 @@ class InventoryTableModel(QtCore.QAbstractTableModel):
             elif column == 1:
                 return item.child('count').value()
             elif column == 2:
-                return round(inventoryutils.itemFindItemCardInfoValue(item, 
+                return round(inventoryutils.itemFindItemCardInfoValue(item,
                                 inventoryutils.eItemCardInfoValueText.Value), 2)
             elif column == 3:
-                return round(inventoryutils.itemFindItemCardInfoValue(item, 
+                return round(inventoryutils.itemFindItemCardInfoValue(item,
                                 inventoryutils.eItemCardInfoValueText.Weight), 2)
             elif column == 4:
-                value = inventoryutils.itemFindItemCardInfoValue(item, 
+                value = inventoryutils.itemFindItemCardInfoValue(item,
                             inventoryutils.eItemCardInfoValueText.Value)
-                weight = inventoryutils.itemFindItemCardInfoValue(item, 
+                weight = inventoryutils.itemFindItemCardInfoValue(item,
                             inventoryutils.eItemCardInfoValueText.Weight)
                 try:
                     if value == 0.0:
@@ -157,25 +159,25 @@ class InventoryTableModel(QtCore.QAbstractTableModel):
                 font.setBold(True)
                 return font
         return None
-        
+
     def getPipValue(self, row):
         if len(self._items) > row:
             return self._items[row]
         else:
             return None
-    
+
     def _cmIsUseActionEnabled(self, item, selected):
         return True
-    
+
     def _cmIsDropActionEnabled(self, item, selected):
         return True
-    
+
     def _cmUseActionText(self, item, selected):
         return 'Use Item'
-    
+
     def _cmDropActionText(self, item, selected):
         return 'Drop Item'
-    
+
     def showItemContextMenu(self, datamanager, item, selected, pos, view):
         menu = QtWidgets.QMenu(view)
         actionCount = 0
@@ -197,10 +199,10 @@ class InventoryTableModel(QtCore.QAbstractTableModel):
             daction.triggered.connect(_dropItem)
         if actionCount > 0:
             menu.exec(view.mapToGlobal(pos))
-        
+
     def itemDoubleClicked(self, datamanager, item, view):
         datamanager.rpcUseItem(item)
-        
+
     def tabVisibilityChanged(self, visible):
         self.tabIsVisible = visible
         if self.tabIsVisible and self.isDirty:
@@ -212,10 +214,10 @@ class InventoryTableModel(QtCore.QAbstractTableModel):
 class CatAllModel(InventoryTableModel):
     def __init__(self, qparent = None):
         super().__init__(qparent)
-        
+
     def columnCount(self, parent = QtCore.QModelIndex()):
         return super().columnCount(parent) + 3
-    
+
     def headerData(self, section, orientation, role = QtCore.Qt.DisplayRole):
         pc = super().columnCount()
         if orientation == QtCore.Qt.Horizontal:
@@ -227,7 +229,7 @@ class CatAllModel(InventoryTableModel):
                 elif section == pc + 2:
                     return 'Category'
         return super().headerData(section, orientation, role)
-        
+
     def _data(self, item, column, role = QtCore.Qt.DisplayRole):
         pc = super().columnCount()
         if role == QtCore.Qt.DisplayRole:
@@ -280,14 +282,14 @@ class CatAllModel(InventoryTableModel):
 class CatWeaponsModel(InventoryTableModel):
     def __init__(self, qparent = None):
         super().__init__(qparent)
-        
+
     def _acceptItem(self, item):
         return inventoryutils.itemHasAnyFilterCategory(item,
             inventoryutils.eItemFilterCategory.Weapon)
-        
+
     def columnCount(self, parent = QtCore.QModelIndex()):
         return super().columnCount(parent) + 9
-    
+
     def headerData(self, section, orientation, role = QtCore.Qt.DisplayRole):
         pc = super().columnCount()
         if orientation == QtCore.Qt.Horizontal:
@@ -311,7 +313,7 @@ class CatWeaponsModel(InventoryTableModel):
                 elif section == pc + 8:
                     return 'Ammo'
         return super().headerData(section, orientation, role)
-        
+
     def _data(self, item, column, role = QtCore.Qt.DisplayRole):
         pc = super().columnCount()
         if role == QtCore.Qt.DisplayRole:
@@ -330,7 +332,7 @@ class CatWeaponsModel(InventoryTableModel):
                 if not cached or cached.dirtyFlag:
                     text  =''
                     isFirst = True
-                    damageInfos = inventoryutils.itemFindItemCardInfos(item, inventoryutils.eItemCardInfoValueText.Damage)                 
+                    damageInfos = inventoryutils.itemFindItemCardInfos(item, inventoryutils.eItemCardInfoValueText.Damage)
                     for info in damageInfos:
                         damageType = info.child('damageType').value()
                         value = info.child('Value').value()
@@ -346,10 +348,10 @@ class CatWeaponsModel(InventoryTableModel):
                     text = cached.value
                 return text
             elif column == pc + 3:
-                rof = inventoryutils.itemFindItemCardInfoValue(item,   
+                rof = inventoryutils.itemFindItemCardInfoValue(item,
                         inventoryutils.eItemCardInfoValueText.RateOfFire)
                 if rof == None:
-                    speed = inventoryutils.itemFindItemCardInfoValue(item,   
+                    speed = inventoryutils.itemFindItemCardInfoValue(item,
                              inventoryutils.eItemCardInfoValueText.Speed)
                     if speed:
                         return 'Speed: ' + speed[1:].lower()
@@ -358,14 +360,14 @@ class CatWeaponsModel(InventoryTableModel):
                 else:
                     return round(rof, 2)
             elif column == pc + 4:
-                rng = inventoryutils.itemFindItemCardInfoValue(item, 
+                rng = inventoryutils.itemFindItemCardInfoValue(item,
                         inventoryutils.eItemCardInfoValueText.Range)
                 if rng == None:
                     return None
                 else:
                     return round(rng, 2)
             elif column == pc + 5:
-                val = inventoryutils.itemFindItemCardInfoValue(item, 
+                val = inventoryutils.itemFindItemCardInfoValue(item,
                         inventoryutils.eItemCardInfoValueText.Accuracy)
                 if val == None:
                     return None
@@ -388,7 +390,7 @@ class CatWeaponsModel(InventoryTableModel):
                 if value != None:
                     text = inventoryutils.itemFindItemCardInfoValue(item, 10, 'damageType', 'text')
                     text += ' (' + str(value) + ')'
-                return text 
+                return text
         elif role == QtCore.Qt.TextAlignmentRole:
             if column == pc:
                 return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignCenter
@@ -409,10 +411,10 @@ class CatWeaponsModel(InventoryTableModel):
             elif column == pc + 8:
                 return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignLeft
         return super()._data(item, column, role)
-    
+
     def _cmUseActionText(self, item, selected):
         return "Use Weapon"
-    
+
     def _cmDropActionText(self, item, selected):
         return 'Drop Weapon'
 
@@ -421,14 +423,14 @@ class CatWeaponsModel(InventoryTableModel):
 class CatApparelModel(InventoryTableModel):
     def __init__(self, qparent = None):
         super().__init__(qparent)
-        
+
     def _acceptItem(self, item):
         return inventoryutils.itemHasAnyFilterCategory(item,
             inventoryutils.eItemFilterCategory.Apparel)
-        
+
     def columnCount(self, parent = QtCore.QModelIndex()):
         return super().columnCount(parent) + 5
-    
+
     def headerData(self, section, orientation, role = QtCore.Qt.DisplayRole):
         pc = super().columnCount()
         if orientation == QtCore.Qt.Horizontal:
@@ -444,7 +446,7 @@ class CatApparelModel(InventoryTableModel):
                 elif section == pc + 4:
                     return 'Slots'
         return super().headerData(section, orientation, role)
-        
+
     def _data(self, item, column, role = QtCore.Qt.DisplayRole):
         pc = super().columnCount()
         if role == QtCore.Qt.DisplayRole:
@@ -463,7 +465,7 @@ class CatApparelModel(InventoryTableModel):
                 if not cached or cached.dirtyFlag:
                     text  =''
                     isFirst = True
-                    damageInfos = inventoryutils.itemFindItemCardInfos(item, inventoryutils.eItemCardInfoValueText.DamageResist)                 
+                    damageInfos = inventoryutils.itemFindItemCardInfos(item, inventoryutils.eItemCardInfoValueText.DamageResist)
                     for info in damageInfos:
                         damageType = info.child('damageType').value()
                         value = info.child('Value').value()
@@ -548,10 +550,10 @@ class CatApparelModel(InventoryTableModel):
             elif column == pc + 4:
                 return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignLeft
         return super()._data(item, column, role)
-    
+
     def _cmUseActionText(self, item, selected):
         return 'Use Apparel'
-    
+
     def _cmDropActionText(self, item, selected):
         return 'Drop Apparel'
 
@@ -560,14 +562,14 @@ class CatApparelModel(InventoryTableModel):
 class CatBooksModel(InventoryTableModel):
     def __init__(self, qparent = None):
         super().__init__(qparent)
-        
+
     def _acceptItem(self, item):
         return inventoryutils.itemHasAnyFilterCategory(item,
             inventoryutils.eItemFilterCategory.Book)
-    
+
     def _cmUseActionText(self, item, selected):
         return 'Read Book'
-    
+
     def _cmDropActionText(self, item, selected):
         return 'Drop Book'
 
@@ -576,14 +578,14 @@ class CatBooksModel(InventoryTableModel):
 class CatAmmoModel(InventoryTableModel):
     def __init__(self, qparent = None):
         super().__init__(qparent)
-        
+
     def _acceptItem(self, item):
         return inventoryutils.itemHasAnyFilterCategory(item,
             inventoryutils.eItemFilterCategory.Ammo)
-    
+
     def _cmIsUseActionEnabled(self, item, selected):
         return False
-    
+
     def _cmDropActionText(self, item, selected):
         return 'Drop Ammo'
 
@@ -592,13 +594,13 @@ class CatAmmoModel(InventoryTableModel):
 class CatKeysModel(InventoryTableModel):
     def __init__(self, qparent = None):
         super().__init__(qparent)
-        
+
     def _acceptItem(self, item):
         return inventoryutils.itemIsAKey(item)
-    
+
     def _cmIsUseActionEnabled(self, item, selected):
         return False
-    
+
     def _cmIsDropActionEnabled(self, item, selected):
         return False
 
@@ -607,14 +609,14 @@ class CatKeysModel(InventoryTableModel):
 class CatAidModel(InventoryTableModel):
     def __init__(self, qparent = None):
         super().__init__(qparent)
-        
+
     def _acceptItem(self, item):
         return inventoryutils.itemHasAnyFilterCategory(item,
             inventoryutils.eItemFilterCategory.Aid)
-        
+
     def columnCount(self, parent = QtCore.QModelIndex()):
         return super().columnCount(parent) + 1
-    
+
     def headerData(self, section, orientation, role = QtCore.Qt.DisplayRole):
         pc = super().columnCount()
         if orientation == QtCore.Qt.Horizontal:
@@ -622,7 +624,7 @@ class CatAidModel(InventoryTableModel):
                 if section == pc:
                     return 'Effects'
         return super().headerData(section, orientation, role)
-        
+
     def _data(self, item, column, role = QtCore.Qt.DisplayRole):
         pc = super().columnCount()
         if role == QtCore.Qt.DisplayRole:
@@ -674,10 +676,10 @@ class CatAidModel(InventoryTableModel):
             if column == pc:
                 return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignLeft
         return super()._data(item, column, role)
-    
+
     def _cmUseActionText(self, item, selected):
         return 'Use Aid'
-    
+
     def _cmDropActionText(self, item, selected):
         return 'Drop Aid'
 
@@ -686,14 +688,14 @@ class CatAidModel(InventoryTableModel):
 class CatHolotapeModel(InventoryTableModel):
     def __init__(self, qparent = None):
         super().__init__(qparent)
-        
+
     def _acceptItem(self, item):
         return inventoryutils.itemHasAnyFilterCategory(item,
             inventoryutils.eItemFilterCategory.Holotape)
-    
+
     def _cmUseActionText(self, item, selected):
         return 'Play Holotape'
-    
+
     def _cmDropActionText(self, item, selected):
         return 'Drop holotape'
 
@@ -702,15 +704,15 @@ class CatHolotapeModel(InventoryTableModel):
 class CatMiscModel(InventoryTableModel):
     def __init__(self, qparent = None):
         super().__init__(qparent)
-        
+
     def _acceptItem(self, item):
         return (inventoryutils.itemHasExactFilterCategory(item,
-            inventoryutils.eItemFilterCategory.Misc) 
+            inventoryutils.eItemFilterCategory.Misc)
             and not inventoryutils.itemIsAKey(item))
-    
+
     def _cmIsUseActionEnabled(self, item, selected):
         return False
-    
+
     def _cmDropActionText(self, item, selected):
         return 'Drop Item'
 
@@ -719,14 +721,14 @@ class CatMiscModel(InventoryTableModel):
 class CatJunkModel(InventoryTableModel):
     def __init__(self, qparent = None):
         super().__init__(qparent)
-        
+
     def _acceptItem(self, item):
         return inventoryutils.itemHasAnyFilterCategory(item,
             inventoryutils.eItemFilterCategory.Junk)
-        
+
     def columnCount(self, parent = QtCore.QModelIndex()):
         return super().columnCount(parent) + 2
-    
+
     def headerData(self, section, orientation, role = QtCore.Qt.DisplayRole):
         pc = super().columnCount()
         if orientation == QtCore.Qt.Horizontal:
@@ -736,7 +738,7 @@ class CatJunkModel(InventoryTableModel):
                 elif section == pc + 1:
                     return 'Components'
         return super().headerData(section, orientation, role)
-        
+
     def _data(self, item, column, role = QtCore.Qt.DisplayRole):
         pc = super().columnCount()
         if role == QtCore.Qt.DisplayRole:
@@ -769,10 +771,10 @@ class CatJunkModel(InventoryTableModel):
             elif column == pc + 1:
                 return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignLeft
         return super()._data(item, column, role)
-    
+
     def _cmIsUseActionEnabled(self, item, selected):
         return False
-    
+
     def _cmDropActionText(self, item, selected):
         return 'Drop Item'
 
@@ -781,15 +783,137 @@ class CatJunkModel(InventoryTableModel):
 class CatModsModel(InventoryTableModel):
     def __init__(self, qparent = None):
         super().__init__(qparent)
-        
+
     def _acceptItem(self, item):
         return inventoryutils.itemHasAnyFilterCategory(item,
             inventoryutils.eItemFilterCategory.Mods)
-    
+
     def _cmIsUseActionEnabled(self, item, selected):
         return False
-    
+
     def _cmDropActionText(self, item, selected):
         return 'Drop Mod'
     
     
+    
+class ComponentsTableModel(QtCore.QAbstractTableModel):
+    _signalComponentsUpdate = QtCore.pyqtSignal(object)
+
+    def __init__(self, view, qparent = None):
+        super().__init__(qparent)
+        self.view = view
+        self.pipInventory = None
+        self.pipComponents = None
+        self.tabIsVisible = False
+        self.isDirty = False
+        self._components = []
+        self._signalComponentsUpdate.connect(self._slotComponentsUpdate)
+
+    def setPipInventory(self, datamanager, pipInventory):
+        self.modelAboutToBeReset.emit()
+        self.pipInventory = pipInventory
+        self.datamanager = datamanager
+        pipComponents = self.pipInventory.child('InvComponents')
+        if pipComponents:
+            self._components = pipComponents.value()
+            if self.pipComponents:
+                self.pipComponents.unregisterValueUpdatedListener(self._onPipComponentsUpdate)
+            self.pipComponents = pipComponents
+            self.pipComponents.registerValueUpdatedListener(self._onPipComponentsUpdate, 10)
+        else:
+            self._components = []
+        self.modelReset.emit()
+
+    def _onPipComponentsUpdate(self, caller, value, pathObjs):
+        self._signalComponentsUpdate.emit(caller)
+
+    @QtCore.pyqtSlot()
+    def _slotComponentsUpdate(self):
+        self.layoutAboutToBeChanged.emit()
+        self._components = self.pipComponents.value()
+        self.layoutChanged.emit()
+
+    def rowCount(self, parent = QtCore.QModelIndex()):
+        return len(self._components)
+
+    def columnCount(self, parent = QtCore.QModelIndex()):
+        return 4
+
+    def headerData(self, section, orientation, role = QtCore.Qt.DisplayRole):
+        if orientation == QtCore.Qt.Horizontal:
+            if role == QtCore.Qt.DisplayRole:
+                if section == 0:
+                    return 'Name'
+                elif section == 1:
+                    return 'Count'
+                elif section == 2:
+                    return 'T'
+                elif section == 3:
+                    return 'Items'
+        return None
+
+    def data(self, index, role = QtCore.Qt.DisplayRole):
+        return self._data(self._components[index.row()], index.column(), role)
+
+    def _data(self, component, column, role = QtCore.Qt.DisplayRole):
+        if role == QtCore.Qt.DisplayRole:
+            if column == 0:
+                return component.child('text').value()
+            elif column == 1:
+                return component.child('count').value()
+            elif column == 2:
+                if component.child('taggedForSearch').value():
+                    return '◼'
+                else:
+                    return ''
+            elif column == 3:
+                text = ''
+                isFirst = True
+                for item in component.child('componentOwners').value():
+                    if isFirst:
+                        isFirst = False
+                    else:
+                        text += ', '
+                    text += item.child('text').value()
+                return text
+        elif role == QtCore.Qt.TextAlignmentRole:
+            if column == 0:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignLeft
+            elif column == 1:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignRight
+            elif column == 2:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignCenter
+            elif column == 3:
+                return QtCore.Qt.AlignVCenter | QtCore.Qt.AlignLeft
+        elif role == QtCore.Qt.FontRole:
+            if component.child('taggedForSearch').value():
+                font = QtGui.QFont()
+                font.setBold(True)
+                return font
+        return None
+
+    def getPipValue(self, row):
+        if len(self._components) > row:
+            return self._components[row]
+        else:
+            return None
+
+    def showItemContextMenu(self, datamanager, component, selected, pos, view):
+        menu = QtWidgets.QMenu(view)
+        if self._data(component, 2):
+            labelTxt = 'Un-tag for Search'
+        else:
+            labelTxt = 'Tag for Search'
+        def _toggleComponentFavorite():
+            datamanager.rpcToggleComponentFavorite(component)
+        action = menu.addAction(labelTxt)
+        action.triggered.connect(_toggleComponentFavorite)
+        menu.exec(view.mapToGlobal(pos))
+
+    def itemDoubleClicked(self, datamanager, component, view):
+        datamanager.rpcToggleComponentFavorite(component)
+
+    def tabVisibilityChanged(self, visible):
+        pass
+    
+

@@ -30,6 +30,9 @@ class QuickAidWidget(widgets.WidgetBase):
         self.DataManager = dataManager
         self.DataManager.registerRootObjectListener(self.DataManagerUpdated)
         
+    def getMenuCategory(self):
+        return 'Player Status'
+        
     # DATA MANAGER OBJECT HAS CHANGED AT SOME LEVEL
     def DataManagerUpdated(self, rootObject):
         self.StatsData = rootObject.child("Stats")
