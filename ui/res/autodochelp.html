@@ -1,0 +1,181 @@
+<html>
+    <head>
+        <title>Med-Tek Pip-Boy Automatic Doctor Help</title>
+        <style type="text/css">
+            h1, h2, p {
+                font-size: 1em;
+                font-family: Consolas;
+                margin: 0em;
+                padding: 0em;
+                margin-bottom: 0.5em;
+            }
+            h1 {
+                font-size: 2em;
+                border: 0em;
+                border-bottom: 0.1em solid #000000;
+                border-left: 0.15em solid #000000;
+                padding: 0.1em;
+            }
+            h2 {
+                font-size: 1.5em;
+                border: 0em;
+                border-top: 0.1em solid #000000;
+                border-bottom: 0.1em solid #000000;
+                padding: 0.1em;
+            }
+            .strong {
+                font-weight: bold;
+                font-size: 1.25em;
+            }
+            .highlight {
+                color: #FF0000;
+            }
+        </style>
+    </head>
+    <body>
+        <p><a href="helpwidget.html">Go Back</a></p>
+
+        <h1>Automatic Doctor Help</h1>
+        <p>Hello, and thank you for your purchase of the Med-Tek Pip-Boy Automatic Doctor. Because your life is too important to leave in your own hands.</p>
+        <p>This guide will help you understand the Auto Doc Pip-Boy application and how it can benefit you and your life on the front lines.</p>
+        
+        <h2>Interface</h2>
+        <p class="strong">Health [ ##/## ] [ ##/##] &lt;&lt; Status &gt;&gt;</p>
+        <p>The first set of brackets will show the current health value, and the maximum health value.</p>
+        <p>The second set of brackets will show the current health percentage, and the Health % Use value from the Stimpak settings.</p>
+        <p>After the bracket values, up to two messages can be shown:</p>
+        <ul>
+            <li>
+                <p class="strong">&lt;&lt; Irradiated &gt;&gt;</p>
+                <p>Means that radiation damage has been done, but radiation is no longer being detected and causing further damage.</p>
+            </li>
+            <li>
+                <p class="strong">&lt;&lt; Radiation &gt;&gt;</p>
+                <p>Means that radiation is being detected and is causing damage.</p>
+            </li>
+            <li>
+                <p class="strong">&lt;&lt; Addicted &gt;&gt;</p>
+                <p>Means that a dependency on drugs or alcohol has been detected.</p>
+            </li>
+        </ul>
+        <p class="strong">Chem Stock [ AA(##/##) ]</p>
+        <p>This will show (upon activating) how many of what substances are available, and what the current stock limitation is set to for that substance.</p>
+        <p>The following values can be seen inside of the brackets:</p>
+        <ul>
+            <li>
+                <p class="strong">Disabled</p>
+                <p>All substance use has been disabled.</p>
+            </li>
+            <li>
+                <p class="strong">ST</p>
+                <p>Stimpak use is enabled.</p>
+            </li>
+            <li>
+                <p class="strong">MX</p>
+                <p>Med-X use is enabled.</p>
+            </li>
+            <li>
+                <p class="strong">RA</p>
+                <p>RadAway use is enabled.</p>
+            </li>
+            <li>
+                <p class="strong">RX</p>
+                <p>Rad-X use is enabled.</p>
+            </li>
+            <li>
+                <p class="strong">AD</p>
+                <p>Addictol use is enabled.</p>
+            </li>
+        </ul>
+        <p class="strong">Chem Applied [ Chem ]</p>
+        <p>This will show a list of all substances detected in use.</p>
+        
+        <h2>General Settings</h2>
+        <p class="strong">Use Delay Timer</p>
+        <p>Places a delay on using a drug again. User vitals might not update immediately after a drug has been taken, so an imbalance might still exist. This will cause the Auto Doc to use more drugs. The delay will prevent over use.</p>
+        
+        <h2>Stimpak Settings</h2>
+        <p class="strong">Health % Use</p>
+        <p>When the health drops below this percentage, a Stimpak will be taken.</p>
+        <p class="strong">Stock Limitation</p>
+        <p>The Auto Doc will be allowed to use a Stimpak, only if the number available in the users inventory exceeds this value.</p>
+        
+        <h2>Med-X Settings</h2>
+        <p class="strong">Use Type</p>
+        <p>Med-X will be applied:</p>
+        <ul>
+            <li>
+                <p class="strong">When Damaged</p>
+                <p>When the health value is less than the last value check.</p>
+            </li>
+            <li>
+                <p class="strong">On Health % Use</p>
+                <p>When the health percentage is less than the Stimpak Health % Use value.</p>
+            </li>
+            <li>
+                <p class="strong">At 3/4 Health</p>
+                <p>When the health value is less than 3/4 full health.</p>
+            </li>
+            <li>
+                <p class="strong">At 1/2 Health</p>
+                <p>When the health value is less than 1/2 full health.</p>
+            </li>
+            <li>
+                <p class="strong">At 1/4 Health</p>
+                <p>When the health value is less than 1/4 full health.</p>
+            </li>
+        </ul>
+        <p class="strong">Stock Limitation</p>
+        <p>The Auto Doc will be allowed to use Med-X, only if the number available in the users inventory exceeds this value.</p>
+        
+        <h2>RadAway Settings</h2>
+        <p class="strong">Use Type</p>
+        <p>RadAway will be applied:</p>
+        <ul>
+            <li>
+                <p class="strong">When Irradiated</p>
+                <p>When radiation has been detected.</p>
+            </li>
+            <li>
+                <p class="strong">When Stimpak Heals Nothing</p>
+                <p>When radiation has damaged health sufficiently and Stimpak use is enabled, a Stimpak will be used. If at any point during the regeneration process health stops recovering, but is below the maximum value, the remaining damage is likely due to radiation damage. A RadAway will be used immediately to reverse the damage and allow the Stimpak to continue its regeneration.</p>
+            </li>
+        </ul>
+        <p class="strong">Stock Limitation</p>
+        <p>The Auto Doc will be allowed to use RadAway, only if the number available in the users inventory exceeds this value.</p>
+        
+        <h2>Rad-X Settings</h2>
+        <p class="strong">Use Type</p>
+        <p>Rad-X will be applied:</p>
+        <ul>
+            <li>
+                <p class="strong">When Irradiated</p>
+                <p>When radiation has been detected.</p>
+            </li>
+            <li>
+                <p class="strong">On RadAway Use</p>
+                <p>Whenever RadAway is used, Rad-X will be used as well.</p>
+            </li>
+        </ul>
+        <p class="strong">Stock Limitation</p>
+        <p>The Auto Doc will be allowed to use Rad-X, only if the number available in the users inventory exceeds this value.</p>
+        
+        <h2>Addictol</h2>
+        <p class="strong">Stock Limitation</p>
+        <p>The Auto Doc will be allowed to use Addictol, only if the number available in the users inventory exceeds this value.</p>
+        
+        <h2>Widget Information</h2>
+        <p class="strong">Radiation Detection</p>
+        <p>Radiation detection is... weird. The information being sent to the companion application does not include a value of how much a player has sustained in radiation damage. All it simply shows is current health being less than max health, as if the player was damaged normally.</p>
+        <p>However, what can be detected is any effect that applies radiation damage to the player. So when you enter a radiation field, or during a rad storm, or even when damaged by enemies, an effect (likely a Spell Effect) is applied for a duration and begins to damage the player.</p>
+        <p>So what this means for the Auto Doc right now, is that when the widget and corresponding drugs have been activated, it will not be able to detect existing radiation damage. What it will be able to do is detect when radiation has been applied, and when radiation had been active but not treated.</p>
+        <p>Upon using a RadAway, the flag for being irradiated will be removed. Unfortunately if the RadAway did not entirely remove all radiation damage, no further RadAway will be applied until radiation has been detected.</p>
+        <p class="strong">Aquaperson, Radiation Damage, and the Language Barrier</p>
+        <p>In order to prevent the use of radiation drugs when the player enters water with the Aquaperson perk, the widget needs to make a couple of checks on currently applied status effects.</p>
+        <p>The Aquaperson perk applies an effect called Waterbreathing to the player. Next, when the player is in deep enough water an effect called Water Radiation is applied. The Auto Doc uses these two effects to determine if it should, or should not apply radiation drugs.</p>
+        <p>Unlike things other things such as items, effects do not have form values associated with them. This means that the widget needs to rely on English words to determine if an effect is active.</p>
+        <p>While the Aquaperson effect applies a sub effect called waterbreathing (there is a chance that this effect is not different in alternate languages because it is not visibly seen), the water radiation effect uses a generic sub effect name of rads.</p>
+        <p>The Auto Doc already checks for any effects with the rads sub effect to detect radiation normally. So without the ability to check for a difference, with or without the Aquaperson perk, radiation will be detected and the appropriate drugs will be taken.</p>
+        <p>If an alternate language version of Fallout 4 can check on this, it would be appreciated.</p>
+    </body>
+</html>
