@@ -76,8 +76,8 @@ class PyPipboyApp(QtWidgets.QApplication):
     PROGRAM_VERSION_REV = 0
     PROGRAM_VERSION_SUFFIX = 'unknown'
     #PROGRAM_ABOUT_TEXT = 'ToDo: About Text'
-    PROGRAM_ABOUT_LICENSE = 'GPL 3.0<br><br>Contains Graphical Assets owned by Bethesda and subject to their terms of service'
-    PROGRAM_ABOUT_AUTHORS = '<li>matzman666</li><li>akamal</li><li>killean</li>'
+    PROGRAM_ABOUT_LICENSE = 'GPL 3.0<br><br>Contains Graphical Assets owned by Bethesda and subject to their terms of service.'
+    PROGRAM_ABOUT_AUTHORS = '<li>matzman666</li><li>akamal</li><li>killean</li><li>gwhittey</li>'
     PROGRAM_WIDGETS_DIR = 'widgets'
     PROGRAM_STYLES_DIR = 'styles'
     
@@ -515,7 +515,7 @@ class PyPipboyApp(QtWidgets.QApplication):
     def startVersionCheck(self, verbose = False):
         def _checkVersion():
             try:
-                rawData = urllib.request.urlopen('https://raw.githubusercontent.com/matzman666/PyPipboyApp/master/VERSION').read().decode()
+                rawData = urllib.request.urlopen('https://raw.githubusercontent.com/matzman666/PyPipboyApp/versionCheck/VERSION').read().decode()
                 versionData = json.loads(rawData)
                 major = versionData['major']
                 minor = versionData['minor']
