@@ -679,7 +679,7 @@ class CollectableMarker(MarkerBase):
 
     @QtCore.pyqtSlot()
     def _rebuildOverlayIcons(self):
-        self.widget._logger.info('CollectableMarker: rebuilding overlay icons')
+        #self.widget._logger.info('CollectableMarker: rebuilding overlay icons')
         self.collectedOverlayIcon = self.imageFactory.getImage('tick8.png')
         ImageFactory.colorizeImage(self.collectedOverlayIcon, self.collectedColor)
         super()._rebuildOverlayIcons()
@@ -862,6 +862,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.characterDataManager = None
         self.collectablesNearPlayer = []
         self.collectableNearSoundEffects = {}
+        self.collectableNearUpdateTimer = QtCore.QTimer()
 
 
     def iwcSetup(self, app):
@@ -870,8 +871,20 @@ class GlobalMapWidget(widgets.WidgetBase):
     def init(self, app, datamanager):
         super().init(app, datamanager)
         self._app = app
+
+        # Init Collectables
+        self.showCollectables = {}
+        self.collectableBtnGroups = []
+        self.collectableLocationMarkers = dict()
+        self.collectableDefs = self._loadCollectablesDefinitionsFromJson()
         self.characterDataManager = CharacterDataManager()
-        self.characterDataManager.init(app, datamanager)
+        self.characterDataManager.init(app, datamanager, self.collectableDefs)
+        self._addCollectablesControls(self.collectableDefs)
+
+        self.collectableNearUpdateFPS = 1
+        self.collectableNearUpdateTimer.setInterval(int(1000/self.collectableNearUpdateFPS))
+        self.collectableNearUpdateTimer.timeout.connect(self.updateCollectableVisibility)
+        self.collectableNearUpdateTimer.start()
 
         # Read maps config file
         try:
@@ -1021,13 +1034,6 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.pipWorldLocations = None
         self.pipMapLocationItems = dict()
         self.poiLocationItems = dict()
-        self.collectableLocationMarkers = dict()
-        # Init Collectables
-        self.showCollectables = {}
-
-        self.collectableDefs = self._loadCollectablesDefinitionsFromJson()
-        self.collectableBtnGroups = []
-        self._addCollectablesControls(self.collectableDefs)
 
         self._signalPipWorldQuestsUpdated.connect(self._slotPipWorldQuestsUpdated)
         self._signalPipWorldLocationsUpdated.connect(self._slotPipWorldLocationsUpdated)
@@ -1087,7 +1093,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         if marker.markerType == 4: # Locations
             self.signalLocationFilterSetVisible.disconnect(marker.filterSetVisible)
             self.signalLocationFilterVisibilityCheat.disconnect(marker.filterVisibilityCheat)
-            
+
     def _onRootObjectEvent(self, rootObject):
         self.pipMapObject = rootObject.child('Map')
         if self.pipMapObject:
@@ -1569,8 +1575,6 @@ class GlobalMapWidget(widgets.WidgetBase):
         if self.centerOnPlayerEnabled:
             self.playerMarker.mapCenterOn()
 
-        self.updateCollectableVisibility()
-
     def updateCollectableVisibility(self, playAudibleAlerts=True):
         for catKey in self.collectableLocationMarkers.keys():
             showAlwaysCollected = bool(int(self._app.settings.value('globalmapwidget/collectable_showcollected_' + catKey, 0)) == 1)
@@ -1762,13 +1766,17 @@ class GlobalMapWidget(widgets.WidgetBase):
                     self.datamanager.rpcSetCustomMarker(self.mapCoords.map2pip_x(markerPos.x()), self.mapCoords.map2pip_y(markerPos.y()))
                 return True
         return False
-    
 
-    def iwcSetCollectableCollected(self, formid):
+    def iwcSetCollectablesCollectedState(self, listFormids):
         for catKey in self.collectableLocationMarkers.keys():
             for instanceID, marker in self.collectableLocationMarkers[catKey].items():
-                if int(marker.itemFormID,16) == formid:
+                if str(int(marker.itemFormID,16)) in listFormids:
                     marker.setCollected(True)
+                else:
+                    marker.setCollected(False)
+
+        self.updateCollectableVisibility(playAudibleAlerts=False)
+
 
 
     def iwcCenterOnLocation(self, pipId):
