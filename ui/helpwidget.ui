@@ -34,7 +34,7 @@
      <widget class="QTextBrowser" name="textBrowser">
       <property name="source">
        <url>
-        <string>file:///home/matzman/Projekte/Privat/PyPipboyApp/workspace/PyPipboyApp/ui/res/helpwidget.html</string>
+        <string></string>
        </url>
       </property>
       <property name="openExternalLinks">
