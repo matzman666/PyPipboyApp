@@ -44,12 +44,9 @@ class PipboyMainWindow(QtWidgets.QMainWindow):
         
     # Init function that is called after everything has been set up
     def init(self, app, networkchannel, datamanager):
-        wstate = self.windowState()
-        if wstate == QtCore.Qt.WindowFullScreen:
-            self.wstateBeforeFullscreen = QtCore.Qt.WindowNoState
+        if self.isFullScreen():
             self.actionFullscreen.setChecked(True)
         else:
-            self.wstateBeforeFullscreen = wstate
             self.actionFullscreen.setChecked(False)
         self.actionFullscreen.toggled.connect(self.setFullscreen)
         
@@ -60,10 +57,9 @@ class PipboyMainWindow(QtWidgets.QMainWindow):
     @QtCore.pyqtSlot(bool)        
     def setFullscreen(self, fullscreen):
         if fullscreen:
-            self.wstateBeforeFullscreen = self.windowState()
-            self.setWindowState(QtCore.Qt.WindowFullScreen)
+            self.showFullScreen()
         else:
-            self.setWindowState(self.wstateBeforeFullscreen)
+            self.showMaximized()
 
 
 
@@ -179,6 +175,9 @@ class PyPipboyApp(QtWidgets.QApplication):
         self.mainWindow.addDockWidget(QtCore.Qt.TopDockWidgetArea, self.helpWidget)
         self._loadWidgets()
         # Restore saved window state
+        savedFullScreen = bool(int(self.settings.value('mainwindow/fullscreen', 0)))
+        if savedFullScreen:
+            self.mainWindow.showFullScreen()
         savedGeometry = self.settings.value('mainwindow/geometry')
         if savedGeometry:
             self.mainWindow.restoreGeometry(savedGeometry)
@@ -418,6 +417,7 @@ class PyPipboyApp(QtWidgets.QApplication):
             self.relayController.stopAutodiscoverService()
             # save state
             self.settings.setValue('mainwindow/geometry', self.mainWindow.saveGeometry())
+            self.settings.setValue('mainwindow/fullscreen', int(self.mainWindow.isFullScreen()))
             self.settings.setValue('mainwindow/windowstate', self.mainWindow.saveState())
             self.settings.sync()
             # quit
