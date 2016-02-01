@@ -4,6 +4,7 @@
 import os, platform
 import sys
 import json
+import time
 import importlib
 import traceback
 import faulthandler
@@ -255,10 +256,14 @@ class PyPipboyApp(QtWidgets.QApplication):
             parentself = self # Capture self for inner class
             class _AutodiscoverThread(QtCore.QThread):
                 def run(self):
-                    parentself._logger.debug('Starting Autodiscovery Thread')
-                    parentself._autodiscoverHosts = NetworkChannel.discoverHosts()
-                    parentself._signalAutodiscoveryFinished.emit()
-                    parentself._logger.debug('Autodiscovery Thread finished')
+                    try:
+                        parentself._logger.debug('Starting Autodiscovery Thread')
+                        parentself._autodiscoverHosts = NetworkChannel.discoverHosts()
+                        parentself._signalAutodiscoveryFinished.emit()
+                        parentself._logger.debug('Autodiscovery Thread finished')
+                    except:
+                        traceback.print_exc(file=sys.stdout)
+                        time.sleep(1) # Just to make sure that the error is correctly written into the log file
             self._autodiscoverThread = _AutodiscoverThread()
             self._autodiscoverThread.start()
             return True
@@ -766,46 +771,51 @@ class PyPipboyApp(QtWidgets.QApplication):
             
 # Main entry point
 if __name__ == "__main__":
-    stdlogfile = None
-    inifile = None
-    i = 1
-    while i < len(sys.argv):
-        if sys.argv[i] == '--stdlog':
-            if i == len(sys.argv) -1 :
-                logging.error('Missing argument for --stdlog')
-            else:
-                i += 1
-                stdlogfile = sys.argv[i]
-        elif sys.argv[i] == '--inifile':
-            if i == len(sys.argv) -1 :
-                logging.error('Missing argument for --inifile')
-            else:
-                i += 1
-                inifile = sys.argv[i]
-        i += 1
-    if stdlogfile != None:
-        stdlog = open(stdlogfile, 'w')
-        sys.stdout = stdlog
-        sys.stderr = stdlog
     try:
-        logging.config.fileConfig('logging.config')
-    except Exception as e:
-        logging.basicConfig(level=logging.WARN)
-        logging.error('Error while reading logging config: ' + str(e))
+        stdlogfile = None
+        inifile = None
+        i = 1
+        while i < len(sys.argv):
+            if sys.argv[i] == '--stdlog':
+                if i == len(sys.argv) -1 :
+                    logging.error('Missing argument for --stdlog')
+                else:
+                    i += 1
+                    stdlogfile = sys.argv[i]
+            elif sys.argv[i] == '--inifile':
+                if i == len(sys.argv) -1 :
+                    logging.error('Missing argument for --inifile')
+                else:
+                    i += 1
+                    inifile = sys.argv[i]
+            i += 1
+        if stdlogfile != None:
+            stdlog = open(stdlogfile, 'w')
+            sys.stdout = stdlog
+            sys.stderr = stdlog
+        try:
+            logging.config.fileConfig('logging.config')
+        except Exception as e:
+            logging.basicConfig(level=logging.WARN)
+            logging.error('Error while reading logging config: ' + str(e))
+    
+        try:
+            faulthandler.enable()
+        except Exception as e:
+            logging.error('Error calling Faulthandle.enable(): ' + str(e))
+            
+        if (faulthandler.is_enabled()):
+            logging.warn('Faulthandler is enabled')
+            #faulthandler.dump_traceback_later(5)
+        else:
+            logging.error('Faulthandler is NOT enabled')
+    
+        if 'nt' in os.name:
+            from ctypes import windll
+            windll.shell32.SetCurrentProcessExplicitAppUserModelID(u'matzman666.pypipboyapp')
+        pipboyApp = PyPipboyApp(sys.argv, inifile)
+        pipboyApp.run()
+    except:
+        traceback.print_exc(file=sys.stdout)
+        time.sleep(1) # Just to make sure that the error is correctly written into the log file
 
-    try:
-        faulthandler.enable()
-    except Exception as e:
-        logging.error('Error calling Faulthandle.enable(): ' + str(e))
-        
-    if (faulthandler.is_enabled()):
-        logging.warn('Faulthandler is enabled')
-        #faulthandler.dump_traceback_later(5)
-    else:
-        logging.error('Faulthandler is NOT enabled')
-
-    if 'nt' in os.name:
-        from ctypes import windll
-        windll.shell32.SetCurrentProcessExplicitAppUserModelID(u'matzman666.pypipboyapp')
-    pipboyApp = PyPipboyApp(sys.argv, inifile)
-    pipboyApp.run()
