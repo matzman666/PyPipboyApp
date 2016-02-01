@@ -723,16 +723,17 @@ class CollectableMarker(MarkerBase):
         
     @QtCore.pyqtSlot(bool)
     def setCollected(self, value):
-        self.collected = value
-        if value:
-            if self.collectedColor is not None:
-                self.color = self.collectedColor
-        else:
-            if self.uncollectedColor is not None:
-                self.color = self.uncollectedColor
-        self.markerPixmapDirty = True
-        self.labelDirty = True
-        self.doUpdate()
+        if self.collected != value:
+            self.collected = value
+            if value:
+                if self.collectedColor is not None:
+                    self.color = self.collectedColor
+            else:
+                if self.uncollectedColor is not None:
+                    self.color = self.uncollectedColor
+            self.markerPixmapDirty = True
+            self.labelDirty = True
+            self.doUpdate()
 
     @QtCore.pyqtSlot(bool)
     def filterSetVisible(self, value):
@@ -755,17 +756,20 @@ class CollectableMarker(MarkerBase):
                 index = self.widget._app.settings.value(collectedcollectablesSettingsPath, None)
                 if index == None:
                     index = []
+                tmp = str(int(self.itemFormID,16))
                 if (value):
-                    if self.itemFormID not in index:
-                        index.append(self.itemFormID)
+                    if tmp not in index:
+                        index = list(set(index)) # remove duplicates
+                        index.append(tmp)
                         self.widget._app.settings.setValue(collectedcollectablesSettingsPath, index)
                 else:
-                    if self.itemFormID in index:
-                        index.remove(self.itemFormID)
+                    if tmp in index:
+                        index = list(set(index)) # remove duplicates
+                        index.remove(tmp)
                         self.widget._app.settings.setValue(collectedcollectablesSettingsPath, index)
             self.setCollected(value)
         ftaction = menu.addAction('Mark as Collected')
-        ftaction.toggled.connect(_markAsCollected)
+        ftaction.triggered.connect(_markAsCollected)
         ftaction.setCheckable(True)
         ftaction.setChecked(self.collected)
 
@@ -1767,14 +1771,25 @@ class GlobalMapWidget(widgets.WidgetBase):
                 return True
         return False
 
-    def iwcSetCollectablesCollectedState(self, listFormids):
-        for catKey in self.collectableLocationMarkers.keys():
-            for instanceID, marker in self.collectableLocationMarkers[catKey].items():
-                if str(int(marker.itemFormID,16)) in listFormids:
-                    marker.setCollected(True)
-                else:
-                    marker.setCollected(False)
-
+    def iwcSetCollectablesCollectedState(self, listFormids, fullUpdate = True):
+        if fullUpdate:
+            for catKey in self.collectableLocationMarkers.keys():
+                for instanceID, marker in self.collectableLocationMarkers[catKey].items():
+                    if str(int(marker.itemFormID,16)) in listFormids:
+                        marker.setCollected(True)
+                    else:
+                        marker.setCollected(False)
+        else:
+            # Python does not allow to break out of several nested loop, 
+            # but we can use "return" as a workaround
+            def _idSetCollected(id):
+                for catKey in self.collectableLocationMarkers.keys():
+                    for instanceID, marker in self.collectableLocationMarkers[catKey].items():
+                        if str(int(marker.itemFormID,16)) == id:
+                            marker.setCollected(True)
+                            return
+            for id in listFormids:
+                _idSetCollected(id)
         self.updateCollectableVisibility(playAudibleAlerts=False)
 
 
