@@ -679,7 +679,7 @@ class CollectableMarker(MarkerBase):
 
     @QtCore.pyqtSlot()
     def _rebuildOverlayIcons(self):
-        self.widget._logger.info('CollectableMarker: rebuilding overlay icons')
+        #self.widget._logger.info('CollectableMarker: rebuilding overlay icons')
         self.collectedOverlayIcon = self.imageFactory.getImage('tick8.png')
         ImageFactory.colorizeImage(self.collectedOverlayIcon, self.collectedColor)
         super()._rebuildOverlayIcons()
@@ -723,16 +723,17 @@ class CollectableMarker(MarkerBase):
         
     @QtCore.pyqtSlot(bool)
     def setCollected(self, value):
-        self.collected = value
-        if value:
-            if self.collectedColor is not None:
-                self.color = self.collectedColor
-        else:
-            if self.uncollectedColor is not None:
-                self.color = self.uncollectedColor
-        self.markerPixmapDirty = True
-        self.labelDirty = True
-        self.doUpdate()
+        if self.collected != value:
+            self.collected = value
+            if value:
+                if self.collectedColor is not None:
+                    self.color = self.collectedColor
+            else:
+                if self.uncollectedColor is not None:
+                    self.color = self.uncollectedColor
+            self.markerPixmapDirty = True
+            self.labelDirty = True
+            self.doUpdate()
 
     @QtCore.pyqtSlot(bool)
     def filterSetVisible(self, value):
@@ -755,17 +756,20 @@ class CollectableMarker(MarkerBase):
                 index = self.widget._app.settings.value(collectedcollectablesSettingsPath, None)
                 if index == None:
                     index = []
+                tmp = str(int(self.itemFormID,16))
                 if (value):
-                    if self.itemFormID not in index:
-                        index.append(self.itemFormID)
+                    if tmp not in index:
+                        index = list(set(index)) # remove duplicates
+                        index.append(tmp)
                         self.widget._app.settings.setValue(collectedcollectablesSettingsPath, index)
                 else:
-                    if self.itemFormID in index:
-                        index.remove(self.itemFormID)
+                    if tmp in index:
+                        index = list(set(index)) # remove duplicates
+                        index.remove(tmp)
                         self.widget._app.settings.setValue(collectedcollectablesSettingsPath, index)
             self.setCollected(value)
         ftaction = menu.addAction('Mark as Collected')
-        ftaction.toggled.connect(_markAsCollected)
+        ftaction.triggered.connect(_markAsCollected)
         ftaction.setCheckable(True)
         ftaction.setChecked(self.collected)
 
@@ -862,6 +866,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.characterDataManager = None
         self.collectablesNearPlayer = []
         self.collectableNearSoundEffects = {}
+        self.collectableNearUpdateTimer = QtCore.QTimer()
 
 
     def iwcSetup(self, app):
@@ -870,8 +875,20 @@ class GlobalMapWidget(widgets.WidgetBase):
     def init(self, app, datamanager):
         super().init(app, datamanager)
         self._app = app
+
+        # Init Collectables
+        self.showCollectables = {}
+        self.collectableBtnGroups = []
+        self.collectableLocationMarkers = dict()
+        self.collectableDefs = self._loadCollectablesDefinitionsFromJson()
         self.characterDataManager = CharacterDataManager()
-        self.characterDataManager.init(app, datamanager)
+        self.characterDataManager.init(app, datamanager, self.collectableDefs)
+        self._addCollectablesControls(self.collectableDefs)
+
+        self.collectableNearUpdateFPS = 1
+        self.collectableNearUpdateTimer.setInterval(int(1000/self.collectableNearUpdateFPS))
+        self.collectableNearUpdateTimer.timeout.connect(self.updateCollectableVisibility)
+        self.collectableNearUpdateTimer.start()
 
         # Read maps config file
         try:
@@ -1021,13 +1038,6 @@ class GlobalMapWidget(widgets.WidgetBase):
         self.pipWorldLocations = None
         self.pipMapLocationItems = dict()
         self.poiLocationItems = dict()
-        self.collectableLocationMarkers = dict()
-        # Init Collectables
-        self.showCollectables = {}
-
-        self.collectableDefs = self._loadCollectablesDefinitionsFromJson()
-        self.collectableBtnGroups = []
-        self._addCollectablesControls(self.collectableDefs)
 
         self._signalPipWorldQuestsUpdated.connect(self._slotPipWorldQuestsUpdated)
         self._signalPipWorldLocationsUpdated.connect(self._slotPipWorldLocationsUpdated)
@@ -1087,7 +1097,7 @@ class GlobalMapWidget(widgets.WidgetBase):
         if marker.markerType == 4: # Locations
             self.signalLocationFilterSetVisible.disconnect(marker.filterSetVisible)
             self.signalLocationFilterVisibilityCheat.disconnect(marker.filterVisibilityCheat)
-            
+
     def _onRootObjectEvent(self, rootObject):
         self.pipMapObject = rootObject.child('Map')
         if self.pipMapObject:
@@ -1569,8 +1579,6 @@ class GlobalMapWidget(widgets.WidgetBase):
         if self.centerOnPlayerEnabled:
             self.playerMarker.mapCenterOn()
 
-        self.updateCollectableVisibility()
-
     def updateCollectableVisibility(self, playAudibleAlerts=True):
         for catKey in self.collectableLocationMarkers.keys():
             showAlwaysCollected = bool(int(self._app.settings.value('globalmapwidget/collectable_showcollected_' + catKey, 0)) == 1)
@@ -1762,13 +1770,28 @@ class GlobalMapWidget(widgets.WidgetBase):
                     self.datamanager.rpcSetCustomMarker(self.mapCoords.map2pip_x(markerPos.x()), self.mapCoords.map2pip_y(markerPos.y()))
                 return True
         return False
-    
 
-    def iwcSetCollectableCollected(self, formid):
-        for catKey in self.collectableLocationMarkers.keys():
-            for instanceID, marker in self.collectableLocationMarkers[catKey].items():
-                if int(marker.itemFormID,16) == formid:
-                    marker.setCollected(True)
+    def iwcSetCollectablesCollectedState(self, listFormids, fullUpdate = True):
+        if fullUpdate:
+            for catKey in self.collectableLocationMarkers.keys():
+                for instanceID, marker in self.collectableLocationMarkers[catKey].items():
+                    if str(int(marker.itemFormID,16)) in listFormids:
+                        marker.setCollected(True)
+                    else:
+                        marker.setCollected(False)
+        else:
+            # Python does not allow to break out of several nested loop, 
+            # but we can use "return" as a workaround
+            def _idSetCollected(id):
+                for catKey in self.collectableLocationMarkers.keys():
+                    for instanceID, marker in self.collectableLocationMarkers[catKey].items():
+                        if str(int(marker.itemFormID,16)) == id:
+                            marker.setCollected(True)
+                            return
+            for id in listFormids:
+                _idSetCollected(id)
+        self.updateCollectableVisibility(playAudibleAlerts=False)
+
 
 
     def iwcCenterOnLocation(self, pipId):

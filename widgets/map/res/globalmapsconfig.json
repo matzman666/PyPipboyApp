@@ -3,30 +3,43 @@
 		"label": "Original Map",
 		"colorable": true,
 		"file": "mapgreyscale.png",
-		"nw": [52, 52],
-		"ne": [1990, 52],
-		"sw": [52, 1990]
+		"nw": [69, 69],
+		"ne": [1979, 69],
+		"sw": [69, 1979]
 	}, "defaultcolor": {
 		"label": "Original Map (Color)",
 		"colorable": false,
 		"file": "mapcolor.png",
-		"nw": [52, 52],
-		"ne": [1990, 52],
-		"sw": [52, 1990]
+		"nw": [69, 69],
+		"ne": [1979, 69],
+		"sw": [69, 1979]
 	}, "greyscale-4k": {
 		"label": "Greyscale Map (4K)",
 		"colorable": true,
 		"file": "mapgreyscale-4k.png",
-		"nw": [104, 104],
-		"ne": [3980, 104],
-		"sw": [104, 3980]
+		"nw": [138, 138],
+		"ne": [3958, 138],
+		"sw": [138, 3958]
 	}, "threadlevel-4k": {
-		"id": "threadlevel-4k",
 		"label": "Thread-Level Map (4K)",
 		"colorable": false,
 		"file": "mapthreatlevel-4k.png",
-		"nw": [104, 104],
-		"ne": [3980, 104],
-		"sw": [104, 3980]
+		"nw": [138, 138],
+		"ne": [3958, 138],
+		"sw": [138, 3958]
+	}, "satview": {
+		"label": "Satellite View",
+		"colorable": true,
+		"file": "satview.png",
+		"nw": [-58, 454],
+		"ne": [3852, 454],
+		"sw": [-58, 4350]
+	}, "satview-color": {
+		"label": "Satellite View (Color)",
+		"colorable": false,
+		"file": "satview-color.jpg",
+		"nw": [-58, 454],
+		"ne": [3852, 454],
+		"sw": [-58, 4350]
 	}
 }
