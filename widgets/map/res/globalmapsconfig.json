@@ -30,7 +30,7 @@
 	}, "satview": {
 		"label": "Satellite View",
 		"colorable": true,
-		"file": "satview.png",
+		"file": "satview.jpg",
 		"nw": [-58, 454],
 		"ne": [3852, 454],
 		"sw": [-58, 4350]
