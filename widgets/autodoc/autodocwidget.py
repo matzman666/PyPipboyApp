@@ -392,53 +392,55 @@ class AutoDocWidget(widgets.WidgetBase):
         
         if self.StatsData:
             if self.StatsData.child("ActiveEffects"):
-                ActiveEffectsData = self.StatsData.child("ActiveEffects")
-                
-                for i in range(0, ActiveEffectsData.childCount()):
-                    TypeID = ActiveEffectsData.child(i).child("type").value()
-                    
-                    if TypeID == 54:
-                        for j in range(0, ActiveEffectsData.child(i).child("Effects").childCount()):
-                            EffectName = ActiveEffectsData.child(i).child("Effects").child(j).child("Name").value()
-                            
-                            if (EffectName == "Waterbreathing") and not self.Aquaperson:
-                                self.Aquaperson = True
-                                
-                            if EffectName == "Rads":
-                                self.TotalRads += ActiveEffectsData.child(i).child("Effects").child(j).child("Value").value()
-                                
-                                if ActiveEffectsData.child(i).child("Source").value() == "Water Radiation":
-                                    self.InWater = True
-                                else:
-                                    self.RadState = 2
-                    
-                    if TypeID == 49:
-                        if ActiveEffectsData.child(i).child("Source").value() == "Alcohol Addiction":
-                            self.Addicted = True
-                    
-                    if TypeID == 44:
-                        self.Stimpak.Active = True
+                # range() is prone to race-conditions
+                for source in self.StatsData.child("ActiveEffects").value():
+                    # People were having crashes because apparently not all sources have a type.
+                    pipType = source.child("type")
+                    if pipType:
+                        TypeID = pipType.value()
                         
-                    if TypeID == 41:
-                        for j in range(0, ActiveEffectsData.child(i).child("Effects").childCount()):
-                            EffectName = ActiveEffectsData.child(i).child("Effects").child(j).child("Name").value()
-                            
-                            if EffectName == "CA_AddictionEffect":
+                        if TypeID == 54:
+                            for effect in source.child("Effects").value():
+                                EffectName = effect.child("Name").value()
+                                
+                                if (EffectName == "Waterbreathing") and not self.Aquaperson:
+                                    self.Aquaperson = True
+                                    
+                                elif EffectName == "Rads":
+                                    self.TotalRads += effect.child("Value").value()
+                                    
+                                    if source.child("Source").value() == "Water Radiation":
+                                        self.InWater = True
+                                    else:
+                                        self.RadState = 2
+                        
+                        if TypeID == 49:
+                            if source.child("Source").value() == "Alcohol Addiction":
                                 self.Addicted = True
+                        
+                        if TypeID == 44:
+                            self.Stimpak.Active = True
                             
-                            if EffectName == "DMG Resist":
-                                if ActiveEffectsData.child(i).child("Effects").child(j).child("Value").value() > 0:
-                                    self.MedX.Active = True
-                            
-                            if EffectName == "Rads":
-                                if ActiveEffectsData.child(i).child("Effects").child(j).child("Value").value() < 0:
-                                    self.RadAway.Active = True
-                                    self.Stimpak.FreezeUseFlag = False
-                                    self.RadState = 0
-                            
-                            if EffectName == "Rad Resist":
-                                if ActiveEffectsData.child(i).child("Effects").child(j).child("Value").value() > 0:
-                                    self.RadX.Active = True
+                        if TypeID == 41:
+                            for effect in source.child("Effects").value():
+                                EffectName = effect.child("Name").value()
+                                
+                                if EffectName == "CA_AddictionEffect":
+                                    self.Addicted = True
+                                
+                                if EffectName == "DMG Resist":
+                                    if effect.child("Value").value() > 0:
+                                        self.MedX.Active = True
+                                
+                                if EffectName == "Rads":
+                                    if effect.child("Value").value() < 0:
+                                        self.RadAway.Active = True
+                                        self.Stimpak.FreezeUseFlag = False
+                                        self.RadState = 0
+                                
+                                if EffectName == "Rad Resist":
+                                    if effect.child("Value").value() > 0:
+                                        self.RadX.Active = True
         
         if self.InWater and not self.Aquaperson:
             self.RadState = 2
