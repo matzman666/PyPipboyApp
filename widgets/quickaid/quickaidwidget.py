@@ -66,19 +66,20 @@ class QuickAidWidget(widgets.WidgetBase):
     
     @QtCore.pyqtSlot()
     def UpdateUI(self):
-        if self.StatsData.childCount():
-            Stimpaks = self.StatsData.child("StimpakCount").value()
-            Radaways = self.StatsData.child("RadawayCount").value()
-            
-            if Stimpaks > 0:
-                self.Widgets.stimpakButton.setEnabled(True)
-            else:
-                self.Widgets.stimpakButton.setEnabled(False)
-            
-            if Radaways > 0:
-                self.Widgets.radawayButton.setEnabled(True)
-            else:
-                self.Widgets.radawayButton.setEnabled(False)
+        if self.isVisible():
+            if self.StatsData:
+                Stimpaks = self.StatsData.child("StimpakCount").value()
+                Radaways = self.StatsData.child("RadawayCount").value()
                 
-            self.Widgets.stimpakButton.setText("STIMPAK (" + str(Stimpaks) + ")")
-            self.Widgets.radawayButton.setText("RADAWAY (" + str(Radaways) + ")")
+                if Stimpaks > 0:
+                    self.Widgets.stimpakButton.setEnabled(True)
+                else:
+                    self.Widgets.stimpakButton.setEnabled(False)
+                
+                if Radaways > 0:
+                    self.Widgets.radawayButton.setEnabled(True)
+                else:
+                    self.Widgets.radawayButton.setEnabled(False)
+                    
+                self.Widgets.stimpakButton.setText("STIMPAK (" + str(Stimpaks) + ")")
+                self.Widgets.radawayButton.setText("RADAWAY (" + str(Radaways) + ")")

@@ -52,23 +52,24 @@ class SpecialWidget(widgets.WidgetBase):
     # UPDATE UI ELEMENTS
     @QtCore.pyqtSlot()
     def UpdateUI(self):
-        if self.SpecialData.childCount():
-            for i in range(0, self.SpecialData.childCount()):
-                Name = self.SpecialData.child(i).child("Name").value()
-                Description = self.SpecialData.child(i).child("Description").value()
-                Total = self.SpecialData.child(i).child("Value").value()
-                Modifier = self.SpecialData.child(i).child("Modifier").value()
-                Base = Total - Modifier
-                
-                TitleLabel = self.findChild(QtWidgets.QLabel, "titleS" + str(i + 1) + "Label")
-                TitleLabel.setText(Name)
-                TitleLabel.setToolTip(Description)
-                
-                BaseLabel = self.findChild(QtWidgets.QLabel, "baseS" + str(i + 1) + "Label")
-                BaseLabel.setText(str(Base))
-                
-                ModLabel = self.findChild(QtWidgets.QLabel, "modS" + str(i + 1) + "Label")
-                ModLabel.setText(str(Modifier))
-                
-                TotalLabel = self.findChild(QtWidgets.QLabel, "totalS" + str(i + 1) + "Label")
-                TotalLabel.setText(str(Total))
+        if self.isVisible():
+            if self.SpecialData:
+                for i in range(0, self.SpecialData.childCount()):
+                    Name = self.SpecialData.child(i).child("Name").value()
+                    Description = self.SpecialData.child(i).child("Description").value()
+                    Total = self.SpecialData.child(i).child("Value").value()
+                    Modifier = self.SpecialData.child(i).child("Modifier").value()
+                    Base = Total - Modifier
+                    
+                    TitleLabel = self.findChild(QtWidgets.QLabel, "titleS" + str(i + 1) + "Label")
+                    TitleLabel.setText(Name)
+                    TitleLabel.setToolTip(Description)
+                    
+                    BaseLabel = self.findChild(QtWidgets.QLabel, "baseS" + str(i + 1) + "Label")
+                    BaseLabel.setText(str(Base))
+                    
+                    ModLabel = self.findChild(QtWidgets.QLabel, "modS" + str(i + 1) + "Label")
+                    ModLabel.setText(str(Modifier))
+                    
+                    TotalLabel = self.findChild(QtWidgets.QLabel, "totalS" + str(i + 1) + "Label")
+                    TotalLabel.setText(str(Total))

@@ -52,10 +52,12 @@ class LimbWidget(widgets.WidgetBase):
     # UPDATE UI ELEMENTS
     @QtCore.pyqtSlot()
     def UpdateUI(self):
-        if self.StatsData.childCount():
-            self.Widgets.headStatus.setValue(self.StatsData.child("HeadCondition").value())
-            self.Widgets.bodyStatus.setValue(self.StatsData.child("TorsoCondition").value())
-            self.Widgets.leftarmStatus.setValue(self.StatsData.child("LArmCondition").value())
-            self.Widgets.rightarmStatus.setValue(self.StatsData.child("RArmCondition").value())
-            self.Widgets.leftlegStatus.setValue(self.StatsData.child("LLegCondition").value())
-            self.Widgets.rightlegStatus.setValue(self.StatsData.child("RLegCondition").value())
+        if self.isVisible():
+            if self.StatsData:
+                if self.StatsData.childCount():
+                    self.Widgets.headStatus.setValue(self.StatsData.child("HeadCondition").value())
+                    self.Widgets.bodyStatus.setValue(self.StatsData.child("TorsoCondition").value())
+                    self.Widgets.leftarmStatus.setValue(self.StatsData.child("LArmCondition").value())
+                    self.Widgets.rightarmStatus.setValue(self.StatsData.child("RArmCondition").value())
+                    self.Widgets.leftlegStatus.setValue(self.StatsData.child("LLegCondition").value())
+                    self.Widgets.rightlegStatus.setValue(self.StatsData.child("RLegCondition").value())

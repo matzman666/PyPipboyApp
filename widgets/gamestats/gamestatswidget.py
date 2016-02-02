@@ -78,45 +78,47 @@ class GameStatsWidget(widgets.WidgetBase):
     
     @QtCore.pyqtSlot()
     def UpdateSectionsList(self):
-        self.SectionsListModel.clear()
-        
-        if self.SectionsData:
-            for i in range(0, self.SectionsData.childCount()):
-                Text = self.SectionsData.child(i).child("text").value()
-                Text = Text[1:]
-                
-                ListItem = [
-                    QStandardItem(str(i)),
-                    QStandardItem(Text)
-                ]
-                self.SectionsListModel.appendRow(ListItem)
+        if self.isVisible():
+            self.SectionsListModel.clear()
             
-            self.Widgets.sectionsList.hideColumn(0)
+            if self.SectionsData:
+                for i in range(0, self.SectionsData.childCount()):
+                    Text = self.SectionsData.child(i).child("text").value()
+                    Text = Text[1:]
+                    
+                    ListItem = [
+                        QStandardItem(str(i)),
+                        QStandardItem(Text)
+                    ]
+                    self.SectionsListModel.appendRow(ListItem)
+                
+                self.Widgets.sectionsList.hideColumn(0)
     
     @QtCore.pyqtSlot()
     def UpdateStatsList(self):
-        self.StatsListModel.clear()
-        
-        if self.StatsData:
-            for i in range(0, self.StatsData.childCount()):
-                Value = self.StatsData.child(i).child("Value").value()
-                ShowIfZero = self.StatsData.child(i).child("showIfZero").value()
-                OkayToShow = False
-                
-                if ShowIfZero:
-                    OkayToShow = True
-                else:
-                    if Value != 0:
-                        OkayToShow = True
-                
-                if OkayToShow:
-                    Text = self.StatsData.child(i).child("text").value()
-                    
-                    ListItem = [
-                        QStandardItem(str(Value))
-                        , QStandardItem(Text)
-                    ]
-                    self.StatsListModel.appendRow(ListItem)
+        if self.isVisible():
+            self.StatsListModel.clear()
             
-            self.Widgets.statsList.setModel(self.StatsListModel)
-            self.Widgets.statsList.resizeColumnToContents(0)
+            if self.StatsData:
+                for i in range(0, self.StatsData.childCount()):
+                    Value = self.StatsData.child(i).child("Value").value()
+                    ShowIfZero = self.StatsData.child(i).child("showIfZero").value()
+                    OkayToShow = False
+                    
+                    if ShowIfZero:
+                        OkayToShow = True
+                    else:
+                        if Value != 0:
+                            OkayToShow = True
+                    
+                    if OkayToShow:
+                        Text = self.StatsData.child(i).child("text").value()
+                        
+                        ListItem = [
+                            QStandardItem(str(Value))
+                            , QStandardItem(Text)
+                        ]
+                        self.StatsListModel.appendRow(ListItem)
+                
+                self.Widgets.statsList.setModel(self.StatsListModel)
+                self.Widgets.statsList.resizeColumnToContents(0)

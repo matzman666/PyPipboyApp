@@ -29,7 +29,7 @@ class StatsWidget(widgets.WidgetBase):
     
     # CLASS INIT
     def __init__(self, mhandle, parent):
-        super().__init__('Player Statistics', parent)
+        super().__init__('Combat Stats', parent)
         self.Widgets = uic.loadUi(os.path.join(mhandle.basepath, 'ui', 'statswidget.ui'))
         self.setWidget(self.Widgets)
         
@@ -103,43 +103,44 @@ class StatsWidget(widgets.WidgetBase):
     # UPDATE UI ELEMENTS
     @QtCore.pyqtSlot()
     def UpdateUI(self):
-        self.Widgets.damageNormalLabel.setText("0")
-        self.Widgets.damageEnergyLabel.setText("0")
-        self.Widgets.damagePoisonLabel.setText("0")
-        self.Widgets.damageRadiationLabel.setText("0")
-        self.Widgets.resistNormalLabel.setText("0")
-        self.Widgets.resistEnergyLabel.setText("0")
-        self.Widgets.resistPoisonLabel.setText("0")
-        self.Widgets.resistRadiationLabel.setText("0")
-        
-        if self.PlayerInfoData.childCount():
-            DamageData = self.PlayerInfoData.child("TotalDamages")
-            ResistsData = self.PlayerInfoData.child("TotalResists")
+        if self.isVisible():
+            self.Widgets.damageNormalLabel.setText("0")
+            self.Widgets.damageEnergyLabel.setText("0")
+            self.Widgets.damagePoisonLabel.setText("0")
+            self.Widgets.damageRadiationLabel.setText("0")
+            self.Widgets.resistNormalLabel.setText("0")
+            self.Widgets.resistEnergyLabel.setText("0")
+            self.Widgets.resistPoisonLabel.setText("0")
+            self.Widgets.resistRadiationLabel.setText("0")
             
-            if DamageData.childCount():
-                for i in range(0, DamageData.childCount()):
-                    DamageValue = int(DamageData.child(i).child("Value").value())
-                    DamageType = DamageData.child(i).child("type").value()
-                    
-                    if DamageType == eEffectType.NORMAL:
-                        self.Widgets.damageNormalLabel.setText(str(DamageValue))
-                    elif DamageType == eEffectType.ENERGY:
-                        self.Widgets.damageEnergyLabel.setText(str(DamageValue))
-                    elif DamageType == eEffectType.POISON:
-                        self.Widgets.damagePoisonLabel.setText(str(DamageValue))
-                    elif DamageType == eEffectType.RADIATION:
-                        self.Widgets.damageRadiationLabel.setText(str(DamageValue))
-            
-            if ResistsData.childCount():
-                for i in range(0, ResistsData.childCount()):
-                    ResistValue = int(ResistsData.child(i).child("Value").value())
-                    ResistType = ResistsData.child(i).child("type").value()
-                    
-                    if ResistType == eEffectType.NORMAL:
-                        self.Widgets.resistNormalLabel.setText(str(ResistValue))
-                    elif ResistType == eEffectType.ENERGY:
-                        self.Widgets.resistEnergyLabel.setText(str(ResistValue))
-                    elif ResistType == eEffectType.POISON:
-                        self.Widgets.resistPoisonLabel.setText(str(ResistValue))
-                    elif ResistType == eEffectType.RADIATION:
-                        self.Widgets.resistRadiationLabel.setText(str(ResistValue))
+            if self.PlayerInfoData:
+                DamageData = self.PlayerInfoData.child("TotalDamages")
+                ResistsData = self.PlayerInfoData.child("TotalResists")
+                
+                if DamageData:
+                    for i in range(0, DamageData.childCount()):
+                        DamageValue = int(DamageData.child(i).child("Value").value())
+                        DamageType = DamageData.child(i).child("type").value()
+                        
+                        if DamageType == eEffectType.NORMAL:
+                            self.Widgets.damageNormalLabel.setText(str(DamageValue))
+                        elif DamageType == eEffectType.ENERGY:
+                            self.Widgets.damageEnergyLabel.setText(str(DamageValue))
+                        elif DamageType == eEffectType.POISON:
+                            self.Widgets.damagePoisonLabel.setText(str(DamageValue))
+                        elif DamageType == eEffectType.RADIATION:
+                            self.Widgets.damageRadiationLabel.setText(str(DamageValue))
+                
+                if ResistsData:
+                    for i in range(0, ResistsData.childCount()):
+                        ResistValue = int(ResistsData.child(i).child("Value").value())
+                        ResistType = ResistsData.child(i).child("type").value()
+                        
+                        if ResistType == eEffectType.NORMAL:
+                            self.Widgets.resistNormalLabel.setText(str(ResistValue))
+                        elif ResistType == eEffectType.ENERGY:
+                            self.Widgets.resistEnergyLabel.setText(str(ResistValue))
+                        elif ResistType == eEffectType.POISON:
+                            self.Widgets.resistPoisonLabel.setText(str(ResistValue))
+                        elif ResistType == eEffectType.RADIATION:
+                            self.Widgets.resistRadiationLabel.setText(str(ResistValue))

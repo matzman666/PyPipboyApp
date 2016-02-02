@@ -161,63 +161,64 @@ class WorkshopsWidget(widgets.WidgetBase):
     
     @QtCore.pyqtSlot()
     def UpdateWorkshopInfo(self):
-        if self.selectedWorkshop:
-            Name = self.selectedWorkshop.child("text").value()
-            PopulationValue = self.selectedWorkshop.child("workshopData").child(0).child("Value").value()
-            PopulationRating = self.selectedWorkshop.child("workshopData").child(0).child("rating").value()
-            FoodValue = self.selectedWorkshop.child("workshopData").child(1).child("Value").value()
-            FoodRating = self.selectedWorkshop.child("workshopData").child(1).child("rating").value()
-            WaterValue = self.selectedWorkshop.child("workshopData").child(2).child("Value").value()
-            WaterRating = self.selectedWorkshop.child("workshopData").child(2).child("rating").value()
-            PowerValue = self.selectedWorkshop.child("workshopData").child(3).child("Value").value()
-            PowerRating = self.selectedWorkshop.child("workshopData").child(3).child("rating").value()
-            DefenseValue = self.selectedWorkshop.child("workshopData").child(4).child("Value").value()
-            DefenseRating = self.selectedWorkshop.child("workshopData").child(4).child("rating").value()
-            BedsValue = self.selectedWorkshop.child("workshopData").child(5).child("Value").value()
-            BedsRating = self.selectedWorkshop.child("workshopData").child(5).child("rating").value()
-            HappinessValue = self.selectedWorkshop.child("workshopData").child(6).child("Value").value()
-            HappinessRating = self.selectedWorkshop.child("workshopData").child(6).child("rating").value()
-            
-            self.Widgets.labelLocation.setText(Name)
-            self.Widgets.numberPeople.setText(str(PopulationValue))
-            self.Widgets.numberFood.setText(str(FoodValue))
-            self.Widgets.numberWater.setText(str(WaterValue))
-            self.Widgets.numberPower.setText(str(PowerValue))
-            self.Widgets.numberDefense.setText(str(DefenseValue))
-            self.Widgets.numberBeds.setText(str(BedsValue))
-            self.Widgets.numberHappiness.setText(str(HappinessValue))
-            
-            if PopulationRating < 0:
-                self.SetWarningWidget(self.Widgets.warningPeople, True)
-            else:
-                self.SetWarningWidget(self.Widgets.warningPeople, False)
-            
-            if FoodRating < 0:
-                self.SetWarningWidget(self.Widgets.warningFood, True)
-            else:
-                self.SetWarningWidget(self.Widgets.warningFood, False)
-            
-            if WaterRating < 0:
-                self.SetWarningWidget(self.Widgets.warningWater, True)
-            else:
-                self.SetWarningWidget(self.Widgets.warningWater, False)
-            
-            if PowerRating < 0:
-                self.SetWarningWidget(self.Widgets.warningPower, True)
-            else:
-                self.SetWarningWidget(self.Widgets.warningPower, False)
-            
-            if DefenseRating < 0:
-                self.SetWarningWidget(self.Widgets.warningDefense, True)
-            else:
-                self.SetWarningWidget(self.Widgets.warningDefense, False)
-            
-            if BedsRating < 0:
-                self.SetWarningWidget(self.Widgets.warningBeds, True)
-            else:
-                self.SetWarningWidget(self.Widgets.warningBeds, False)
-            
-            if HappinessRating < 0 and HappinessValue > 20:
-                self.SetWarningWidget(self.Widgets.warningHappiness, True)
-            else:
-                self.SetWarningWidget(self.Widgets.warningHappiness, False)
+        if self.isVisible():
+            if self.selectedWorkshop:
+                Name = self.selectedWorkshop.child("text").value()
+                PopulationValue = self.selectedWorkshop.child("workshopData").child(0).child("Value").value()
+                PopulationRating = self.selectedWorkshop.child("workshopData").child(0).child("rating").value()
+                FoodValue = self.selectedWorkshop.child("workshopData").child(1).child("Value").value()
+                FoodRating = self.selectedWorkshop.child("workshopData").child(1).child("rating").value()
+                WaterValue = self.selectedWorkshop.child("workshopData").child(2).child("Value").value()
+                WaterRating = self.selectedWorkshop.child("workshopData").child(2).child("rating").value()
+                PowerValue = self.selectedWorkshop.child("workshopData").child(3).child("Value").value()
+                PowerRating = self.selectedWorkshop.child("workshopData").child(3).child("rating").value()
+                DefenseValue = self.selectedWorkshop.child("workshopData").child(4).child("Value").value()
+                DefenseRating = self.selectedWorkshop.child("workshopData").child(4).child("rating").value()
+                BedsValue = self.selectedWorkshop.child("workshopData").child(5).child("Value").value()
+                BedsRating = self.selectedWorkshop.child("workshopData").child(5).child("rating").value()
+                HappinessValue = self.selectedWorkshop.child("workshopData").child(6).child("Value").value()
+                HappinessRating = self.selectedWorkshop.child("workshopData").child(6).child("rating").value()
+                
+                self.Widgets.labelLocation.setText(Name)
+                self.Widgets.numberPeople.setText(str(PopulationValue))
+                self.Widgets.numberFood.setText(str(FoodValue))
+                self.Widgets.numberWater.setText(str(WaterValue))
+                self.Widgets.numberPower.setText(str(PowerValue))
+                self.Widgets.numberDefense.setText(str(DefenseValue))
+                self.Widgets.numberBeds.setText(str(BedsValue))
+                self.Widgets.numberHappiness.setText(str(HappinessValue))
+                
+                if PopulationRating < 0:
+                    self.SetWarningWidget(self.Widgets.warningPeople, True)
+                else:
+                    self.SetWarningWidget(self.Widgets.warningPeople, False)
+                
+                if FoodRating < 0:
+                    self.SetWarningWidget(self.Widgets.warningFood, True)
+                else:
+                    self.SetWarningWidget(self.Widgets.warningFood, False)
+                
+                if WaterRating < 0:
+                    self.SetWarningWidget(self.Widgets.warningWater, True)
+                else:
+                    self.SetWarningWidget(self.Widgets.warningWater, False)
+                
+                if PowerRating < 0:
+                    self.SetWarningWidget(self.Widgets.warningPower, True)
+                else:
+                    self.SetWarningWidget(self.Widgets.warningPower, False)
+                
+                if DefenseRating < 0:
+                    self.SetWarningWidget(self.Widgets.warningDefense, True)
+                else:
+                    self.SetWarningWidget(self.Widgets.warningDefense, False)
+                
+                if BedsRating < 0:
+                    self.SetWarningWidget(self.Widgets.warningBeds, True)
+                else:
+                    self.SetWarningWidget(self.Widgets.warningBeds, False)
+                
+                if HappinessRating < 0 and HappinessValue > 20:
+                    self.SetWarningWidget(self.Widgets.warningHappiness, True)
+                else:
+                    self.SetWarningWidget(self.Widgets.warningHappiness, False)
