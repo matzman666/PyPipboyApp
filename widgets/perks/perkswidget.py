@@ -1,5 +1,6 @@
 import os
 import math
+import logging
 from PyQt5 import QtCore, QtWidgets, QtGui, uic
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
@@ -138,84 +139,88 @@ class PerksWidget(widgets.WidgetBase):
     
     @QtCore.pyqtSlot()
     def UpdatePerkList(self):
-        self.PerkListModel.clear()
-        
-        if self.PerkData.childCount():
-            for i in range(0, self.PerkData.childCount()):
-                Visible = self.PerkData.child(i).child("ListVisible").value()
-                PlayerRank = self.PerkData.child(i).child("Rank").value()
-                
-                if Visible and PlayerRank != 0:
-                    Name = self.PerkData.child(i).child("Name").value()
+        if self.isVisible():
+            self.PerkListModel.clear()
+            
+            if self.PerkData.childCount():
+                for i in range(0, self.PerkData.childCount()):
+                    Visible = self.PerkData.child(i).child("ListVisible").value()
+                    PlayerRank = self.PerkData.child(i).child("Rank").value()
                     
-                    ListItem = [
-                        QStandardItem(str(i)),
-                        QStandardItem(str(PlayerRank)),
-                        QStandardItem(Name)
-                    ]
-                    self.PerkListModel.appendRow(ListItem)
-
-            self.Widgets.perkList.sortByColumn(2, QtCore.Qt.AscendingOrder)
-            self.Widgets.perkList.hideColumn(0)
-            self.Widgets.perkList.resizeColumnToContents(1)
-
-            if self.SelectedPerkId == -1:
-                ModelIndex = self.PerkListModel.index(0, 0)
-                DataId = self.PerkListModel.data(ModelIndex)
-                
-                if DataId:
-                    self.SetPerkId(int(DataId))
+                    if Visible and PlayerRank != 0:
+                        Name = self.PerkData.child(i).child("Name").value()
+                        
+                        if Name != "":
+                            ListItem = [
+                                QStandardItem(str(i)),
+                                QStandardItem(str(PlayerRank)),
+                                QStandardItem(Name)
+                            ]
+                            self.PerkListModel.appendRow(ListItem)
+    
+                self.Widgets.perkList.sortByColumn(2, QtCore.Qt.AscendingOrder)
+                self.Widgets.perkList.hideColumn(0)
+                self.Widgets.perkList.resizeColumnToContents(1)
+    
+                if self.SelectedPerkId == -1:
+                    ModelIndex = self.PerkListModel.index(0, 0)
+                    DataId = self.PerkListModel.data(ModelIndex)
+                    
+                    if DataId:
+                        self.SetPerkId(int(DataId))
     
     @QtCore.pyqtSlot()
     def UpdatePerkInfo(self):
-        if self.PerkData.childCount():
-            if self.PerkData.child(self.SelectedPerkId):
-                Text = self.PerkData.child(self.SelectedPerkId).child("Perks").child(self.SelectedPerkRCur - 1).child("Description").value()
-                self.Widgets.descriptionLabel.setText(Text)
-            
-                if self.SelectedPerkRCur == 1:
-                    self.Widgets.prevButton.setEnabled(False)
-                else:
-                    self.Widgets.prevButton.setEnabled(True)
+        if self.isVisible():
+            if self.PerkData.childCount():
+                if self.PerkData.child(self.SelectedPerkId):
+                    Text = self.PerkData.child(self.SelectedPerkId).child("Perks").child(self.SelectedPerkRCur - 1).child("Description").value()
+                    self.Widgets.descriptionLabel.setText(Text)
                 
-                if self.SelectedPerkRCur == self.SelectedPerkRMax:
-                    self.Widgets.nextButton.setEnabled(False)
-                else:
-                    self.Widgets.nextButton.setEnabled(True)
+                    if self.SelectedPerkRCur == 1:
+                        self.Widgets.prevButton.setEnabled(False)
+                    else:
+                        self.Widgets.prevButton.setEnabled(True)
+                    
+                    if self.SelectedPerkRCur == self.SelectedPerkRMax:
+                        self.Widgets.nextButton.setEnabled(False)
+                    else:
+                        self.Widgets.nextButton.setEnabled(True)
     
     @QtCore.pyqtSlot()
     def UpdatePerkStars(self):
-        if self.PerkData.childCount():
-            AreaWidth = self.Widgets.rankStars.rect().width()
-            MaxStarSize = math.floor(AreaWidth / self.SelectedPerkRMax)
-            
-            # The stars only get so large
-            if MaxStarSize > 30:
-                MaxStarSize = 30
-            
-            # Update Star Size and Images
-            self.StarFilled.Size = MaxStarSize
-            self.StarFilled.Update()
-            
-            self.StarEmpty.Size = MaxStarSize
-            self.StarEmpty.Update()
-            
-            MaxStarArea = self.SelectedPerkRMax * MaxStarSize
-            
-            # Create scene and set its area
-            StarScene = QGraphicsScene()
-            StarScene.setSceneRect(0, 0, MaxStarArea, MaxStarSize)
-
-            # Filled Stars
-            for i in range(0, self.SelectedPerkRCur):
-                Star = StarScene.addPixmap(self.StarFilled.ImageData)
-                Star.setOffset(i * MaxStarSize, 0)
-            
-            # Empty Stars
-            for i in range(self.SelectedPerkRCur, self.SelectedPerkRMax):
-                Star = StarScene.addPixmap(self.StarEmpty.ImageData)  
-                Star.setOffset(i * MaxStarSize, 0)
+        if self.isVisible():
+            if self.PerkData:
+                AreaWidth = self.Widgets.rankStars.rect().width()
+                MaxStarSize = math.floor(AreaWidth / self.SelectedPerkRMax)
+                
+                # The stars only get so large
+                if MaxStarSize > 30:
+                    MaxStarSize = 30
+                
+                # Update Star Size and Images
+                self.StarFilled.Size = MaxStarSize
+                self.StarFilled.Update()
+                
+                self.StarEmpty.Size = MaxStarSize
+                self.StarEmpty.Update()
+                
+                MaxStarArea = self.SelectedPerkRMax * MaxStarSize
+                
+                # Create scene and set its area
+                StarScene = QGraphicsScene()
+                StarScene.setSceneRect(0, 0, MaxStarArea, MaxStarSize)
     
-            # Set the widget and show its glory
-            self.Widgets.rankStars.setScene(StarScene)
-            self.Widgets.rankStars.show()
+                # Filled Stars
+                for i in range(0, self.SelectedPerkRCur):
+                    Star = StarScene.addPixmap(self.StarFilled.ImageData)
+                    Star.setOffset(i * MaxStarSize, 0)
+                
+                # Empty Stars
+                for i in range(self.SelectedPerkRCur, self.SelectedPerkRMax):
+                    Star = StarScene.addPixmap(self.StarEmpty.ImageData)  
+                    Star.setOffset(i * MaxStarSize, 0)
+        
+                # Set the widget and show its glory
+                self.Widgets.rankStars.setScene(StarScene)
+                self.Widgets.rankStars.show()

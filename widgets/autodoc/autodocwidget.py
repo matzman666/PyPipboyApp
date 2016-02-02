@@ -18,6 +18,8 @@ class MedicalFeature:
     UseTimerDelay = None
     UseMethod = None
     
+    FreezeUseFlag = None
+    
     def __init__(self, startEnabled, startSetting, startLimit, formID):
         self.Enabled = startEnabled
         self.Setting = startSetting
@@ -32,12 +34,14 @@ class MedicalFeature:
         self.UseTimer.setSingleShot(True)
         self.UseTimer.timeout.connect(self.UseTimerTimeout)
         self.UseTimerDelay = 2000
+        
+        self.FreezeUseFlag = False
     
     def connect(self, useMethod):
         self.UseMethod = useMethod
     
     def Use(self):
-        if self.Enabled:
+        if self.Enabled and not self.FreezeUseFlag:
             if (self.Num > self.Limit) and (self.Num > 0):
                 if not self.Active:
                     if not self.UseFlag:
@@ -83,10 +87,6 @@ class AutoDocWidget(widgets.WidgetBase):
     Addicted = False
     Aquaperson = False
     InWater = False
-    
-    StimpakRadAwayFlag = False
-    # Activates when you trigger the no heal case because of radiation.
-    # Prevents additional stims from being taken
     
     Stimpak = MedicalFeature(True, 80, 10, 145206)
     MedX = MedicalFeature(False, 0, 5, 210809)
@@ -155,14 +155,14 @@ class AutoDocWidget(widgets.WidgetBase):
         self.UIUpdateSignal.emit()
     
     def UpdatePlayerInfoData(self, caller, value, pathObjs):
-        if self.WidgetEnabled:
+        if self.WidgetEnabled and self.isVisible():
             self.UpdateVitals()
             
             self.AutoDocSignal.emit()
             self.UIUpdateSignal.emit()
     
     def UpdateStatsData(self, caller, value, pathObjs):
-        if self.WidgetEnabled:
+        if self.WidgetEnabled and self.isVisible():
             self.UpdatePipItems()
             self.UpdateEffects()
             
@@ -170,7 +170,7 @@ class AutoDocWidget(widgets.WidgetBase):
             self.UIUpdateSignal.emit()
         
     def UpdateInventoryData(self, caller, value, pathObjs):
-        if self.WidgetEnabled:
+        if self.WidgetEnabled and self.isVisible():
             self.UpdateInventory()
             
             self.UIUpdateSignal.emit()
@@ -203,15 +203,15 @@ class AutoDocWidget(widgets.WidgetBase):
 
     @QtCore.pyqtSlot()
     def RunAutoDoc(self):
-        if self.WidgetEnabled and (self.HPPercent > 0):
+        if self.WidgetEnabled and self.isVisible() and (self.HPPercent > 0):
             # Stimpak Trigger
             if self.HPPercent < self.Stimpak.Setting:
                 # Rad Away No Healing Trigger
                 if self.Stimpak.Active:
                     if (self.HPCur == self.HPLast) and (self.HPCur != self.HPMax):
-                        if (self.RadAway.Num <= self.RadAway.Limit) or (self.RadAway.Num == 0):
-                            if not self.StimpakRadAwayFlag:
-                                self.StimpakRadAwayFlag = True
+                        if (self.RadAway.Enabled == False) or (self.RadAway.Num <= self.RadAway.Limit) or (self.RadAway.Num == 0):
+                            if not self.Stimpak.FreezeUseFlag:
+                                self.Stimpak.FreezeUseFlag = True
                         
                         if self.RadAway.Setting == 1:
                             # Rad-X RadAway Use Trigger
@@ -220,7 +220,7 @@ class AutoDocWidget(widgets.WidgetBase):
                                 
                             self.RadAway.Use()
                 else:
-                    if not self.StimpakRadAwayFlag:
+                    if not self.Stimpak.FreezeUseFlag:
                         self.Stimpak.Use()
                 
                 # Med-X %HP Trigger
@@ -266,7 +266,7 @@ class AutoDocWidget(widgets.WidgetBase):
             
     @QtCore.pyqtSlot()
     def UpdateUI(self):
-        if self.WidgetEnabled:
+        if self.WidgetEnabled and self.isVisible():
             Output = "Health [ " + str(self.HPCur) + "/" + str(self.HPMax) + " ] "
             Output += "[ " + str(self.HPPercent) + "/" + str(self.Stimpak.Setting) + " ] "
             
@@ -383,9 +383,11 @@ class AutoDocWidget(widgets.WidgetBase):
         self.Addicted = False
         self.InWater = False
         
+        self.TotalRads = 0
+        
         if self.RadState == 2:
             self.RadState = 1
-        else:
+        elif self.RadState != 1:
             self.RadState = 0
         
         if self.StatsData:
@@ -403,6 +405,8 @@ class AutoDocWidget(widgets.WidgetBase):
                                 self.Aquaperson = True
                                 
                             if EffectName == "Rads":
+                                self.TotalRads += ActiveEffectsData.child(i).child("Effects").child(j).child("Value").value()
+                                
                                 if ActiveEffectsData.child(i).child("Source").value() == "Water Radiation":
                                     self.InWater = True
                                 else:
@@ -429,7 +433,7 @@ class AutoDocWidget(widgets.WidgetBase):
                             if EffectName == "Rads":
                                 if ActiveEffectsData.child(i).child("Effects").child(j).child("Value").value() < 0:
                                     self.RadAway.Active = True
-                                    self.StimpakRadAwayFlag = False
+                                    self.Stimpak.FreezeUseFlag = False
                                     self.RadState = 0
                             
                             if EffectName == "Rad Resist":

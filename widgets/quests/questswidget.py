@@ -172,84 +172,86 @@ class QuestsWidget(widgets.WidgetBase):
 
     @QtCore.pyqtSlot()
     def UpdateQuestList(self):
-        self.QuestListModel.clear()
-        
-        HighlightFont = QtGui.QFont()
-        HighlightFont.setBold(True)
-        
-        if self.QuestData.childCount():
-            for i in range(0, self.QuestData.childCount()):
-                Enabled = self.QuestData.child(i).child("enabled").value()
-                FormId = self.QuestData.child(i).child("formID").value()
-                
-                if FormId == 0:
-                    self.MiscellaneousId = i
-                
-                if Enabled:
-                    Name = self.QuestData.child(i).child("text").value()
-                    Active = self.QuestData.child(i).child("active").value()
-                    
-                    NameCell = QStandardItem(Name)
-                    
-                    if Active:
-                        NameCell.setFont(HighlightFont)
-                    
-                    ListItem = [
-                        QStandardItem(str(i))
-                        , NameCell
-                    ]
-                    self.QuestListModel.appendRow(ListItem)
+        if self.isVisible():
+            self.QuestListModel.clear()
             
-            self.Widgets.questList.sortByColumn(1, Qt.AscendingOrder)
-            self.Widgets.questList.hideColumn(0)
+            HighlightFont = QtGui.QFont()
+            HighlightFont.setBold(True)
             
-            if self.SelectedQuestId == -1:
-                ModelIndex = self.QuestListModel.index(0,0)
-                DataId = self.QuestListModel.data(ModelIndex)
+            if self.QuestData:
+                for i in range(0, self.QuestData.childCount()):
+                    Enabled = self.QuestData.child(i).child("enabled").value()
+                    FormId = self.QuestData.child(i).child("formID").value()
+                    
+                    if FormId == 0:
+                        self.MiscellaneousId = i
+                    
+                    if Enabled:
+                        Name = self.QuestData.child(i).child("text").value()
+                        Active = self.QuestData.child(i).child("active").value()
+                        
+                        NameCell = QStandardItem(Name)
+                        
+                        if Active:
+                            NameCell.setFont(HighlightFont)
+                        
+                        ListItem = [
+                            QStandardItem(str(i))
+                            , NameCell
+                        ]
+                        self.QuestListModel.appendRow(ListItem)
                 
-                if DataId:
-                    self.SetQuestId(int(DataId))
+                self.Widgets.questList.sortByColumn(1, Qt.AscendingOrder)
+                self.Widgets.questList.hideColumn(0)
+                
+                if self.SelectedQuestId == -1:
+                    ModelIndex = self.QuestListModel.index(0,0)
+                    DataId = self.QuestListModel.data(ModelIndex)
+                    
+                    if DataId:
+                        self.SetQuestId(int(DataId))
     
     @QtCore.pyqtSlot()
     def UpdateObjectiveList(self):
-        self.ObjectiveListModel.clear()
-        self.Widgets.descriptionLabel.setText("")
-        
-        HighlightFont = QtGui.QFont()
-        HighlightFont.setBold(True)
-        
-        if self.QuestData.childCount() and self.ObjectiveData.childCount():
-            if self.SelectedQuestId == self.MiscellaneousId:
-                self.Widgets.descriptionLabel.setText("Double click an objective to activate or deactivate it.")
-            else:
-                if self.QuestData.child(self.SelectedQuestId):
-                    Description = self.QuestData.child(self.SelectedQuestId).child("desc").value()
-                    self.Widgets.descriptionLabel.setText(Description)
+        if self.isVisible():
+            self.ObjectiveListModel.clear()
+            self.Widgets.descriptionLabel.setText("")
             
-            for i in range(0, self.ObjectiveData.childCount()):
-                Text = self.ObjectiveData.child(i).child("text").value()
-                Completed = self.ObjectiveData.child(i).child("completed").value()
-                Enabled = self.ObjectiveData.child(i).child("enabled").value()
-                ActiveItem = self.ObjectiveData.child(i).child("active")
-                
-                TextCell = QStandardItem(Text)
-                
-                if ActiveItem:
-                    Active = ActiveItem.value()
-                    
-                    if Active:
-                        TextCell.setFont(HighlightFont)
+            HighlightFont = QtGui.QFont()
+            HighlightFont.setBold(True)
+            
+            if self.QuestData and self.ObjectiveData:
+                if self.SelectedQuestId == self.MiscellaneousId:
+                    self.Widgets.descriptionLabel.setText("Double click an objective to activate or deactivate it.")
                 else:
-                    if Enabled and not Completed:
-                        TextCell.setFont(HighlightFont)
+                    if self.QuestData.child(self.SelectedQuestId):
+                        Description = self.QuestData.child(self.SelectedQuestId).child("desc").value()
+                        self.Widgets.descriptionLabel.setText(Description)
                 
-                ListItem = [
-                    QStandardItem(str(i))
-                    , TextCell
-                    , QStandardItem(str(Completed))
-                ]
-                self.ObjectiveListModel.appendRow(ListItem)
-            
-            self.Widgets.objectiveList.sortByColumn(2, Qt.AscendingOrder)
-            self.Widgets.objectiveList.hideColumn(0)
-            self.Widgets.objectiveList.hideColumn(2)
+                for i in range(0, self.ObjectiveData.childCount()):
+                    Text = self.ObjectiveData.child(i).child("text").value()
+                    Completed = self.ObjectiveData.child(i).child("completed").value()
+                    Enabled = self.ObjectiveData.child(i).child("enabled").value()
+                    ActiveItem = self.ObjectiveData.child(i).child("active")
+                    
+                    TextCell = QStandardItem(Text)
+                    
+                    if ActiveItem:
+                        Active = ActiveItem.value()
+                        
+                        if Active:
+                            TextCell.setFont(HighlightFont)
+                    else:
+                        if Enabled and not Completed:
+                            TextCell.setFont(HighlightFont)
+                    
+                    ListItem = [
+                        QStandardItem(str(i))
+                        , TextCell
+                        , QStandardItem(str(Completed))
+                    ]
+                    self.ObjectiveListModel.appendRow(ListItem)
+                
+                self.Widgets.objectiveList.sortByColumn(2, Qt.AscendingOrder)
+                self.Widgets.objectiveList.hideColumn(0)
+                self.Widgets.objectiveList.hideColumn(2)
