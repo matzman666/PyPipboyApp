@@ -112,7 +112,11 @@ class EffectsTableModel(QtCore.QAbstractTableModel):
                     return text
             elif column == 1:
                 # Immediate parent is the enclosing array, therefore we need parent.parent
-                return effect.pipParent.pipParent.child('Source').value()
+                source = effect.pipParent.pipParent.child('Source')
+                if source:
+                    return source.value()
+                else:
+                    return None
             elif column == 2:
                 duration = effect.child('duration')
                 if duration:
@@ -125,7 +129,11 @@ class EffectsTableModel(QtCore.QAbstractTableModel):
                 return 0.0
             elif column == 4:
                 # Immediate parent is the enclosing array, therefore we need parent.parent
-                return effect.pipParent.pipParent.child('type').value()
+                type = effect.pipParent.pipParent.child('type')
+                if type:
+                    return type.value()
+                else:
+                    return None
             elif column == 5:
                 if effect.child('IsActive').value():
                     return '◼'
