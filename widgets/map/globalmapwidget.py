@@ -426,9 +426,10 @@ class LocationMarker(PipValueMarkerBase):
             py = self.mapCoords.pip2map_y(ry)
             tttext = 'Pos: (' + str(rx) + ', ' + str(ry) + ')'
             props = self.pipValue.value()
-            for prop in props:
-                if prop != 'X' and prop !='Y':
-                    tttext += '\n' + prop + ': ' + str(props[prop].value())
+            for propkey in props:
+                if propkey != 'x' and propkey !='y':
+                    prop = props[propkey]
+                    tttext += '\n' + prop.pipParentKey + ': ' + str(prop.value())
             self.markerItem.setToolTip( tttext )
             if (self.visible or self.filterVisibilityCheatFlag) and self.filterVisibleFlag:
                 self.setVisible(True)
@@ -774,15 +775,16 @@ class CollectableMarker(MarkerBase):
         ftaction.setChecked(self.collected)
 
     def setSavedSettings(self):
-        collectedcollectablesSettingsPath =\
-            self.widget.characterDataManager.playerDataPath + self.widget.characterDataManager.collectedcollectablesuffix
-        index = self.widget._app.settings.value(collectedcollectablesSettingsPath, None)
-        if index == None:
-            index = []
-
-        if index and len(index) > 0:
-            if str(int(self.itemFormID,16)) in index:
-                self.setCollected(True)
+        if self.widget.characterDataManager.playerDataPath and self.widget.characterDataManager.collectedcollectablesuffix:
+            collectedcollectablesSettingsPath =\
+                self.widget.characterDataManager.playerDataPath + self.widget.characterDataManager.collectedcollectablesuffix
+            index = self.widget._app.settings.value(collectedcollectablesSettingsPath, None)
+            if index == None:
+                index = []
+    
+            if index and len(index) > 0:
+                if str(int(self.itemFormID,16)) in index:
+                    self.setCollected(True)
 
         super().setSavedSettings()
 

@@ -268,11 +268,12 @@ class LocationBrowserWidget(widgets.WidgetBase):
             keys.sort()
             r = 0
             for k in keys:
-                nameItem = QtWidgets.QTableWidgetItem(k)
-                if k in ['LocationFormId', 'LocationMarkerFormId']:
-                    value = hex(props[k].value())
+                prop = props[k]
+                nameItem = QtWidgets.QTableWidgetItem(prop.pipParentKey)
+                if k in ['locationformid', 'locationmarkerformid']:
+                    value = hex(prop.value())
                 else:
-                    value = str(props[k].value())
+                    value = str(prop.value())
                 valueItem = QtWidgets.QTableWidgetItem(value)
                 self.widget.propertyTable.setItem(r, 0, nameItem)
                 self.widget.propertyTable.setItem(r, 1, valueItem)

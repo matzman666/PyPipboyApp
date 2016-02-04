@@ -159,19 +159,24 @@ class InventoryBrowserWidget(widgets.WidgetBase):
             self.widget.propertyTree.clear()
             keys = list(props.keys())
             keys.sort()
-            def _createTreeItem(prop, title, parent = self.widget.propertyTree):
+            def _createTreeItem(prop, key, title, parent = self.widget.propertyTree):
                 if prop.pipType == ePipboyValueType.ARRAY:
                     ti = QtWidgets.QTreeWidgetItem(parent)
                     ti.setText(0, title)
-                    for i in range(0, prop.childCount()):
-                        _createTreeItem(prop.value()[i], str(i), ti)
+                    i = 0
+                    for e in prop.value():
+                        _createTreeItem(e, i, str(i), ti)
+                        i += 1
                 elif prop.pipType == ePipboyValueType.OBJECT:
                     ti = QtWidgets.QTreeWidgetItem(parent)
                     ti.setText(0, title)
-                    for i in prop.value():
-                        _createTreeItem(prop.value()[i], str(i), ti)
+                    members = prop.value()
+                    sortedKeys = list(members.keys())
+                    sortedKeys.sort()
+                    for e in sortedKeys:
+                        _createTreeItem(members[e], e, members[e].pipParentKey, ti)
                 else:
-                    if k in ['formID', 'componentFormID']:
+                    if key in ['formid', 'componentformid']:
                         value = hex(prop.value())
                     else:
                         value = str(prop.value())
@@ -184,6 +189,6 @@ class InventoryBrowserWidget(widgets.WidgetBase):
             self.widget.propertyTree.addTopLevelItem(ti)
             for k in keys:
                 prop = props[k]
-                ti = _createTreeItem(prop, k)
+                ti = _createTreeItem(prop, k, prop.pipParentKey)
                 self.widget.propertyTree.addTopLevelItem(ti)
             
