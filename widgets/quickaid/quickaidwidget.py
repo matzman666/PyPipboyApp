@@ -50,26 +50,34 @@ class QuickAidWidget(widgets.WidgetBase):
     def StimpakButtonClicked(self):
         # Apparently need to do this because it raises a no items exception
         if self.StatsData:
-            Stimpaks = self.StatsData.child("StimpakCount").value()
+            Stimpaks = self.StatsData.child("StimpakCount")
             
-            if Stimpaks > 0:
+            if Stimpaks and Stimpaks.value() > 0:
                 self.DataManager.rpcUseStimpak()
     
     @QtCore.pyqtSlot()
     def RadAwayButtonClicked(self):
         # Apparently need to do this because it raises a no items exception
         if self.StatsData:
-            Radaways = self.StatsData.child("RadawayCount").value()
+            Radaways = self.StatsData.child("RadawayCount")
             
-            if Radaways > 0:
+            if Radaways and Radaways.value() > 0:
                 self.DataManager.rpcUseRadAway()
     
     @QtCore.pyqtSlot()
     def UpdateUI(self):
         if self.isVisible():
             if self.StatsData:
-                Stimpaks = self.StatsData.child("StimpakCount").value()
-                Radaways = self.StatsData.child("RadawayCount").value()
+                Stimpaks = self.StatsData.child("StimpakCount")
+                if Stimpaks:
+                    Stimpaks = Stimpaks.value()
+                else:
+                    Stimpaks = 0
+                Radaways = self.StatsData.child("RadawayCount")
+                if Radaways:
+                    Radaways = Radaways.value()
+                else:
+                    Radaways = 0
                 
                 if Stimpaks > 0:
                     self.Widgets.stimpakButton.setEnabled(True)
