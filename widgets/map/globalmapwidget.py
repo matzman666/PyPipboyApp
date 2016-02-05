@@ -1593,6 +1593,11 @@ class GlobalMapWidget(widgets.WidgetBase):
             collectableVRange = int(self._app.settings.value('globalmapwidget/collectable_vrange_' + catKey, 100))
             collectableARange = int(self._app.settings.value('globalmapwidget/collectable_arange_' + catKey, 50))
 
+            # Multiplying with the map coordinate's scale factor will make the distance 
+            # independent from the map resolution
+            collectableVRange = self.mapCoords._ax * collectableVRange * 100
+            collectableARange = self.mapCoords._ax * collectableARange * 100
+
             for k, marker in self.collectableLocationMarkers[catKey].items():
                 if marker.collected:
                     if showAlwaysCollected:
